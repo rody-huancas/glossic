@@ -1,40 +1,51 @@
-import { z } from "zod";
-import { GlosikConfigSchema } from "./config.js";
-import { zFunction } from "./internal.js";
-import { RelationSchema, UnitSchema } from "./unit.js";
-import { type Project, ProjectSchema } from "./workspace.js";
+import type { GlosikConfig } from "./config.js";
+import type { Relation, Unit } from "./unit.js";
+import type { Project, Workspace } from "./workspace.js";
 
 /** Shared context handed to every adapter method. */
-export const AdapterContextSchema = z.object({
+export interface AdapterContext {
   /** Absolute path to the workspace root. */
-  root: z.string().min(1),
-  config: GlosikConfigSchema,
-});
-export type AdapterContext = z.infer<typeof AdapterContextSchema>;
+  root: string;
+  workspace: Workspace;
+  config: GlosikConfig;
+}
 
-export const ExtractContextSchema = AdapterContextSchema.extend({
-  project: ProjectSchema,
-});
-export type ExtractContext = z.infer<typeof ExtractContextSchema>;
+export interface DiscoverContext extends AdapterContext {
+  project: Project;
+}
 
-export const ExtractResultSchema = z.object({
-  units: z.array(UnitSchema).default([]),
-  relations: z.array(RelationSchema).default([]),
-});
-export type ExtractResult = z.infer<typeof ExtractResultSchema>;
+/** A unit as returned by `discover`: grouped files, no facts yet. */
+export interface DiscoveredUnit {
+  id: string;
+  projectId: string;
+  /** Posix path relative to the project root, or "root". */
+  name: string;
+  /** Posix path relative to the workspace root. */
+  path: string;
+  /** Posix paths relative to the workspace root, sorted. */
+  files: string[];
+}
+
+export interface ExtractContext extends DiscoverContext {
+  units: DiscoveredUnit[];
+}
+
+export interface ExtractResult {
+  units: Unit[];
+  relations: Relation[];
+}
 
 /**
- * Turns a folder into projects, units and relations. Purely static:
- * an adapter never talks to an LLM.
+ * Turns a project into units, facts and relations. Purely static: an adapter
+ * never talks to an LLM and never hits the network.
  */
-export const AdapterSchema = z.object({
+export interface Adapter {
   /** Unique adapter id, e.g. "generic", "nestjs". */
-  name: z.string().min(1),
-  /** Can this adapter handle the workspace? */
-  detect: zFunction<(ctx: AdapterContext) => Promise<boolean>>(),
-  /** Find the projects this adapter is responsible for. */
-  discover: zFunction<(ctx: AdapterContext) => Promise<Project[]>>(),
-  /** Pull facts out of a single project. */
-  extract: zFunction<(ctx: ExtractContext) => Promise<ExtractResult>>(),
-});
-export type Adapter = z.infer<typeof AdapterSchema>;
+  readonly name: string;
+  /** Can this adapter handle the project? */
+  detect(ctx: DiscoverContext): Promise<boolean>;
+  /** Group the project's source files into units. */
+  discover(ctx: DiscoverContext): Promise<DiscoveredUnit[]>;
+  /** Turn discovered units into units carrying facts and a hash. */
+  extract(ctx: ExtractContext): Promise<ExtractResult>;
+}

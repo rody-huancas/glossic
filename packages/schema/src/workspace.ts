@@ -1,32 +1,36 @@
 import { z } from "zod";
 
-export const ProjectKindSchema = z.enum(["app", "lib", "service", "package", "unknown"]);
-export type ProjectKind = z.infer<typeof ProjectKindSchema>;
+/** How the monorepo was declared, or "none" for a single-project repository. */
+export const WorkspaceToolSchema = z.enum([
+  "pnpm",
+  "npm-workspaces",
+  "turbo",
+  "nx",
+  "lerna",
+  "none",
+]);
+export type WorkspaceTool = z.infer<typeof WorkspaceToolSchema>;
 
 /** A single analyzable unit of code ownership inside a workspace. */
 export const ProjectSchema = z.object({
-  /** Stable identifier, unique inside the workspace. */
+  /** Stable identifier: the posix path relative to the workspace root, or "root". */
   id: z.string().min(1),
   name: z.string().min(1),
-  /** Absolute or workspace-relative path to the project root. */
-  root: z.string().min(1),
-  kind: ProjectKindSchema,
-  /** Primary language, e.g. "typescript", "php". */
-  language: z.string().min(1),
-  /** Detected framework, e.g. "nestjs", "express", "laravel". */
-  framework: z.string().optional(),
-  /** Name of the adapter that discovered this project. */
-  adapter: z.string().optional(),
-  tags: z.array(z.string()).default([]),
+  /** Posix path relative to the workspace root; "." for the workspace itself. */
+  rootDir: z.string().min(1),
+  /** "pnpm" | "npm" | "yarn" | "bun" | "composer", when one can be inferred. */
+  packageManager: z.string().optional(),
 });
 export type Project = z.infer<typeof ProjectSchema>;
 
-/** The repository (or folder) being documented, plus every project inside it. */
+/** The repository being documented, plus every project inside it. */
 export const WorkspaceSchema = z.object({
   name: z.string().min(1),
+  /** Absolute path to the workspace root. */
   root: z.string().min(1),
-  /** e.g. "pnpm", "npm", "turbo", "none". */
+  isMonorepo: z.boolean(),
+  tool: WorkspaceToolSchema,
   packageManager: z.string().optional(),
-  projects: z.array(ProjectSchema).default([]),
+  projects: z.array(ProjectSchema),
 });
 export type Workspace = z.infer<typeof WorkspaceSchema>;
