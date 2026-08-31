@@ -1,4 +1,5 @@
 export * from "./check.js";
+export * from "./doctor.js";
 export * from "./generate.js";
 export * from "./init.js";
 export * from "./scan.js";

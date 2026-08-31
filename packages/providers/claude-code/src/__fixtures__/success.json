@@ -1,0 +1,16 @@
+{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "duration_ms": 8421,
+  "duration_api_ms": 8112,
+  "num_turns": 1,
+  "result": "## UsersController\n\nHandles the `/users` HTTP surface.",
+  "session_id": "3f0a9c1e-2b44-4d8f-9c11-8a7e5d2b6f10",
+  "total_cost_usd": 0.0421,
+  "usage": {
+    "input_tokens": 1834,
+    "output_tokens": 412,
+    "cache_read_input_tokens": 1200
+  }
+}

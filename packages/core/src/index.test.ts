@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { CORE_VERSION, createAdapterRegistry, NotImplementedError } from "./index.js";
 
 describe("@glosik/core", () => {
@@ -13,6 +14,6 @@ describe("@glosik/core", () => {
   });
 
   it("NotImplementedError carries the stub name", () => {
-    expect(new NotImplementedError("scan").message).toBe("scan is not implemented");
+    expect(new NotImplementedError("generate").message).toBe("generate is not implemented");
   });
 });

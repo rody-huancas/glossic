@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import type { ScanResult } from "@glosik/core";
+import type { GenerateResult, ScanResult } from "@glosik/core";
 import { toPosix } from "@glosik/core";
 import type { Manifest, Unit } from "@glosik/schema";
 
@@ -91,8 +91,63 @@ export const renderScanReport = (result: ScanResult): string => {
   return `${lines.join("\n")}\n`;
 };
 
+export interface GenerateReportContext {
+  outDir: string;
+  cwd: string;
+  provider: string | undefined;
+}
+
+const formatTokens = (tokens: number): string =>
+  tokens < 1000 ? `${tokens}` : `~${Math.round(tokens / 1000)}k`;
+
 /** A path outside the cwd reads better absolute than as a pile of "../". */
 export const displayPath = (cwd: string, target: string): string => {
   const relative = toPosix(path.relative(cwd, target));
   return relative === "" || relative.startsWith("..") ? toPosix(target) : relative;
+};
+
+/** Renders the generate report, for both a dry run and a real run. */
+export const renderGenerateReport = (
+  result: GenerateResult,
+  context: GenerateReportContext,
+): string => {
+  const relativeOut = displayPath(context.cwd, context.outDir);
+  const nameWidth = Math.max(0, ...result.plan.map((entry) => entry.unitId.length));
+
+  const lines: string[] = [];
+
+  if (result.dryRun) {
+    lines.push(`dry run — no provider was called, nothing was written to ${relativeOut}`, "");
+  } else {
+    lines.push(`provider: ${context.provider ?? "none"}`, "");
+  }
+
+  for (const entry of result.plan) {
+    lines.push(
+      [
+        `  ${entry.unitId.padEnd(nameWidth)}`,
+        plural(entry.files, "file").padStart(9),
+        `${formatTokens(entry.estimatedTokens)} tokens`.padStart(13),
+        entry.docPath,
+      ].join("  "),
+    );
+  }
+
+  if (result.plan.length > 0) lines.push("");
+
+  lines.push(
+    `${result.plan.length} units, ${formatTokens(result.estimatedTokens)} estimated input tokens`,
+  );
+
+  if (!result.dryRun) {
+    lines.push(`${result.written.length} files written to ${relativeOut}`);
+  }
+
+  for (const failure of result.failures) {
+    lines.push(`  failed: ${failure.unitId} — ${failure.reason}`);
+  }
+
+  return `${lines.join("
+")}
+`;
 };

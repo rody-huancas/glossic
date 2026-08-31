@@ -1,0 +1,15 @@
+[
+  { "type": "system", "subtype": "init", "session_id": "aa11bb22-cc33-4d44-8e55-ff6677889900" },
+  {
+    "type": "assistant",
+    "message": { "role": "assistant", "content": [{ "type": "text", "text": "working" }] }
+  },
+  {
+    "type": "result",
+    "subtype": "success",
+    "is_error": false,
+    "result": "## Routes\n\nDeclares the order endpoints.",
+    "total_cost_usd": 0.0102,
+    "usage": { "input_tokens": 900, "output_tokens": 120 }
+  }
+]
