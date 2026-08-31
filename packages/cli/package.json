@@ -1,0 +1,39 @@
+{
+  "name": "glosik",
+  "version": "0.0.0",
+  "description": "glosik CLI",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "glosik": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "start": "node ./dist/index.js"
+  },
+  "dependencies": {
+    "@glosik/adapter-generic": "workspace:*",
+    "@glosik/adapter-nestjs": "workspace:*",
+    "@glosik/adapter-treesitter": "workspace:*",
+    "@glosik/core": "workspace:*",
+    "@glosik/provider-anthropic": "workspace:*",
+    "@glosik/provider-claude-code": "workspace:*",
+    "@glosik/schema": "workspace:*",
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

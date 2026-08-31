@@ -1,0 +1,31 @@
+{
+  "name": "glosik-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Glosik monorepo root",
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "clean": "pnpm -r exec rm -rf dist",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.2",
+    "@changesets/cli": "^2.29.7",
+    "@types/node": "^22.15.3",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "moduleDetection": "force",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    "paths": {
+      "@glosik/schema": ["./packages/schema/src/index.ts"],
+      "@glosik/core": ["./packages/core/src/index.ts"],
+      "@glosik/provider-claude-code": ["./packages/providers/claude-code/src/index.ts"],
+      "@glosik/provider-anthropic": ["./packages/providers/anthropic/src/index.ts"],
+      "@glosik/adapter-generic": ["./packages/adapters/generic/src/index.ts"],
+      "@glosik/adapter-treesitter": ["./packages/adapters/treesitter/src/index.ts"],
+      "@glosik/adapter-nestjs": ["./packages/adapters/nestjs/src/index.ts"]
+    }
+  },
+  "exclude": ["**/node_modules", "**/dist"]
+}
