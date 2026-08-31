@@ -260,7 +260,7 @@ name: docs
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   check:
