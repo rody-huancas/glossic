@@ -1,7 +1,7 @@
 {
-  "name": "@glosik/adapter-generic",
+  "name": "@glossic/adapter-generic",
   "version": "0.0.0",
-  "description": "Language-agnostic fallback adapter for glosik",
+  "description": "Language-agnostic fallback adapter for glossic",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@glosik/schema": "workspace:*",
+    "@glossic/schema": "workspace:*",
     "ignore": "^7.0.5",
     "tinyglobby": "^0.2.15"
   },

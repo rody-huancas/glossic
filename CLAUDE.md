@@ -21,7 +21,7 @@ groups with a blank line. **Do not align imports with extra spaces.**
 import { createHash } from "node:crypto";
 import { glob } from "tinyglobby";
 
-import type { Adapter, Unit } from "@glosik/schema";
+import type { Adapter, Unit } from "@glossic/schema";
 import { inferLanguage } from "./languages.js";
 ```
 
@@ -66,10 +66,10 @@ unchanged code produce identical output.
 ## Package boundaries
 
 ```
-@glosik/schema     -> no internal dependencies
-@glosik/core       -> schema
+@glossic/schema     -> no internal dependencies
+@glossic/core       -> schema
 adapters/providers -> schema
-glosik (cli)       -> core, schema, adapters, providers
+glossic (cli)       -> core, schema, adapters, providers
 ```
 
 Core never imports an adapter or a provider: they are passed in as arguments.

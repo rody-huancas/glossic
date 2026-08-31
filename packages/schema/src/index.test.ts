@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { defineConfig, GlosikConfigSchema, MANIFEST_VERSION, ManifestSchema } from "./index.js";
+import { defineConfig, GlossicConfigSchema, MANIFEST_VERSION, ManifestSchema } from "./index.js";
 
-describe("@glosik/schema", () => {
+describe("@glossic/schema", () => {
   it("applies config defaults", () => {
-    const config = GlosikConfigSchema.parse({});
+    const config = GlossicConfigSchema.parse({});
 
     // No provider means "auto-detect": claude-code first, then anthropic.
     expect(config.provider).toBeUndefined();
     expect(config.output.format).toBe("markdown");
-    expect(config.output.manifest).toBe(".glosik/manifest.json");
+    expect(config.output.manifest).toBe(".glossic/manifest.json");
     expect(config.lang).toBe("en");
     // Unset on purpose: recent Claude models reject sampling parameters.
     expect(config.temperature).toBeUndefined();

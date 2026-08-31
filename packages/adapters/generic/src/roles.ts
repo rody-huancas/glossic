@@ -1,4 +1,4 @@
-import type { RoleHint } from "@glosik/schema";
+import type { RoleHint } from "@glossic/schema";
 
 /** Directory name (lowercased) -> role. Singular and plural both map. */
 const ROLE_BY_DIRECTORY: Readonly<Record<string, RoleHint>> = {

@@ -1,4 +1,4 @@
-import type { GlosikConfig, Provider } from "@glosik/schema";
+import type { GlossicConfig, Provider } from "@glossic/schema";
 
 import { NoProviderAvailableError, UnknownProviderError } from "./errors.js";
 import { compareStrings } from "./order.js";
@@ -12,7 +12,7 @@ export const PROVIDER_PREFERENCE = ["claude-code", "anthropic"];
 export interface ResolveProviderOptions {
   /** Every provider the caller knows about. */
   providers: readonly Provider[];
-  config?: Pick<GlosikConfig, "provider"> | undefined;
+  config?: Pick<GlossicConfig, "provider"> | undefined;
   /** `--provider <name>`, which outranks the config. */
   requested?: string | undefined;
 }
@@ -34,7 +34,7 @@ const byPreference = (providers: readonly Provider[]): Provider[] =>
     return compareStrings(a.name, b.name);
   });
 
-/** Probes every provider. Used by `glosik doctor`; never throws. */
+/** Probes every provider. Used by `glossic doctor`; never throws. */
 export const probeProviders = async (providers: readonly Provider[]): Promise<ProviderStatus[]> =>
   Promise.all(
     byPreference(providers).map(async (provider) => ({

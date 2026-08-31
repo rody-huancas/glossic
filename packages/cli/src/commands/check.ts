@@ -1,9 +1,9 @@
 import path from "node:path";
 import process from "node:process";
 
-import type { CheckResult } from "@glosik/core";
-import { check } from "@glosik/core";
-import { GlosikConfigSchema } from "@glosik/schema";
+import type { CheckResult } from "@glossic/core";
+import { check } from "@glossic/core";
+import { GlossicConfigSchema } from "@glossic/schema";
 import { Command } from "commander";
 
 import { builtinAdapters } from "../registries.js";
@@ -17,7 +17,7 @@ interface CheckCliOptions {
 export const runCheck = async (target: string, options: CheckCliOptions): Promise<CheckResult> => {
   const cwd = process.cwd();
   const root = path.resolve(cwd, target);
-  const config = GlosikConfigSchema.parse({});
+  const config = GlossicConfigSchema.parse({});
 
   const outDir =
     options.out === undefined

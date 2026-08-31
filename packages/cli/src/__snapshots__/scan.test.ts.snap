@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`glosik scan > matches the nestjs-api manifest snapshot 1`] = `
+exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
 {
   "generatedAt": "2026-01-01T00:00:00.000Z",
   "relations": [],
@@ -246,7 +246,7 @@ exports[`glosik scan > matches the nestjs-api manifest snapshot 1`] = `
 }
 `;
 
-exports[`glosik scan > renders a deterministic report 1`] = `
+exports[`glossic scan > renders a deterministic report 1`] = `
 "example-monorepo — pnpm monorepo
 
 @example/api (packages/api)

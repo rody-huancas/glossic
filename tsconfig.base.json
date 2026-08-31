@@ -28,13 +28,13 @@
     "sourceMap": true,
 
     "paths": {
-      "@glosik/schema": ["./packages/schema/src/index.ts"],
-      "@glosik/core": ["./packages/core/src/index.ts"],
-      "@glosik/provider-claude-code": ["./packages/providers/claude-code/src/index.ts"],
-      "@glosik/provider-anthropic": ["./packages/providers/anthropic/src/index.ts"],
-      "@glosik/adapter-generic": ["./packages/adapters/generic/src/index.ts"],
-      "@glosik/adapter-treesitter": ["./packages/adapters/treesitter/src/index.ts"],
-      "@glosik/adapter-nestjs": ["./packages/adapters/nestjs/src/index.ts"]
+      "@glossic/schema": ["./packages/schema/src/index.ts"],
+      "@glossic/core": ["./packages/core/src/index.ts"],
+      "@glossic/provider-claude-code": ["./packages/providers/claude-code/src/index.ts"],
+      "@glossic/provider-anthropic": ["./packages/providers/anthropic/src/index.ts"],
+      "@glossic/adapter-generic": ["./packages/adapters/generic/src/index.ts"],
+      "@glossic/adapter-treesitter": ["./packages/adapters/treesitter/src/index.ts"],
+      "@glossic/adapter-nestjs": ["./packages/adapters/nestjs/src/index.ts"]
     }
   },
   "exclude": ["**/node_modules", "**/dist"]

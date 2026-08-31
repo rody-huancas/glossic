@@ -5,8 +5,8 @@ import { z } from "zod";
 
 import { sortBy } from "./order.js";
 
-/** Where `glosik generate` keeps its incremental state. */
-export const DEFAULT_CACHE_PATH = ".glosik/cache.json";
+/** Where `glossic generate` keeps its incremental state. */
+export const DEFAULT_CACHE_PATH = ".glossic/cache.json";
 
 /** Schema version of the cache document itself. */
 export const CACHE_VERSION = "1";

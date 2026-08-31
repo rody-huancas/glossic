@@ -5,11 +5,11 @@ import type {
   AdapterContext,
   DiscoverContext,
   ExtractResult,
-  GlosikConfig,
+  GlossicConfig,
   Manifest,
   Workspace,
-} from "@glosik/schema";
-import { GlosikConfigSchema } from "@glosik/schema";
+} from "@glossic/schema";
+import { GlossicConfigSchema } from "@glossic/schema";
 
 import { buildManifest } from "./manifest.js";
 import { resolveWorkspace } from "./workspace.js";
@@ -19,7 +19,7 @@ export interface PipelineContext {
   root: string;
   /** Adapters in priority order; the first one whose `detect` passes wins. */
   adapters: readonly Adapter[];
-  config?: GlosikConfig;
+  config?: GlossicConfig;
   /** ISO-8601 timestamp. Injectable so tests get a stable manifest. */
   generatedAt?: string;
 }
@@ -46,7 +46,7 @@ const selectAdapter = async (
  * and assembles the manifest. No LLM, no network.
  */
 export const scan = async (ctx: PipelineContext): Promise<ScanResult> => {
-  const config = ctx.config ?? GlosikConfigSchema.parse({});
+  const config = ctx.config ?? GlossicConfigSchema.parse({});
   const workspace = await resolveWorkspace(path.resolve(ctx.root));
   const adapterContext: AdapterContext = { root: workspace.root, workspace, config };
 

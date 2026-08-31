@@ -1,7 +1,7 @@
 {
-  "name": "@glosik/schema",
+  "name": "@glossic/schema",
   "version": "0.0.0",
-  "description": "Zod schemas and inferred types shared across glosik",
+  "description": "Zod schemas and inferred types shared across glossic",
   "license": "MIT",
   "type": "module",
   "engines": {

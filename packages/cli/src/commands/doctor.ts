@@ -1,8 +1,8 @@
 import path from "node:path";
 import process from "node:process";
 
-import { findConfigFile, probeProviders, resolveProvider } from "@glosik/core";
-import type { Adapter, Provider } from "@glosik/schema";
+import { findConfigFile, probeProviders, resolveProvider } from "@glossic/core";
+import type { Adapter, Provider } from "@glossic/schema";
 import { Command } from "commander";
 
 import { builtinAdapters, builtinProviders } from "../registries.js";
@@ -47,7 +47,7 @@ const mark = (ok: boolean): string => (ok ? "ok     " : "missing");
 
 export const renderDoctorReport = (report: DoctorReport): string => {
   const lines = [
-    "glosik doctor",
+    "glossic doctor",
     "",
     `node        ${report.node}`,
     `platform    ${report.platform}`,
@@ -61,7 +61,7 @@ export const renderDoctorReport = (report: DoctorReport): string => {
   }
 
   lines.push("", `adapters    ${report.adapters.join(", ")}`);
-  lines.push(`config      ${report.configFile ?? "none (glosik.config.ts not found)"}`);
+  lines.push(`config      ${report.configFile ?? "none (glossic.config.ts not found)"}`);
   lines.push("");
 
   if (report.selected === undefined) {
@@ -70,7 +70,7 @@ export const renderDoctorReport = (report: DoctorReport): string => {
       "",
       "  1. Claude Code — install the CLI and sign in:",
       "       https://claude.com/claude-code",
-      "     glosik picks it up as soon as `claude --version` works.",
+      "     glossic picks it up as soon as `claude --version` works.",
       "",
       "  2. Anthropic API — export an API key:",
       "       export ANTHROPIC_API_KEY=sk-ant-...",
@@ -78,7 +78,7 @@ export const renderDoctorReport = (report: DoctorReport): string => {
       "",
     );
   } else {
-    lines.push(`Ready: \`glosik generate\` would use ${report.selected}.`, "");
+    lines.push(`Ready: \`glossic generate\` would use ${report.selected}.`, "");
   }
 
   return lines.join("\n");

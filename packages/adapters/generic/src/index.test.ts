@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DiscoverContext, Project, Unit } from "@glosik/schema";
-import { GlosikConfigSchema } from "@glosik/schema";
+import type { DiscoverContext, Project, Unit } from "@glossic/schema";
+import { GlossicConfigSchema } from "@glossic/schema";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { genericAdapter, genericAdapterName } from "./index.js";
@@ -16,7 +16,7 @@ const contextFor = (root: string, rootDir = "."): DiscoverContext => {
   return {
     root,
     project,
-    config: GlosikConfigSchema.parse({}),
+    config: GlossicConfigSchema.parse({}),
     workspace: {
       name: path.basename(root),
       root,
@@ -39,7 +39,7 @@ const roleOf = (units: readonly Unit[], name: string): string | null | undefined
 const tempDirs: string[] = [];
 
 const makeRepo = async (files: Record<string, string>): Promise<string> => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glosik-generic-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-generic-"));
   tempDirs.push(dir);
 
   for (const [file, content] of Object.entries(files)) {

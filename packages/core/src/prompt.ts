@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { CompletionRequest, Project, Unit } from "@glosik/schema";
+import type { CompletionRequest, Project, Unit } from "@glossic/schema";
 
 import { compareStrings } from "./order.js";
 

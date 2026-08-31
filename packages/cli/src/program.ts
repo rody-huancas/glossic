@@ -15,7 +15,7 @@ export const createProgram = (): Command => {
   program
     .name(CLI_NAME)
     .description("Documentation generator driven by static analysis and LLM providers")
-    .version(CLI_VERSION, "-v, --version", "print the glosik version")
+    .version(CLI_VERSION, "-v, --version", "print the glossic version")
     .showHelpAfterError();
 
   program.addCommand(scanCommand());

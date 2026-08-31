@@ -1,4 +1,4 @@
-import type { Manifest, Project, Unit } from "@glosik/schema";
+import type { Manifest, Project, Unit } from "@glossic/schema";
 
 import { compareStrings } from "./order.js";
 

@@ -1,9 +1,9 @@
 {
-  "name": "glosik-monorepo",
+  "name": "glossic-monorepo",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Glosik monorepo root",
+  "description": "Glossic monorepo root",
   "packageManager": "pnpm@10.17.1",
   "engines": {
     "node": ">=20"

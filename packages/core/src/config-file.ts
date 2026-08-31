@@ -5,15 +5,15 @@ import { toPosix } from "./paths.js";
 
 /** Looked up in this order; the first hit wins. */
 export const CONFIG_FILENAMES = [
-  "glosik.config.ts",
-  "glosik.config.mts",
-  "glosik.config.js",
-  "glosik.config.mjs",
+  "glossic.config.ts",
+  "glossic.config.mts",
+  "glossic.config.js",
+  "glossic.config.mjs",
 ];
 
 /**
  * Locates the config file in `root`. Loading it needs a TypeScript loader, so
- * for now glosik only reports whether one exists.
+ * for now glossic only reports whether one exists.
  */
 export const findConfigFile = async (root: string): Promise<string | undefined> => {
   for (const filename of CONFIG_FILENAMES) {

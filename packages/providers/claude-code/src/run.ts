@@ -1,6 +1,6 @@
 import { type ChildProcess, spawn } from "node:child_process";
 
-import { ProviderError } from "@glosik/schema";
+import { ProviderError } from "@glossic/schema";
 
 export interface RunOptions {
   binary: string;

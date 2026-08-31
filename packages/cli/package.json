@@ -1,7 +1,7 @@
 {
-  "name": "glosik",
+  "name": "glossic",
   "version": "0.0.0",
-  "description": "glosik CLI",
+  "description": "glossic CLI",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -11,7 +11,7 @@
     "dist"
   ],
   "bin": {
-    "glosik": "./dist/index.js"
+    "glossic": "./dist/index.js"
   },
   "scripts": {
     "build": "tsup",
@@ -21,13 +21,13 @@
     "start": "node ./dist/index.js"
   },
   "dependencies": {
-    "@glosik/adapter-generic": "workspace:*",
-    "@glosik/adapter-nestjs": "workspace:*",
-    "@glosik/adapter-treesitter": "workspace:*",
-    "@glosik/core": "workspace:*",
-    "@glosik/provider-anthropic": "workspace:*",
-    "@glosik/provider-claude-code": "workspace:*",
-    "@glosik/schema": "workspace:*",
+    "@glossic/adapter-generic": "workspace:*",
+    "@glossic/adapter-nestjs": "workspace:*",
+    "@glossic/adapter-treesitter": "workspace:*",
+    "@glossic/core": "workspace:*",
+    "@glossic/provider-anthropic": "workspace:*",
+    "@glossic/provider-claude-code": "workspace:*",
+    "@glossic/schema": "workspace:*",
     "commander": "^14.0.0"
   },
   "devDependencies": {

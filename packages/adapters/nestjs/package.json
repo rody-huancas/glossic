@@ -1,7 +1,7 @@
 {
-  "name": "@glosik/adapter-nestjs",
+  "name": "@glossic/adapter-nestjs",
   "version": "0.0.0",
-  "description": "NestJS extraction adapter for glosik",
+  "description": "NestJS extraction adapter for glossic",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@glosik/schema": "workspace:*"
+    "@glossic/schema": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

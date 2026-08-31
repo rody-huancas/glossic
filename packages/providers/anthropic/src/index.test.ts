@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { isProviderError } from "@glosik/schema";
+import { isProviderError } from "@glossic/schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {

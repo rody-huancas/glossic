@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { check, createFakeProvider, generate } from "@glosik/core";
+import { check, createFakeProvider, generate } from "@glossic/core";
 
-import { ProviderError } from "@glosik/schema";
+import { ProviderError } from "@glossic/schema";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { builtinAdapters } from "./registries.js";
 import { renderCheckReport } from "./render.js";
@@ -27,7 +27,7 @@ const write = async (file: string, content: string): Promise<void> => {
 };
 
 beforeEach(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), "glosik-check-"));
+  root = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-check-"));
   tempDirs.push(root);
   docs = path.join(root, "docs");
 
@@ -44,13 +44,13 @@ const generateAll = async () =>
     adapters: builtinAdapters,
     provider: createFakeProvider(),
     outDir: docs,
-    cachePath: path.join(root, ".glosik/cache.json"),
+    cachePath: path.join(root, ".glossic/cache.json"),
     generatedAt: "2026-01-01T00:00:00.000Z",
   });
 
 const runCheck = async () => check({ root, adapters: builtinAdapters, outDir: docs });
 
-describe("glosik check", () => {
+describe("glossic check", () => {
   it("is happy right after a generate", async () => {
     await generateAll();
     const result = await runCheck();
@@ -91,7 +91,7 @@ describe("glosik check", () => {
     const report = renderCheckReport(result, { cwd: root, target: "." });
     expect(report).toContain("stale");
     expect(report).toContain("docs/src/utils.md");
-    expect(report).toContain("glosik generate .");
+    expect(report).toContain("glossic generate .");
   });
 
   it("reports an orphaned document", async () => {
@@ -176,7 +176,7 @@ describe("a failing unit does not abort the run", () => {
       adapters: builtinAdapters,
       provider,
       outDir: docs,
-      cachePath: path.join(root, ".glosik/cache.json"),
+      cachePath: path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
       retry: { sleep: async () => {} },
     });
@@ -216,7 +216,7 @@ describe("a failing unit does not abort the run", () => {
       adapters: builtinAdapters,
       provider,
       outDir: docs,
-      cachePath: path.join(root, ".glosik/cache.json"),
+      cachePath: path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
       retry: { sleep: async () => {} },
     });
@@ -245,7 +245,7 @@ describe("a failing unit does not abort the run", () => {
       adapters: builtinAdapters,
       provider,
       outDir: docs,
-      cachePath: path.join(root, ".glosik/cache.json"),
+      cachePath: path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
       retry: { sleep: async () => {} },
     });

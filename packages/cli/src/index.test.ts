@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createProgram } from "./program.js";
 import { builtinAdapters, builtinProviders } from "./registries.js";
 
-describe("glosik cli", () => {
+describe("glossic cli", () => {
   it("registers every command", () => {
     const names = createProgram()
       .commands.map((command) => command.name())

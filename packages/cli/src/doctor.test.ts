@@ -1,4 +1,4 @@
-import { createFakeProvider } from "@glosik/core";
+import { createFakeProvider } from "@glossic/core";
 import { describe, expect, it } from "vitest";
 
 import { collectDoctorReport, renderDoctorReport } from "./commands/doctor.js";
@@ -7,7 +7,7 @@ import { builtinAdapters } from "./registries.js";
 const exampleRoot = (name: string): string =>
   new URL(`../../../examples/${name}`, import.meta.url).pathname;
 
-describe("glosik doctor", () => {
+describe("glossic doctor", () => {
   it("exits 0 and names the provider it would use", async () => {
     const report = await collectDoctorReport({
       root: exampleRoot("nestjs-api"),
@@ -55,6 +55,6 @@ describe("glosik doctor", () => {
 
     expect(report.node).toBe(process.versions.node);
     expect(report.configFile).toBeUndefined();
-    expect(renderDoctorReport(report)).toContain("glosik.config.ts not found");
+    expect(renderDoctorReport(report)).toContain("glossic.config.ts not found");
   });
 });

@@ -1,4 +1,4 @@
-import type { Manifest, Project, Unit } from "@glosik/schema";
+import type { Manifest, Project, Unit } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 

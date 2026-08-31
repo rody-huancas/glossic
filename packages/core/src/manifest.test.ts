@@ -1,4 +1,4 @@
-import type { ExtractResult, Unit, Workspace } from "@glosik/schema";
+import type { ExtractResult, Unit, Workspace } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
 import { buildManifest, serializeManifest } from "./manifest.js";

@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext } from "@glosik/schema";
-import { ProviderError } from "@glosik/schema";
+import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext } from "@glossic/schema";
+import { ProviderError } from "@glossic/schema";
 import { afterAll, describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
@@ -13,7 +13,7 @@ import { createFakeProvider } from "./testing.js";
 const tempDirs: string[] = [];
 
 const outDir = async (): Promise<string> => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glosik-docs-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-docs-"));
   tempDirs.push(dir);
   return dir;
 };
@@ -75,7 +75,7 @@ const run = async (overrides: Partial<Parameters<typeof generate>[0]> = {}) =>
     root: exampleDir("nestjs-api"),
     adapters: [fakeAdapter],
     outDir: await outDir(),
-    // Never the fixture's own .glosik: tests must not leave state in the repo.
+    // Never the fixture's own .glossic: tests must not leave state in the repo.
     cachePath: path.join(await outDir(), "cache.json"),
     generatedAt: "2026-01-01T00:00:00.000Z",
     ...overrides,
@@ -162,7 +162,7 @@ describe("generate", () => {
     await run({
       provider,
       outDir: await outDir(),
-      config: { ...(await import("@glosik/schema")).GlosikConfigSchema.parse({ lang: "es" }) },
+      config: { ...(await import("@glossic/schema")).GlossicConfigSchema.parse({ lang: "es" }) },
     });
 
     expect(provider.calls[0]?.prompt).toContain("Write the documentation in es.");

@@ -3,13 +3,13 @@ import path from "node:path";
 
 import type {
   CompletionRequest,
-  GlosikConfig,
+  GlossicConfig,
   Manifest,
   Project,
   Provider,
   Unit,
-} from "@glosik/schema";
-import { GlosikConfigSchema } from "@glosik/schema";
+} from "@glossic/schema";
+import { GlossicConfigSchema } from "@glossic/schema";
 import picomatch from "picomatch";
 
 import {
@@ -41,7 +41,7 @@ export interface GenerateContext extends PipelineContext {
   force?: boolean;
   /** Only units whose id, name or path matches this glob are considered. */
   only?: string;
-  /** Absolute path of the cache file. Defaults to `<root>/.glosik/cache.json`. */
+  /** Absolute path of the cache file. Defaults to `<root>/.glossic/cache.json`. */
   cachePath?: string;
   retry?: RetryOptions;
 }
@@ -92,10 +92,10 @@ export interface GenerateResult {
 }
 
 /**
- * Cache key for the model. With no model pinned in the config, glosik cannot
+ * Cache key for the model. With no model pinned in the config, glossic cannot
  * see the provider's own default drifting: pin `model` if that matters.
  */
-export const modelCacheKey = (config: GlosikConfig): string => config.model ?? "default";
+export const modelCacheKey = (config: GlossicConfig): string => config.model ?? "default";
 
 interface Job {
   unit: Unit;
@@ -158,7 +158,7 @@ const writeDoc = async (outDir: string, relative: string, content: string): Prom
 
 const buildJobs = async (
   manifest: Manifest,
-  config: GlosikConfig,
+  config: GlossicConfig,
   root: string,
 ): Promise<Job[]> => {
   const projectById = new Map(manifest.workspace.projects.map((entry) => [entry.id, entry]));
@@ -200,7 +200,7 @@ const errorCode = (cause: unknown): string | undefined =>
  * source tree, plus a linked index.
  */
 export const generate = async (ctx: GenerateContext): Promise<GenerateResult> => {
-  const config = ctx.config ?? GlosikConfigSchema.parse({});
+  const config = ctx.config ?? GlossicConfigSchema.parse({});
   const scanned = await scan(ctx);
   const { manifest } = scanned;
   const generatedAt = manifest.generatedAt;

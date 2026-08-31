@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { scan } from "@glosik/core";
-import type { Manifest } from "@glosik/schema";
+import { scan } from "@glossic/core";
+import type { Manifest } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
 import { builtinAdapters } from "./registries.js";
@@ -20,7 +20,7 @@ const portable = (manifest: Manifest): Manifest => ({
   workspace: { ...manifest.workspace, root: "<root>" },
 });
 
-describe("glosik scan", () => {
+describe("glossic scan", () => {
   it("uses the generic adapter for every project", async () => {
     const result = await scanExample("monorepo");
 

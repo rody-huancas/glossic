@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CORE_VERSION, createAdapterRegistry, NotImplementedError } from "./index.js";
 
-describe("@glosik/core", () => {
+describe("@glossic/core", () => {
   it("exposes a version", () => {
     expect(CORE_VERSION).toBe("0.0.0");
   });

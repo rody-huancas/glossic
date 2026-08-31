@@ -1,7 +1,7 @@
 {
-  "name": "@glosik/core",
+  "name": "@glossic/core",
   "version": "0.0.0",
-  "description": "Glosik orchestration core: registries, pipeline and manifest plumbing",
+  "description": "Glossic orchestration core: registries, pipeline and manifest plumbing",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@glosik/schema": "workspace:*",
+    "@glossic/schema": "workspace:*",
     "picomatch": "^4.0.3",
     "tinyglobby": "^0.2.15",
     "yaml": "^2.8.1",

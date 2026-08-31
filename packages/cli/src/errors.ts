@@ -1,10 +1,10 @@
 import process from "node:process";
 
-import { isProviderError } from "@glosik/schema";
+import { isProviderError } from "@glossic/schema";
 
 /**
  * Turns an error into what the user should read. Stack traces are noise for
- * everyone but us, so they stay behind GLOSIK_DEBUG.
+ * everyone but us, so they stay behind GLOSSIC_DEBUG.
  */
 export const formatCliError = (error: unknown): string => {
   if (isProviderError(error)) {
@@ -13,7 +13,7 @@ export const formatCliError = (error: unknown): string => {
   }
 
   if (error instanceof Error) {
-    return process.env.GLOSIK_DEBUG === undefined ? error.message : (error.stack ?? error.message);
+    return process.env.GLOSSIC_DEBUG === undefined ? error.message : (error.stack ?? error.message);
   }
 
   return String(error);

@@ -1,4 +1,4 @@
-import type { GlosikConfig } from "./config.js";
+import type { GlossicConfig } from "./config.js";
 import type { Relation, Unit } from "./unit.js";
 import type { Project, Workspace } from "./workspace.js";
 
@@ -7,7 +7,7 @@ export interface AdapterContext {
   /** Absolute path to the workspace root. */
   root: string;
   workspace: Workspace;
-  config: GlosikConfig;
+  config: GlossicConfig;
 }
 
 export interface DiscoverContext extends AdapterContext {

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createFakeProvider, generate } from "@glosik/core";
+import { createFakeProvider, generate } from "@glossic/core";
 import { afterAll, describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
@@ -14,7 +14,7 @@ const exampleDir = (name: string): string =>
 const tempDirs: string[] = [];
 
 const outDir = async (): Promise<string> => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glosik-cli-docs-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-cli-docs-"));
   tempDirs.push(dir);
   return dir;
 };

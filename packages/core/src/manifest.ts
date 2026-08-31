@@ -1,13 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { ExtractResult, Manifest, Relation, Unit, Workspace } from "@glosik/schema";
-import { MANIFEST_VERSION, ManifestSchema } from "@glosik/schema";
+import type { ExtractResult, Manifest, Relation, Unit, Workspace } from "@glossic/schema";
+import { MANIFEST_VERSION, ManifestSchema } from "@glossic/schema";
 
 import { compareStrings, sortBy } from "./order.js";
 
-/** Where `glosik scan` writes the manifest unless told otherwise. */
-export const DEFAULT_MANIFEST_PATH = ".glosik/manifest.json";
+/** Where `glossic scan` writes the manifest unless told otherwise. */
+export const DEFAULT_MANIFEST_PATH = ".glossic/manifest.json";
 
 export interface BuildManifestOptions {
   /** ISO-8601 timestamp. Injectable so tests get a stable document. */

@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-import type { CompletionRequest, CompletionResult, Provider } from "@glosik/schema";
-import { isProviderError, ProviderError } from "@glosik/schema";
+import type { CompletionRequest, CompletionResult, Provider } from "@glossic/schema";
+import { isProviderError, ProviderError } from "@glossic/schema";
 
 export const anthropicProviderName = "anthropic";
 
@@ -10,7 +10,7 @@ const DEFAULT_MAX_TOKENS = 16_000;
 
 /**
  * Opus 5, Sonnet 5, Fable 5 and the 4.7/4.8 family reject `temperature`,
- * `top_p` and `top_k` with a 400: they decide sampling themselves. glosik still
+ * `top_p` and `top_k` with a 400: they decide sampling themselves. glossic still
  * defaults to temperature 0, it just does not send it to models that refuse it.
  */
 const SAMPLING_REJECTED_BY = [

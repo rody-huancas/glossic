@@ -1,4 +1,4 @@
-import { ProviderError } from "@glosik/schema";
+import { ProviderError } from "@glossic/schema";
 import { describe, expect, it, vi } from "vitest";
 
 import { backoffDelay, withRetry } from "./retry.js";

@@ -3,8 +3,8 @@ import type {
   CompletionResult,
   Provider,
   ProviderErrorCode,
-} from "@glosik/schema";
-import { ProviderError } from "@glosik/schema";
+} from "@glossic/schema";
+import { ProviderError } from "@glossic/schema";
 
 import { parseClaudeOutput } from "./output.js";
 import { run } from "./run.js";
@@ -56,7 +56,7 @@ export const createClaudeCodeProvider = (options: ClaudeCodeProviderOptions = {}
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   // One probe per process: `claude --version` costs ~200ms and cannot change
-  // meaningfully while glosik runs.
+  // meaningfully while glossic runs.
   let availability: Promise<boolean> | undefined;
 
   const probe = async (): Promise<boolean> => {

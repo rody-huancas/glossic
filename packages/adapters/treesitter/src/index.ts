@@ -1,4 +1,4 @@
-import type { Adapter, DiscoveredUnit, ExtractResult } from "@glosik/schema";
+import type { Adapter, DiscoveredUnit, ExtractResult } from "@glossic/schema";
 
 export const treesitterAdapterName = "treesitter";
 

@@ -29,7 +29,7 @@ importers:
 
   packages/adapters/generic:
     dependencies:
-      '@glosik/schema':
+      '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
       ignore:
@@ -54,7 +54,7 @@ importers:
 
   packages/adapters/nestjs:
     dependencies:
-      '@glosik/schema':
+      '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
     devDependencies:
@@ -73,7 +73,7 @@ importers:
 
   packages/adapters/treesitter:
     dependencies:
-      '@glosik/schema':
+      '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
     devDependencies:
@@ -92,25 +92,25 @@ importers:
 
   packages/cli:
     dependencies:
-      '@glosik/adapter-generic':
+      '@glossic/adapter-generic':
         specifier: workspace:*
         version: link:../adapters/generic
-      '@glosik/adapter-nestjs':
+      '@glossic/adapter-nestjs':
         specifier: workspace:*
         version: link:../adapters/nestjs
-      '@glosik/adapter-treesitter':
+      '@glossic/adapter-treesitter':
         specifier: workspace:*
         version: link:../adapters/treesitter
-      '@glosik/core':
+      '@glossic/core':
         specifier: workspace:*
         version: link:../core
-      '@glosik/provider-anthropic':
+      '@glossic/provider-anthropic':
         specifier: workspace:*
         version: link:../providers/anthropic
-      '@glosik/provider-claude-code':
+      '@glossic/provider-claude-code':
         specifier: workspace:*
         version: link:../providers/claude-code
-      '@glosik/schema':
+      '@glossic/schema':
         specifier: workspace:*
         version: link:../schema
       commander:
@@ -135,7 +135,7 @@ importers:
 
   packages/core:
     dependencies:
-      '@glosik/schema':
+      '@glossic/schema':
         specifier: workspace:*
         version: link:../schema
       picomatch:
@@ -172,7 +172,7 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.71.0
         version: 0.71.2(zod@4.5.4)
-      '@glosik/schema':
+      '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
     devDependencies:
@@ -191,7 +191,7 @@ importers:
 
   packages/providers/claude-code:
     dependencies:
-      '@glosik/schema':
+      '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
     devDependencies:

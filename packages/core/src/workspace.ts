@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { Project, Workspace, WorkspaceTool } from "@glosik/schema";
+import type { Project, Workspace, WorkspaceTool } from "@glossic/schema";
 import { glob } from "tinyglobby";
 import { parse as parseYaml } from "yaml";
 

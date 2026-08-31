@@ -1,4 +1,4 @@
-import type { Adapter, Provider } from "@glosik/schema";
+import type { Adapter, Provider } from "@glossic/schema";
 
 /** Minimal name-keyed registry used for adapters and providers. */
 export class Registry<T extends { name: string }> {

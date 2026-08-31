@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { Manifest } from "@glosik/schema";
+import type { Manifest } from "@glossic/schema";
 import { glob } from "tinyglobby";
 import { parse as parseYaml } from "yaml";
 

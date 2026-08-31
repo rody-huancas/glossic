@@ -10,7 +10,7 @@ import type {
   FileFact,
   LanguageCount,
   Unit,
-} from "@glosik/schema";
+} from "@glossic/schema";
 import { glob } from "tinyglobby";
 
 import { collectGitignores, createGitignoreFilter } from "./gitignore.js";

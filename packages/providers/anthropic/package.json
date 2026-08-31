@@ -1,5 +1,5 @@
 {
-  "name": "@glosik/provider-anthropic",
+  "name": "@glossic/provider-anthropic",
   "version": "0.0.0",
   "description": "Completion provider backed by the Anthropic API",
   "license": "MIT",
@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.0",
-    "@glosik/schema": "workspace:*"
+    "@glossic/schema": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

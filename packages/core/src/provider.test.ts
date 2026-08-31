@@ -56,7 +56,7 @@ describe("resolveProvider", () => {
     expect(error).toBeInstanceOf(NoProviderAvailableError);
     expect((error as Error).message).toContain("claude.com/claude-code");
     expect((error as Error).message).toContain("ANTHROPIC_API_KEY");
-    expect((error as Error).message).toContain("glosik doctor");
+    expect((error as Error).message).toContain("glossic doctor");
   });
 
   it("treats a throwing available() as unavailable", async () => {

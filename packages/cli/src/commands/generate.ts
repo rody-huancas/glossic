@@ -1,9 +1,9 @@
 import path from "node:path";
 import process from "node:process";
 
-import type { GenerateResult } from "@glosik/core";
-import { generate, resolveProvider } from "@glosik/core";
-import { GlosikConfigSchema } from "@glosik/schema";
+import type { GenerateResult } from "@glossic/core";
+import { generate, resolveProvider } from "@glossic/core";
+import { GlossicConfigSchema } from "@glossic/schema";
 import { Command } from "commander";
 
 import { builtinAdapters, builtinProviders } from "../registries.js";
@@ -35,7 +35,7 @@ export const runGenerate = async (
   const cwd = process.cwd();
   const root = path.resolve(cwd, target);
 
-  const config = GlosikConfigSchema.parse({
+  const config = GlossicConfigSchema.parse({
     ...(options.lang === undefined ? {} : { lang: options.lang }),
     concurrency: parseConcurrency(options.concurrency, 3),
   });

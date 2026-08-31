@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { GenerateContext, GenerateResult } from "@glosik/core";
-import { createFakeProvider, generate, readCache } from "@glosik/core";
+import type { GenerateContext, GenerateResult } from "@glossic/core";
+import { createFakeProvider, generate, readCache } from "@glossic/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { builtinAdapters } from "./registries.js";
@@ -23,7 +23,7 @@ interface Fixture {
 }
 
 const makeFixture = async (): Promise<Fixture> => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "glosik-cache-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-cache-"));
   tempDirs.push(root);
 
   for (const [file, content] of Object.entries(SOURCES)) {
@@ -35,7 +35,7 @@ const makeFixture = async (): Promise<Fixture> => {
   return {
     root,
     docs: path.join(root, "docs"),
-    cachePath: path.join(root, ".glosik", "cache.json"),
+    cachePath: path.join(root, ".glossic", "cache.json"),
   };
 };
 
@@ -146,9 +146,9 @@ describe("incremental cache", () => {
   it("invalidates everything when the model changes", async () => {
     await run();
 
-    const { GlosikConfigSchema } = await import("@glosik/schema");
+    const { GlossicConfigSchema } = await import("@glossic/schema");
     const { result } = await run({
-      config: GlosikConfigSchema.parse({ model: "claude-haiku-4-5" }),
+      config: GlossicConfigSchema.parse({ model: "claude-haiku-4-5" }),
     });
 
     expect(result.generated).toBe(3);
@@ -158,8 +158,8 @@ describe("incremental cache", () => {
   it("invalidates everything when the language changes", async () => {
     await run();
 
-    const { GlosikConfigSchema } = await import("@glosik/schema");
-    const { result } = await run({ config: GlosikConfigSchema.parse({ lang: "es" }) });
+    const { GlossicConfigSchema } = await import("@glossic/schema");
+    const { result } = await run({ config: GlossicConfigSchema.parse({ lang: "es" }) });
 
     expect(result.generated).toBe(3);
     expect(result.plan.every((entry) => entry.reason === "lang-changed")).toBe(true);

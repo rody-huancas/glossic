@@ -124,7 +124,7 @@ export const UnitSchema = z.object({
   facts: FactsSchema,
   /** sha256 over the sorted (path, content digest) pairs of the unit. */
   hash: z.string().min(1),
-  /** LLM-generated prose. Absent until `glosik generate` runs. */
+  /** LLM-generated prose. Absent until `glossic generate` runs. */
   summary: z.string().optional(),
 });
 export type Unit = z.infer<typeof UnitSchema>;

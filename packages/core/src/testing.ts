@@ -1,4 +1,4 @@
-import type { CompletionRequest, CompletionResult, Provider } from "@glosik/schema";
+import type { CompletionRequest, CompletionResult, Provider } from "@glossic/schema";
 
 export interface FakeProvider extends Provider {
   /** Every request the provider was asked to complete, in call order. */

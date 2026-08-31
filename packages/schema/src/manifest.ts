@@ -7,7 +7,7 @@ import { WorkspaceSchema } from "./workspace.js";
 export const MANIFEST_VERSION = "1";
 
 /**
- * The full, serializable output of a glosik run. `generatedAt` is the only
+ * The full, serializable output of a glossic run. `generatedAt` is the only
  * volatile field: everything else must be byte-identical across runs.
  */
 export const ManifestSchema = z.object({

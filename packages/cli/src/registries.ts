@@ -1,10 +1,10 @@
-import { genericAdapter } from "@glosik/adapter-generic";
-import { nestjsAdapter } from "@glosik/adapter-nestjs";
-import { treesitterAdapter } from "@glosik/adapter-treesitter";
-import type { AdapterRegistry, ProviderRegistry } from "@glosik/core";
-import { createAdapterRegistry, createProviderRegistry } from "@glosik/core";
-import { anthropicProvider } from "@glosik/provider-anthropic";
-import { claudeCodeProvider } from "@glosik/provider-claude-code";
+import { genericAdapter } from "@glossic/adapter-generic";
+import { nestjsAdapter } from "@glossic/adapter-nestjs";
+import { treesitterAdapter } from "@glossic/adapter-treesitter";
+import type { AdapterRegistry, ProviderRegistry } from "@glossic/core";
+import { createAdapterRegistry, createProviderRegistry } from "@glossic/core";
+import { anthropicProvider } from "@glossic/provider-anthropic";
+import { claudeCodeProvider } from "@glossic/provider-claude-code";
 
 /**
  * Every adapter shipped with the CLI, in priority order. The generic adapter

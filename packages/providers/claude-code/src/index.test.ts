@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { isProviderError, type ProviderError } from "@glosik/schema";
+import { isProviderError, type ProviderError } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
 import { claudeCodeProvider, claudeCodeProviderName, createClaudeCodeProvider } from "./index.js";
@@ -85,7 +85,7 @@ describe("parseClaudeOutput", () => {
 describe("createClaudeCodeProvider", () => {
   it("reports unavailable when the binary does not exist", async () => {
     const provider = createClaudeCodeProvider({
-      binary: "glosik-definitely-not-a-real-binary",
+      binary: "glossic-definitely-not-a-real-binary",
       timeoutMs: 5_000,
     });
 
@@ -94,7 +94,7 @@ describe("createClaudeCodeProvider", () => {
 
   it("caches the availability probe for the life of the process", async () => {
     const provider = createClaudeCodeProvider({
-      binary: "glosik-definitely-not-a-real-binary",
+      binary: "glossic-definitely-not-a-real-binary",
       timeoutMs: 5_000,
     });
 
@@ -106,7 +106,7 @@ describe("createClaudeCodeProvider", () => {
 
   it("fails with a typed error when completing through a missing binary", async () => {
     const provider = createClaudeCodeProvider({
-      binary: "glosik-definitely-not-a-real-binary",
+      binary: "glossic-definitely-not-a-real-binary",
       timeoutMs: 5_000,
     });
 

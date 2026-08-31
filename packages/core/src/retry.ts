@@ -1,4 +1,4 @@
-import { isRetryableProviderError } from "@glosik/schema";
+import { isRetryableProviderError } from "@glossic/schema";
 
 export interface RetryOptions {
   /** Total attempts, including the first one. */

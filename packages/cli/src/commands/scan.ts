@@ -1,5 +1,5 @@
 import path from "node:path";
-import { DEFAULT_MANIFEST_PATH, scan, serializeManifest, writeManifest } from "@glosik/core";
+import { DEFAULT_MANIFEST_PATH, scan, serializeManifest, writeManifest } from "@glossic/core";
 import { Command } from "commander";
 
 import { builtinAdapters } from "../registries.js";

@@ -1,8 +1,8 @@
-import type { CompletionResult } from "@glosik/schema";
-import { ProviderError } from "@glosik/schema";
+import type { CompletionResult } from "@glossic/schema";
+import { ProviderError } from "@glossic/schema";
 
 /**
- * Shape of `claude -p --output-format json`. Only the fields glosik reads are
+ * Shape of `claude -p --output-format json`. Only the fields glossic reads are
  * declared; the CLI adds more over time and unknown keys are kept in `raw`.
  */
 interface ClaudeResultPayload {

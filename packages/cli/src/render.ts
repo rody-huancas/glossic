@@ -1,8 +1,8 @@
 import path from "node:path";
 
-import type { CheckResult, GenerateResult, ScanResult } from "@glosik/core";
-import { toPosix } from "@glosik/core";
-import type { Manifest, Unit } from "@glosik/schema";
+import type { CheckResult, GenerateResult, ScanResult } from "@glossic/core";
+import { toPosix } from "@glossic/core";
+import type { Manifest, Unit } from "@glossic/schema";
 
 const plural = (count: number, singular: string): string =>
   `${count} ${count === 1 ? singular : `${singular}s`}`;
@@ -214,7 +214,7 @@ export const renderCheckReport = (result: CheckResult, context: CheckReportConte
 
   if (result.stale.length + result.missing.length > 0) {
     lines.push("Regenerate the stale and missing documents with:", "");
-    lines.push(`  glosik generate ${context.target}`, "");
+    lines.push(`  glossic generate ${context.target}`, "");
     lines.push("The cache regenerates exactly the units listed above.", "");
   }
 

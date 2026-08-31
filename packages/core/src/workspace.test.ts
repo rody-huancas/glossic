@@ -9,7 +9,7 @@ import { resolveWorkspace } from "./workspace.js";
 const tempDirs: string[] = [];
 
 const makeRepo = async (files: Record<string, string>): Promise<string> => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glosik-ws-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-ws-"));
   tempDirs.push(dir);
 
   for (const [file, content] of Object.entries(files)) {

@@ -10,13 +10,13 @@ const fromRoot = (path: string) => fileURLToPath(new URL(`../../${path}`, import
 export default defineConfig({
   resolve: {
     alias: {
-      "@glosik/schema": fromRoot("packages/schema/src/index.ts"),
-      "@glosik/core": fromRoot("packages/core/src/index.ts"),
-      "@glosik/provider-claude-code": fromRoot("packages/providers/claude-code/src/index.ts"),
-      "@glosik/provider-anthropic": fromRoot("packages/providers/anthropic/src/index.ts"),
-      "@glosik/adapter-generic": fromRoot("packages/adapters/generic/src/index.ts"),
-      "@glosik/adapter-treesitter": fromRoot("packages/adapters/treesitter/src/index.ts"),
-      "@glosik/adapter-nestjs": fromRoot("packages/adapters/nestjs/src/index.ts"),
+      "@glossic/schema": fromRoot("packages/schema/src/index.ts"),
+      "@glossic/core": fromRoot("packages/core/src/index.ts"),
+      "@glossic/provider-claude-code": fromRoot("packages/providers/claude-code/src/index.ts"),
+      "@glossic/provider-anthropic": fromRoot("packages/providers/anthropic/src/index.ts"),
+      "@glossic/adapter-generic": fromRoot("packages/adapters/generic/src/index.ts"),
+      "@glossic/adapter-treesitter": fromRoot("packages/adapters/treesitter/src/index.ts"),
+      "@glossic/adapter-nestjs": fromRoot("packages/adapters/nestjs/src/index.ts"),
     },
   },
   test: {

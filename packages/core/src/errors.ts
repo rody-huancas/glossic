@@ -18,17 +18,17 @@ export class NoProviderAvailableError extends Error {
       [
         "No LLM provider is available.",
         "",
-        "glosik needs one of these two:",
+        "glossic needs one of these two:",
         "",
         "  1. Claude Code — install the CLI and sign in:",
         "       https://claude.com/claude-code",
-        "     glosik picks it up as soon as `claude --version` works.",
+        "     glossic picks it up as soon as `claude --version` works.",
         "",
         "  2. Anthropic API — export an API key:",
         "       export ANTHROPIC_API_KEY=sk-ant-...",
         "       https://console.anthropic.com/settings/keys",
         "",
-        "Run `glosik doctor` to see what glosik can find on this machine.",
+        "Run `glossic doctor` to see what glossic can find on this machine.",
       ].join("\n"),
     );
     this.name = "NoProviderAvailableError";
