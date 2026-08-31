@@ -28,6 +28,13 @@ export interface BuildPromptInput {
   lang: string;
 }
 
+/**
+ * Bumped by hand whenever SYSTEM_PROMPT changes. Any change invalidates every
+ * cache entry, which is what keeps generated docs aligned with the prompt that
+ * produced them.
+ */
+export const PROMPT_VERSION = "1";
+
 export const SYSTEM_PROMPT = [
   "You are a technical writer documenting a codebase for the engineers who work on it.",
   "",

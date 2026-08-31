@@ -15,6 +15,8 @@ interface GenerateCliOptions {
   out?: string;
   lang?: string;
   concurrency?: string;
+  force?: boolean;
+  only?: string;
 }
 
 const parseConcurrency = (value: string | undefined, fallback: number): number => {
@@ -60,6 +62,8 @@ export const runGenerate = async (
     config,
     outDir,
     dryRun,
+    force: options.force === true,
+    ...(options.only === undefined ? {} : { only: options.only }),
     ...(provider === undefined ? {} : { provider }),
   });
 
@@ -80,6 +84,8 @@ export const generateCommand = (): Command =>
     .option("--out <dir>", "docs destination; relative to the cwd, default <root>/docs")
     .option("--lang <code>", "language the documentation is written in", "en")
     .option("--concurrency <n>", "parallel completions", "3")
+    .option("--force", "ignore the cache and regenerate everything", false)
+    .option("--only <glob>", "regenerate only the units matching this glob")
     .action(async (target: string, options: GenerateCliOptions) => {
       await runGenerate(target, options);
     });

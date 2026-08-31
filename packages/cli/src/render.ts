@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import type { GenerateResult, ScanResult } from "@glosik/core";
+import type { CheckResult, GenerateResult, ScanResult } from "@glosik/core";
 import { toPosix } from "@glosik/core";
 import type { Manifest, Unit } from "@glosik/schema";
 
@@ -128,6 +128,7 @@ export const renderGenerateReport = (
         `  ${entry.unitId.padEnd(nameWidth)}`,
         plural(entry.files, "file").padStart(9),
         `${formatTokens(entry.estimatedTokens)} tokens`.padStart(13),
+        entry.reason.padEnd(22),
         entry.docPath,
       ].join("  "),
     );
@@ -135,19 +136,93 @@ export const renderGenerateReport = (
 
   if (result.plan.length > 0) lines.push("");
 
+  const counts = [
+    `${result.dryRun ? result.plan.filter((entry) => entry.regenerate).length : result.generated} generated`,
+    `${result.fromCache} from cache`,
+    `${result.failures.length} failed`,
+  ];
+  if (result.filteredOut.length > 0) counts.push(`${result.filteredOut.length} filtered out`);
+  lines.push(counts.join(", "));
+
   lines.push(
-    `${result.plan.length} units, ${formatTokens(result.estimatedTokens)} estimated input tokens`,
+    `${formatTokens(result.estimatedTokens)} input tokens${result.dryRun ? " estimated" : ""}`,
   );
+
+  if (result.savedTokens > 0) {
+    lines.push(`${formatTokens(result.savedTokens)} input tokens saved by the cache`);
+  }
 
   if (!result.dryRun) {
     lines.push(`${result.written.length} files written to ${relativeOut}`);
   }
 
   for (const failure of result.failures) {
-    lines.push(`  failed: ${failure.unitId} — ${failure.reason}`);
+    const code = failure.code === undefined ? "" : ` [${failure.code}]`;
+    lines.push(`  failed: ${failure.unitId}${code} — ${failure.reason}`);
   }
 
-  return `${lines.join("
-")}
-`;
+  return `${lines.join("\n")}\n`;
+};
+
+export interface CheckReportContext {
+  cwd: string;
+  /** The path argument the user passed, echoed back in the fix instructions. */
+  target: string;
+}
+
+/**
+ * Renders the check report. Its job is to name the exact files to regenerate:
+ * this is what a developer reads after a failing CI job.
+ */
+export const renderCheckReport = (result: CheckResult, context: CheckReportContext): string => {
+  const docs = displayPath(context.cwd, result.outDir);
+  const problems = result.missing.length + result.stale.length + result.orphaned.length;
+
+  if (result.ok) {
+    return `documentation is up to date — ${plural(result.upToDate.length, "unit")} in ${docs}\n`;
+  }
+
+  const labelWidth = Math.max(
+    0,
+    ...[...result.stale, ...result.missing].map((entry) => `${docs}/${entry.docPath}`.length),
+    ...result.orphaned.map((doc) => `${docs}/${doc}`.length),
+  );
+
+  const lines = ["documentation is out of date", ""];
+
+  for (const entry of result.stale) {
+    lines.push(
+      `  stale     ${`${docs}/${entry.docPath}`.padEnd(labelWidth)}  ${entry.unitId} changed`,
+    );
+  }
+
+  for (const entry of result.missing) {
+    lines.push(
+      `  missing   ${`${docs}/${entry.docPath}`.padEnd(labelWidth)}  ${entry.unitId} is undocumented`,
+    );
+  }
+
+  for (const doc of result.orphaned) {
+    lines.push(`  orphaned  ${`${docs}/${doc}`.padEnd(labelWidth)}  no unit produces this file`);
+  }
+
+  lines.push(
+    "",
+    `${plural(problems, "problem")}, ${plural(result.upToDate.length, "unit")} up to date`,
+    "",
+  );
+
+  if (result.stale.length + result.missing.length > 0) {
+    lines.push("Regenerate the stale and missing documents with:", "");
+    lines.push(`  glosik generate ${context.target}`, "");
+    lines.push("The cache regenerates exactly the units listed above.", "");
+  }
+
+  if (result.orphaned.length > 0) {
+    lines.push("Delete the orphaned documents:", "");
+    for (const doc of result.orphaned) lines.push(`  rm ${docs}/${doc}`);
+    lines.push("");
+  }
+
+  return `${lines.join("\n")}\n`;
 };
