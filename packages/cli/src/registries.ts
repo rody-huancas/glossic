@@ -6,8 +6,11 @@ import { createAdapterRegistry, createProviderRegistry } from "@glosik/core";
 import { anthropicProvider } from "@glosik/provider-anthropic";
 import { claudeCodeProvider } from "@glosik/provider-claude-code";
 
-/** Every adapter shipped with the CLI. */
-export const builtinAdapters = [genericAdapter, treesitterAdapter, nestjsAdapter];
+/**
+ * Every adapter shipped with the CLI, in priority order. The generic adapter
+ * detects everything, so it must stay last.
+ */
+export const builtinAdapters = [nestjsAdapter, treesitterAdapter, genericAdapter];
 
 /** Every provider shipped with the CLI. */
 export const builtinProviders = [claudeCodeProvider, anthropicProvider];

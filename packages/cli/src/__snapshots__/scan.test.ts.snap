@@ -1,0 +1,265 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`glosik scan > matches the nestjs-api manifest snapshot 1`] = `
+{
+  "generatedAt": "2026-01-01T00:00:00.000Z",
+  "relations": [],
+  "units": [
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 273,
+              "language": "typescript",
+              "path": "src/app.module.ts",
+            },
+            {
+              "bytes": 295,
+              "language": "typescript",
+              "path": "src/main.ts",
+            },
+          ],
+          "languages": [
+            {
+              "count": 2,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": null,
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "7c0b3b19c4bd2f7b1f4138001e84a1e60439ad65d1c59149414b016f37f064bf",
+      "id": "root:src",
+      "kind": "directory",
+      "name": "src",
+      "path": "src",
+      "projectId": "root",
+    },
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 338,
+              "language": "typescript",
+              "path": "src/common/middleware/logger.middleware.ts",
+            },
+          ],
+          "languages": [
+            {
+              "count": 1,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": "middleware",
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "96984d5de32add96e2ec170a0452cabd141f482e8493ed62634ec2bda11e9c1d",
+      "id": "root:src/common/middleware",
+      "kind": "directory",
+      "name": "src/common/middleware",
+      "path": "src/common/middleware",
+      "projectId": "root",
+    },
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 95,
+              "language": "typescript",
+              "path": "src/config/app.config.ts",
+            },
+          ],
+          "languages": [
+            {
+              "count": 1,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": "config",
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "af05d582fd28548b476ae5c1bcff8a3574d56e898862bc32c116f842125218f6",
+      "id": "root:src/config",
+      "kind": "directory",
+      "name": "src/config",
+      "path": "src/config",
+      "projectId": "root",
+    },
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 644,
+              "language": "typescript",
+              "path": "src/users/users.controller.ts",
+            },
+            {
+              "bytes": 282,
+              "language": "typescript",
+              "path": "src/users/users.module.ts",
+            },
+            {
+              "bytes": 625,
+              "language": "typescript",
+              "path": "src/users/users.service.ts",
+            },
+          ],
+          "languages": [
+            {
+              "count": 3,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": null,
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "894a654f7c13c4b475b5a2f4dd9999bc8422835309686b86747d08126ba7335b",
+      "id": "root:src/users",
+      "kind": "directory",
+      "name": "src/users",
+      "path": "src/users",
+      "projectId": "root",
+    },
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 84,
+              "language": "typescript",
+              "path": "src/users/dto/create-user.dto.ts",
+            },
+            {
+              "bytes": 84,
+              "language": "typescript",
+              "path": "src/users/dto/update-user.dto.ts",
+            },
+          ],
+          "languages": [
+            {
+              "count": 2,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": "dtos",
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "b07088141c4536b8388faf7f181467473ba05b0c2cbf96929173a775d610659e",
+      "id": "root:src/users/dto",
+      "kind": "directory",
+      "name": "src/users/dto",
+      "path": "src/users/dto",
+      "projectId": "root",
+    },
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 92,
+              "language": "typescript",
+              "path": "src/users/entities/user.entity.ts",
+            },
+          ],
+          "languages": [
+            {
+              "count": 1,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": "entities",
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "1f9a1fbb52bdf7a6ec686406e09f883a821cdc63f0039fc9e775ad402b641e3c",
+      "id": "root:src/users/entities",
+      "kind": "directory",
+      "name": "src/users/entities",
+      "path": "src/users/entities",
+      "projectId": "root",
+    },
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 312,
+              "language": "typescript",
+              "path": "test/users.e2e-spec.ts",
+            },
+          ],
+          "languages": [
+            {
+              "count": 1,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": "tests",
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "c55dc25aedf10201b5fc579713b690378a8358c8ddb00dbabf1774a03219491e",
+      "id": "root:test",
+      "kind": "directory",
+      "name": "test",
+      "path": "test",
+      "projectId": "root",
+    },
+  ],
+  "version": "1",
+  "workspace": {
+    "isMonorepo": false,
+    "name": "nestjs-api",
+    "projects": [
+      {
+        "id": "root",
+        "name": "nestjs-api",
+        "rootDir": ".",
+      },
+    ],
+    "root": "<root>",
+    "tool": "none",
+  },
+}
+`;
+
+exports[`glosik scan > renders a deterministic report 1`] = `
+"example-monorepo — pnpm monorepo
+
+@example/api (packages/api)
+├─ src              1 file  typescript
+├─ src/routes      2 files  typescript  routes
+└─ src/services     1 file  typescript  services
+
+@example/web (packages/web)
+├─ src              1 file  tsx
+├─ src/components  2 files  tsx         components
+└─ src/hooks        1 file  typescript  hooks
+
+2 projects, 6 units, 8 files
+languages: typescript 5, tsx 3
+"
+`;

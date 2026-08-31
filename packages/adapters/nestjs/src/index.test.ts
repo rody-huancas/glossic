@@ -1,5 +1,5 @@
-import { AdapterSchema } from "@glosik/schema";
 import { describe, expect, it } from "vitest";
+
 import { nestjsAdapter, nestjsAdapterName } from "./index.js";
 
 describe("nestjs adapter", () => {
@@ -7,7 +7,9 @@ describe("nestjs adapter", () => {
     expect(nestjsAdapter.name).toBe(nestjsAdapterName);
   });
 
-  it("satisfies the Adapter schema", () => {
-    expect(() => AdapterSchema.parse(nestjsAdapter)).not.toThrow();
+  it("does not claim any workspace yet", async () => {
+    await expect(nestjsAdapter.detect({} as never)).resolves.toBe(false);
+    await expect(nestjsAdapter.discover({} as never)).resolves.toEqual([]);
+    await expect(nestjsAdapter.extract({} as never)).resolves.toEqual({ units: [], relations: [] });
   });
 });

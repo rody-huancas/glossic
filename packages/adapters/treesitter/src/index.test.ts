@@ -1,5 +1,5 @@
-import { AdapterSchema } from "@glosik/schema";
 import { describe, expect, it } from "vitest";
+
 import { treesitterAdapter, treesitterAdapterName } from "./index.js";
 
 describe("treesitter adapter", () => {
@@ -7,7 +7,12 @@ describe("treesitter adapter", () => {
     expect(treesitterAdapter.name).toBe(treesitterAdapterName);
   });
 
-  it("satisfies the Adapter schema", () => {
-    expect(() => AdapterSchema.parse(treesitterAdapter)).not.toThrow();
+  it("does not claim any workspace yet", async () => {
+    await expect(treesitterAdapter.detect({} as never)).resolves.toBe(false);
+    await expect(treesitterAdapter.discover({} as never)).resolves.toEqual([]);
+    await expect(treesitterAdapter.extract({} as never)).resolves.toEqual({
+      units: [],
+      relations: [],
+    });
   });
 });

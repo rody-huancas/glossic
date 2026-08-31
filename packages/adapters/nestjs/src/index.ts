@@ -1,29 +1,21 @@
-import type {
-  Adapter,
-  AdapterContext,
-  ExtractContext,
-  ExtractResult,
-  Project,
-} from "@glosik/schema";
+import type { Adapter, DiscoveredUnit, ExtractResult } from "@glosik/schema";
 
-export const nestjsAdapterName = "nestjs" as const;
+export const nestjsAdapterName = "nestjs";
 
 /**
  * Understands NestJS modules, controllers, providers and route decorators.
  *
- * Scaffold only: every method is a no-op stub.
+ * Not implemented yet: `detect` returns false so the generic adapter keeps
+ * handling these projects.
  */
 export const nestjsAdapter: Adapter = {
   name: nestjsAdapterName,
 
-  detect: async (_ctx: AdapterContext): Promise<boolean> => false,
+  detect: async (): Promise<boolean> => false,
 
-  discover: async (_ctx: AdapterContext): Promise<Project[]> => [],
+  discover: async (): Promise<DiscoveredUnit[]> => [],
 
-  extract: async (_ctx: ExtractContext): Promise<ExtractResult> => ({
-    units: [],
-    relations: [],
-  }),
+  extract: async (): Promise<ExtractResult> => ({ units: [], relations: [] }),
 };
 
 export default nestjsAdapter;

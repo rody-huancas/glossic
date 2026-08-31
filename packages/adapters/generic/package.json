@@ -28,7 +28,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@glosik/schema": "workspace:*"
+    "@glosik/schema": "workspace:*",
+    "ignore": "^7.0.5",
+    "tinyglobby": "^0.2.15"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
