@@ -39,4 +39,7 @@ jobs:
         run: pnpm build
 
       - name: Smoke test CLI
-        run: node packages/cli/dist/index.js --help
+        run: |
+          node packages/cli/dist/index.js --help
+          node packages/cli/dist/index.js scan ./examples/monorepo --no-write
+          node packages/cli/dist/index.js generate ./examples/nestjs-api --dry-run
