@@ -11,6 +11,7 @@ export { filenameRoot, isReadableLabel, splitLargeUnit } from "./split.js";
 export type { FileClassifier, GroupingOptions, UnitDraft } from "./draft.js";
 
 
+/** The whole grouping pipeline: group by directory, absorb, merge, then split. */
 export const shapeUnits = (files: readonly string[], options: GroupingOptions): UnitDraft[] => {
   const classifier = createClassifier(options);
   const grouped    = absorbUndocumentedUnits(groupByDirectory(files, classifier));

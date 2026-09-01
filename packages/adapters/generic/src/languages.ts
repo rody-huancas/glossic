@@ -1,3 +1,4 @@
+/** The extensions glossic treats as source. A file outside this table is not documentable. */
 const LANGUAGE_BY_EXTENSION: Readonly<Record<string, string>> = {
   c     : "c",
   cc    : "cpp",
@@ -40,6 +41,7 @@ const LANGUAGE_BY_EXTENSION: Readonly<Record<string, string>> = {
 };
 
 
+/** The language of a file, or undefined when its extension is not one glossic reads. */
 export const inferLanguage = (filePath: string): string | undefined => {
   const base = filePath.slice(filePath.lastIndexOf("/") + 1);
   const dot  = base.lastIndexOf(".");

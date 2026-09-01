@@ -7,6 +7,7 @@ import type { FileFact, LanguageCount } from "@glossic/schema";
 import { sha256 } from "./hash.js";
 import { inferLanguage } from "./languages.js";
 
+/** Languages in a unit, most files first, ties broken by name so the order is total. */
 export const countLanguages = (files: readonly FileFact[]): LanguageCount[] => {
   const counts = new Map<string, number>();
 
@@ -19,6 +20,7 @@ export const countLanguages = (files: readonly FileFact[]): LanguageCount[] => {
     .sort((a, b) => b.count - a.count || compareStrings(a.language, b.language));
 };
 
+/** Why a file is in the unit: documented, a test, or ignored but still hashed. */
 export type Bucket = "doc" | "test" | "ignored";
 
 export interface ReadFile {
@@ -27,6 +29,7 @@ export interface ReadFile {
   bucket: Bucket;
 }
 
+/** Reads a file and digests it, or returns undefined when its extension is not source. */
 export const readFile = async (root: string, relativePath: string, bucket: Bucket): Promise<ReadFile | undefined> => {
   const language = inferLanguage(relativePath);
 

@@ -6,6 +6,7 @@ import type { UnitDraft } from "./draft.js";
 const MAX_LABEL_LENGTH = 20;
 const GENERATED_LABEL  = /^\d/;
 
+/** The part of a filename before its first dot, which is what groups siblings. */
 export const filenameRoot = (filePath: string): string => {
   const base = basename(filePath);
   const dot  = base.indexOf(".");
@@ -14,6 +15,7 @@ export const filenameRoot = (filePath: string): string => {
 };
 
 
+/** Whether a filename root makes a label a person can read, rather than a number. */
 export const isReadableLabel = (root: string): boolean => {
   return root.length > 0 && root.length <= MAX_LABEL_LENGTH && !GENERATED_LABEL.test(root);
 }
@@ -25,6 +27,7 @@ interface FileGroup {
   ignoredFiles: string[];
 }
 
+/** Files bucketed by their filename root, sorted, so a split lands on whole families. */
 const groupByFilenameRoot = (draft: UnitDraft): FileGroup[] => {
   const groups = new Map<string, FileGroup>();
 
@@ -54,6 +57,10 @@ const groupByFilenameRoot = (draft: UnitDraft): FileGroup[] => {
   return [...groups.values()].sort((a, b) => compareStrings(a.root, b.root));
 };
 
+/**
+ * Splits a unit too big for one page into bins of related filenames. A unit
+ * that came out of a subtree merge is left alone: it was already deliberate.
+ */
 export const splitLargeUnit = (draft: UnitDraft, maxUnitFiles: number): UnitDraft[] => {
   if (draft.subtreeMerged === true) {
     return [draft];

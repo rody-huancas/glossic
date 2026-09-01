@@ -1,5 +1,6 @@
 import type { RoleHint } from "@glossic/schema";
 
+/** Directory names that give away what a unit holds, singular and plural. */
 const ROLE_BY_DIRECTORY: Readonly<Record<string, RoleHint>> = {
   __tests__    : "tests",
   component    : "components",
@@ -38,6 +39,7 @@ const ROLE_BY_DIRECTORY: Readonly<Record<string, RoleHint>> = {
 };
 
 
+/** What a unit appears to hold, from the last segment of its name. Null when nothing matches. */
 export const inferRoleHint = (unitName: string): RoleHint | null => {
   if (unitName === "root") {
     return null;

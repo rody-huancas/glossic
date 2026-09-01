@@ -15,6 +15,7 @@ import type { GroupingOptions, UnitDraft } from "./grouping/index.js";
 export const genericAdapterName = "generic";
 
 
+/** Directories never walked into, whatever the config says. */
 export const HARD_IGNORES: readonly string[] = [
   "**/.git/**",
   "**/.next/**",
@@ -31,6 +32,7 @@ const unitId = (projectId: string, draft: UnitDraft): string => {
   return `${projectId}:${unitName(draft)}`;
 }
 
+/** The unit name without the split suffix, so a split unit keeps its parent's role. */
 const roleSource = (name: string): string => {
   const split = name.lastIndexOf(SPLIT_SEPARATOR);
 
@@ -47,6 +49,7 @@ const groupingOptions = (ctx: DiscoverContext): GroupingOptions => ({
 });
 
 
+/** Turns a draft into a discovered unit, with every path relative to the workspace root. */
 const toDiscovered = (draft: UnitDraft, projectId: string, projectDir: string): DiscoveredUnit => {
   const name = unitName(draft);
 
@@ -64,6 +67,10 @@ const toDiscovered = (draft: UnitDraft, projectId: string, projectDir: string): 
 };
 
 
+/**
+ * Language-agnostic fallback: it claims every project, groups files by
+ * directory, and reports only what a file's path and size can tell.
+ */
 export const genericAdapter: Adapter = {
   name: genericAdapterName,
 

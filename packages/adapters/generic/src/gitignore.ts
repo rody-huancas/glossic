@@ -8,6 +8,7 @@ interface GitignoreScope {
   matcher: Ignore;
 }
 
+/** One .gitignore parsed into a matcher, with the directory its rules are relative to. */
 const readScope = async (root: string, base: string): Promise<GitignoreScope | undefined> => {
   const file = path.join(root, base, ".gitignore");
   try {
@@ -19,6 +20,10 @@ const readScope = async (root: string, base: string): Promise<GitignoreScope | u
 };
 
 
+/**
+ * Every .gitignore that governs the project, outermost first, so a nested one
+ * can override the rules above it.
+ */
 export const collectGitignores = async (root: string, projectDir: string, hardIgnores: readonly string[]): Promise<GitignoreScope[]> => {
   const found = await glob({
     patterns           : ["**/.gitignore"],
@@ -53,6 +58,7 @@ const joinBase = (projectDir: string, sub: string): string => {
 };
 
 
+/** Tells whether a path is ignored, applying each scope only under its own directory. */
 export const createGitignoreFilter = (scopes: readonly GitignoreScope[]): ((relativePath: string) => boolean) => {
   return (relativePath: string): boolean => {
     for (const scope of scopes) {
