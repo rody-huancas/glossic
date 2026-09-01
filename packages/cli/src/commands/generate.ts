@@ -35,12 +35,19 @@ const parseConcurrency = (value: string | undefined): number | undefined => {
   return parsed;
 };
 
+/** `createProviders` is injected so a test can drive the whole chain without a real provider. */
 export interface GenerateDeps {
-  /** Injected so a test can drive the whole chain without a real provider. */
   createProviders?: typeof createProviders;
   cwd?: string;
 }
 
+/**
+ * An explicit --out is the user's path, so it follows the cwd; anything coming
+ * from the config belongs to the project, so it follows the scanned root.
+ *
+ * A failed unit does not abort the run, but it does set a non-zero exit code:
+ * CI must not pass on documentation that was never written.
+ */
 export const runGenerate = async (
   target: string,
   options: GenerateCliOptions,
@@ -49,8 +56,6 @@ export const runGenerate = async (
   const cwd = deps.cwd ?? process.cwd();
   const root = path.resolve(cwd, target);
 
-  // One chain for every option: flags, then glossic.config.ts, then the saved
-  // preference, then the schema's defaults.
   const { config, origins } = await resolveEffectiveConfig({
     root,
     flags: flagsToConfig({
@@ -62,8 +67,6 @@ export const runGenerate = async (
     }),
   });
 
-  // An explicit --out is the user's path, so it follows the cwd. Anything from
-  // the config belongs to the project, so it follows the scanned root.
   const outDir =
     options.out === undefined
       ? path.resolve(root, config.output.dir)
@@ -78,7 +81,6 @@ export const runGenerate = async (
         config,
       });
 
-  // A dry run has nothing to watch: it never calls the provider.
   const progress =
     dryRun || !shouldDecorate({ quiet: options.quiet }) ? undefined : createGenerateProgress(t);
 
@@ -105,12 +107,15 @@ export const runGenerate = async (
     }),
   );
 
-  // A unit that failed does not abort the run, but it must not pass for CI.
   if (result.failures.length > 0) process.exitCode = 1;
 
   return result;
 };
 
+/**
+ * No eager defaults on the language flags: resolving them here would make
+ * `--help` print a different line on every machine. The action resolves them.
+ */
 export const generateCommand = (): Command =>
   new Command("generate")
     .description("generate documentation (scan + LLM completion)")
@@ -119,8 +124,6 @@ export const generateCommand = (): Command =>
     .option("--provider <name>", "force a provider (claude-code, anthropic)")
     .option("--model <name>", "model the provider should use")
     .option("--out <dir>", "docs destination; relative to the cwd, default <root>/docs")
-    // No eager defaults: resolving them here would make `--help` print a
-    // different line on every machine. The action resolves them instead.
     .option("--lang <code>", "language of the documentation (default: system language)")
     .option("--ui-lang <code>", "language of the CLI itself: en or es (default: system language)")
     .option("--concurrency <n>", "parallel completions (default: 3)")

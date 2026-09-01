@@ -8,7 +8,6 @@ import type { Translator } from "../i18n/index.js";
 export interface StatusLine {
   project: string;
   provider: string | undefined;
-  /** The documentation language, not the interface one. */
   language: string;
 }
 

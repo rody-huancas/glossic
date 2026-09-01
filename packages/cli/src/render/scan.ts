@@ -20,6 +20,7 @@ const countLanguages = (units: readonly Unit[]): Array<[string, number]> => {
   );
 };
 
+/** The tool already names the package manager for pnpm workspaces. */
 const workspaceHeadline = (manifest: Manifest, t: Translator): string => {
   const { workspace } = manifest;
   const kind = workspace.isMonorepo
@@ -27,7 +28,6 @@ const workspaceHeadline = (manifest: Manifest, t: Translator): string => {
     : t("scan.singleProject");
   const manager = workspace.packageManager;
 
-  // The tool already names the package manager for pnpm workspaces.
   const suffix = manager === undefined || manager === workspace.tool ? "" : `, ${manager}`;
   return `${workspace.name} — ${kind}${suffix}`;
 };

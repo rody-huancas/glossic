@@ -27,14 +27,17 @@ export type { StatusLine } from "./status.js";
 type Action = "scan" | "generate" | "check" | "doctor";
 type Choice = Action | "uiLanguage" | "docLanguage" | "exit";
 
+/**
+ * The runScan, runGenerate and runCheck slots are the very same entry points
+ * the flags go through; `preferences` is injectable so tests neither read nor
+ * write the real user config.
+ */
 export interface InteractiveDeps {
   prompts?: PromptPort;
-  /** The very same entry points the flags go through. */
   runScan?: typeof runScan;
   runGenerate?: typeof runGenerate;
   runCheck?: typeof runCheck;
   cwd?: string;
-  /** Injectable so tests neither read nor write the real user config. */
   preferences?: PreferencesLocation;
   resolveConfig?: typeof resolveEffectiveConfig;
   writePreferences?: typeof writePreferences;
@@ -48,6 +51,12 @@ export interface InteractiveDeps {
  * It is a loop. Opening the menu means staying in it: every action prints its
  * output, leaves it on screen and draws the menu again underneath. Only Exit
  * — or Ctrl+C, which clack surfaces as a cancel — ends the process.
+ *
+ * The failure flag and the last unit count are remembered across the session:
+ * the first so the exit code can report it, the second so the menu can say
+ * what the last scan found without scanning again. An action that throws — a
+ * dead provider, a timeout, a bad path — is worth reading but not worth
+ * ending the session over, so it is reported and the menu is drawn again.
  */
 export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number> => {
   const prompts = deps.prompts ?? clackPrompts;
@@ -67,8 +76,6 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   let uiLang: string = config.uiLang;
   let first = true;
 
-  // Remembered across the session so the exit code can report it, and so the
-  // menu can say what the last scan found without scanning again.
   let failed = false;
   let knownUnits: number | undefined;
 
@@ -100,8 +107,6 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
 
       return generateInteractively(prompts, t, generate, language, defaultOut);
     } catch (error) {
-      // A dead provider, a timeout, a bad path: worth reading, not worth
-      // ending the session over.
       process.stderr.write(`${formatCliError(error)}\n`);
       prompts.note(t("menu.actionFailed"));
       return { ok: false };
@@ -117,7 +122,6 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     else prompts.note(line);
     first = false;
 
-    // "free" read as a pricing tier. What it means is that nothing calls a model.
     const noAiCalls = t("menu.hint.noAiCalls");
     const provider = status.provider ?? "claude-code";
 
@@ -150,7 +154,6 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       ],
     });
 
-    // Ctrl+C reaches here as a cancel, and is the only other way out.
     if (prompts.isCancel(choice) || typeof choice !== "string" || choice === "exit") {
       prompts.cancel(t("menu.bye"));
       return failed ? 1 : 0;

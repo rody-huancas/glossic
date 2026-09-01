@@ -24,11 +24,8 @@ export interface DoctorReport {
   selected: string | undefined;
   adapters: string[];
   configFile: string | undefined;
-  /** Every effective option and where its value came from. */
   config: DoctorConfigEntry[];
-  /** The interface language the report should be rendered in. */
   uiLang: string;
-  /** 0 when at least one provider can be used. */
   exitCode: number;
 }
 
@@ -87,6 +84,11 @@ export const collectDoctorReport = async (options: DoctorOptions): Promise<Docto
   };
 };
 
+/**
+ * The effective configuration is part of the report because debugging "why did
+ * glossic do that" is guesswork without knowing which source won for each
+ * option.
+ */
 export const renderDoctorReport = (report: DoctorReport, translator?: Translator): string => {
   const t = translator ?? createTranslator(report.uiLang) ?? defaultTranslator;
 
@@ -122,8 +124,6 @@ export const renderDoctorReport = (report: DoctorReport, translator?: Translator
   lines.push("", `${label("doctor.adapters")}  ${report.adapters.join(", ")}`);
   lines.push(`${label("doctor.config")}  ${report.configFile ?? t("doctor.noConfigFile")}`);
 
-  // Debugging "why did glossic do that" is guesswork without knowing which
-  // source won for each option.
   lines.push("", t("doctor.effectiveConfig"));
 
   const keyWidth = Math.max(0, ...report.config.map((entry) => entry.key.length));

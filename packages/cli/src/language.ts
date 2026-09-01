@@ -6,12 +6,12 @@ export const DEFAULT_LANGUAGE = "en";
 /** Where a locale can come from, most specific first. */
 const LOCALE_VARIABLES = ["LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"] as const;
 
+/**
+ * Passing `locale` explicitly — even as undefined — stops the lookup from
+ * reaching the real machine, which is what tests need.
+ */
 export interface LanguageSource {
   env?: NodeJS.ProcessEnv;
-  /**
-   * The runtime's locale. Passing it explicitly — even as undefined — stops
-   * the lookup from reaching the real machine, which is what tests need.
-   */
   locale?: string | undefined;
 }
 
@@ -63,13 +63,9 @@ export const languageName = (code: string): string => NAMES[code] ?? code;
 export type LanguageOrigin = "flag" | "project" | "preference" | "system" | "default";
 
 export interface LanguageInputs {
-  /** --lang on the command line. */
   flag?: string | undefined;
-  /** `lang` in the project's glossic.config.ts. */
   project?: string | undefined;
-  /** The user's saved choice. */
   preference?: string | undefined;
-  /** The system locale. */
   system?: string | undefined;
 }
 
@@ -101,7 +97,6 @@ export const resolveLanguage = (inputs: LanguageInputs): ResolvedLanguage => {
 };
 
 export interface LanguageContext {
-  /** Absolute path of the scanned workspace. */
   root: string;
   flag?: string | undefined;
   location?: PreferencesLocation;

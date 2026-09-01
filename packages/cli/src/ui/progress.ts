@@ -22,7 +22,6 @@ const duration = (ms: number): string => (ms < 1000 ? `${ms}ms` : `${(ms / 1000)
 
 export interface Progress {
   onEvent: (event: GenerateEvent) => void;
-  /** Clears the spinner. Safe to call even when nothing was ever started. */
   finish: (message: string) => void;
 }
 
@@ -30,6 +29,9 @@ export interface Progress {
  * Live progress for `generate`: a counter, the unit in flight, and one
  * persistent line per unit as it lands. Only ever built when the caller has a
  * terminal to draw on — with --json or in CI the events go nowhere.
+ *
+ * Stopping the spinner is what prints a unit's line for good, so the next unit
+ * has to start a new one. `finish` is safe to call even if none was started.
  */
 export const createGenerateProgress = (t: Translator = defaultTranslator): Progress => {
   const spinner = clack.spinner();
@@ -59,7 +61,6 @@ export const createGenerateProgress = (t: Translator = defaultTranslator): Progr
         .filter((part) => part !== "")
         .join(" ");
 
-      // Stopping prints the line for good; the next unit starts a new spinner.
       if (running) {
         spinner.stop(line);
         running = false;

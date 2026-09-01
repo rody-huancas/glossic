@@ -15,6 +15,10 @@ export interface ScanOptions {
   write: boolean;
 }
 
+/**
+ * An explicit --out is the user's path, so it follows the cwd; the default
+ * manifest belongs to the scanned project, so it follows the scanned root.
+ */
 export const runScan = async (target: string, options: ScanOptions): Promise<ScanResult> => {
   const cwd = process.cwd();
   const root = path.resolve(cwd, target);
@@ -35,8 +39,6 @@ export const runScan = async (target: string, options: ScanOptions): Promise<Sca
 
   if (!options.write) return result;
 
-  // An explicit --out is the user's path, so it follows the cwd. The default
-  // belongs to the scanned project, so it follows the scanned root.
   const manifestPath =
     options.out === undefined
       ? path.resolve(root, config.output.manifest)

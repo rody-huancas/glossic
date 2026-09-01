@@ -6,7 +6,6 @@ import type { Translator } from "../i18n/index.js";
 
 export interface CheckReportContext {
   cwd: string;
-  /** The path argument the user passed, echoed back in the fix instructions. */
   target: string;
   t?: Translator | undefined;
 }

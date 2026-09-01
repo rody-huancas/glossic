@@ -15,6 +15,11 @@ export { CLI_NAME, CLI_VERSION } from "./version.js";
 
 const argv = process.argv.slice(2);
 
+/**
+ * Flags run the command, a bare `glossic` on a terminal opens the menu, and a
+ * bare `glossic` without one behaves like any other non-interactive tool: it
+ * says what the flags are.
+ */
 try {
   if (argv.length > 0) {
     await createProgram().parseAsync(process.argv);
@@ -22,8 +27,6 @@ try {
     printBanner();
     process.exitCode = await runInteractive();
   } else {
-    // No terminal to ask questions in: behave like any other non-interactive
-    // tool and say what the flags are.
     createProgram().outputHelp();
   }
 } catch (error) {

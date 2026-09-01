@@ -8,7 +8,6 @@ export interface GenerateReportContext {
   outDir: string;
   cwd: string;
   provider: string | undefined;
-  /** The resolved documentation language, and where it was resolved from. */
   language?: { code: string; origin: string } | undefined;
   t?: Translator | undefined;
 }

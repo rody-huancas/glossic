@@ -9,16 +9,14 @@ import { detectLanguage } from "./language.js";
 import type { PreferencesLocation } from "./preferences.js";
 import { readPreferences } from "./preferences.js";
 
+/** `flags` carries only the keys the user actually passed on the command line. */
 export interface ConfigRequest {
-  /** Absolute path of the workspace being worked on. */
   root: string;
-  /** Only the keys the user actually passed on the command line. */
   flags?: GlossicUserConfig | undefined;
   location?: PreferencesLocation | undefined;
 }
 
 export interface EffectiveConfig extends ResolvedConfig {
-  /** Posix path of the config file that contributed, when there was one. */
   file: string | undefined;
   origins: ConfigOrigins;
 }
@@ -29,7 +27,9 @@ export interface EffectiveConfig extends ResolvedConfig {
  * defaults.
  *
  * The system locale is folded in as a preference rather than a source of its
- * own: it is a default for `lang` that the project's config still outranks.
+ * own: it is a default for `lang` that the project's config still outranks. It
+ * only reaches `uiLang` when there is a catalogue for it, so a French machine
+ * gets an English menu rather than a pile of keys.
  */
 export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<EffectiveConfig> => {
   const root = path.resolve(request.root);
@@ -44,8 +44,6 @@ export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<Ef
   const preference: GlossicUserConfig = {
     ...preferences,
     lang: preferences.lang ?? system,
-    // Only fall back to the system language when there is a catalogue for it;
-    // a French machine gets an English menu rather than a pile of keys.
     uiLang: preferences.uiLang ?? (hasCatalogue(system) ? (system as "en" | "es") : "en"),
   };
 

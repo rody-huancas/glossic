@@ -5,9 +5,7 @@ import process from "node:process";
 
 /** What glossic remembers between runs. Everything is optional. */
 export interface Preferences {
-  /** Documentation language chosen from the interactive menu. */
   lang?: string;
-  /** Interface language chosen from the interactive menu. */
   uiLang?: "en" | "es";
 }
 

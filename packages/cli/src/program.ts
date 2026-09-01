@@ -19,7 +19,6 @@ export const createProgram = (): Command => {
     .version(CLI_VERSION, "-v, --version", "print the glossic version")
     .showHelpAfterError();
 
-  // Every command draws the banner first, unless it was told not to.
   program.hook("preAction", (_program, action) => {
     const options = action.opts<{ json?: boolean; quiet?: boolean }>();
     printBanner({ json: options.json, quiet: options.quiet });

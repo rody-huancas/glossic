@@ -5,12 +5,22 @@ import type { runGenerate } from "../commands/generate.js";
 import type { Translator } from "../i18n/index.js";
 import type { PromptPort } from "../ui/prompts.js";
 
+/** `units` is whatever the action happened to learn, for the next menu's hint. */
 export interface ActionOutcome {
   ok: boolean;
-  /** Units the action happened to learn about, for the next menu's hint. */
   units?: number | undefined;
 }
 
+/**
+ * The language is already resolved from the chain, so its prompt is an Enter
+ * rather than a decision the user has to make again, and the out-dir
+ * placeholder names the directory the config already points at: an empty
+ * answer accepts it. Substituting "./docs" there would quietly override a
+ * project that configured somewhere else.
+ *
+ * The plan and the estimate shown before confirming come from a real dry run,
+ * not a guess.
+ */
 export const generateInteractively = async (
   prompts: PromptPort,
   t: Translator,
@@ -18,15 +28,10 @@ export const generateInteractively = async (
   resolved: string,
   defaultOut: string,
 ): Promise<ActionOutcome> => {
-  // Already resolved from the chain, so this is an Enter rather than a
-  // decision the user has to make again.
   const codes = LANGUAGES.map((entry) => entry.code);
   const language = await pickLanguage(prompts, t, "prompt.docLanguage", codes, resolved);
   if (language === undefined) return cancelled(prompts, t);
 
-  // The placeholder names the directory the config already points at, and an
-  // empty answer accepts it. Substituting "./docs" here would quietly override
-  // a project that configured somewhere else.
   const out = await prompts.text({
     message: t("prompt.outDir"),
     placeholder: defaultOut,
@@ -39,7 +44,6 @@ export const generateInteractively = async (
     ...(answer === "" ? {} : { out: answer }),
   };
 
-  // The plan and the estimate come from the real dry run, not a guess.
   const plan = await generate(".", { ...options, dryRun: true });
   const units = plan.plan.length;
 
