@@ -42,7 +42,7 @@ export const runScan = async (target: string, options: ScanOptions): Promise<voi
       : path.resolve(cwd, options.out);
 
   const out = await writeManifest(result.manifest, manifestPath);
-  process.stdout.write(`\nmanifest: ${displayPath(cwd, out)}\n`);
+  process.stdout.write(`\n${t("scan.manifest", { path: displayPath(cwd, out) })}\n`);
 };
 
 export const scanCommand = (): Command =>
