@@ -8,15 +8,18 @@ import { collectDoctorReport, renderDoctorReport } from "./commands/doctor.js";
 import type { GenerateCliOptions } from "./commands/generate.js";
 import { runGenerate } from "./commands/generate.js";
 import { runScan } from "./commands/scan.js";
-import { LANGUAGES, languageName, resolveDocumentationLanguage } from "./language.js";
-import type { PreferencesLocation } from "./preferences.js";
+import { resolveEffectiveConfig } from "./config.js";
+import type { MessageKey, Translator } from "./i18n/messages.js";
+import { createTranslator, UI_LANGUAGES } from "./i18n/messages.js";
+import { LANGUAGES } from "./language.js";
+import type { Preferences, PreferencesLocation } from "./preferences.js";
 import { writePreferences } from "./preferences.js";
 import { builtinAdapters, builtinProviders } from "./registries.js";
 import type { PromptPort } from "./ui/prompts.js";
 import { clackPrompts } from "./ui/prompts.js";
 import { accent, dim } from "./ui/theme.js";
 
-type Choice = "scan" | "generate" | "check" | "doctor" | "language" | "exit";
+type Choice = "scan" | "generate" | "check" | "doctor" | "uiLanguage" | "docLanguage" | "exit";
 
 export interface InteractiveDeps {
   prompts?: PromptPort;
@@ -27,15 +30,23 @@ export interface InteractiveDeps {
   cwd?: string;
   /** Injectable so tests neither read nor write the real user config. */
   preferences?: PreferencesLocation;
-  resolveLanguage?: typeof resolveDocumentationLanguage;
+  resolveConfig?: typeof resolveEffectiveConfig;
   writePreferences?: typeof writePreferences;
 }
 
 export interface StatusLine {
   project: string;
   provider: string | undefined;
+  /** The documentation language, not the interface one. */
   language: string;
 }
+
+/** The language's own name, in the interface language. */
+const languageLabel = (t: Translator, code: string): string => {
+  const key = `language.${code}` as MessageKey;
+  const name = t(key);
+  return name === key ? code : name;
+};
 
 /**
  * `riqsi-frontend · claude-code · docs in Spanish`
@@ -43,11 +54,11 @@ export interface StatusLine {
  * The language is spelled out as the documentation's, not the interface's:
  * "· Spanish" on its own read as though the menu had been translated.
  */
-export const renderStatusLine = (status: StatusLine): string =>
+export const renderStatusLine = (status: StatusLine, t: Translator): string =>
   [
     accent(status.project),
-    status.provider ?? dim("no provider"),
-    dim(`docs in ${languageName(status.language)}`),
+    status.provider ?? dim(t("status.noProvider")),
+    dim(t("status.docsIn", { language: languageLabel(t, status.language) })),
   ].join(dim(" · "));
 
 const readStatus = async (root: string, language: string): Promise<StatusLine> => {
@@ -63,19 +74,25 @@ const readStatus = async (root: string, language: string): Promise<StatusLine> =
   };
 };
 
-const cancelled = (prompts: PromptPort): number => {
-  prompts.cancel("Cancelled.");
+const cancelled = (prompts: PromptPort, t: Translator): number => {
+  prompts.cancel(t("menu.cancelled"));
   return 0;
 };
 
-/** The language picker, preselected on whatever is in force right now. */
-const pickLanguage = async (prompts: PromptPort, current: string): Promise<string | undefined> => {
+/** A picker over language codes, preselected on the one in force. */
+const pickLanguage = async (
+  prompts: PromptPort,
+  t: Translator,
+  message: MessageKey,
+  codes: readonly string[],
+  current: string,
+): Promise<string | undefined> => {
   const chosen = await prompts.select<string>({
-    message: "Which language should the documentation be written in?",
-    options: LANGUAGES.map((entry) => ({
-      value: entry.code,
-      label: entry.name,
-      ...(entry.code === current ? { hint: "current" } : {}),
+    message: t(message),
+    options: codes.map((code) => ({
+      value: code,
+      label: languageLabel(t, code),
+      ...(code === current ? { hint: t("prompt.hint.current") } : {}),
     })),
     initialValue: current,
   });
@@ -94,57 +111,81 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   const scan = deps.runScan ?? runScan;
   const generate = deps.runGenerate ?? runGenerate;
   const check = deps.runCheck ?? runCheck;
-  const resolve = deps.resolveLanguage ?? resolveDocumentationLanguage;
+  const resolve = deps.resolveConfig ?? resolveEffectiveConfig;
   const save = deps.writePreferences ?? writePreferences;
   const location = deps.preferences ?? {};
 
   const root = path.resolve(cwd);
-  let language = (await resolve({ root, location })).language;
+  const { config } = await resolve({ root, location });
+
+  let language = config.lang;
+  let uiLang: string = config.uiLang;
   let first = true;
 
-  // Choosing a language comes back here, so the status line is redrawn with
-  // the new value instead of going stale until the next run.
+  const remember = async (update: Preferences): Promise<void> => {
+    await save(update, location);
+  };
+
+  // Choosing a language comes back here, so both the status line and every
+  // label are redrawn with the new value instead of going stale until the
+  // next run.
   for (;;) {
+    const t = createTranslator(uiLang);
     const status = await readStatus(root, language);
-    const line = renderStatusLine(status);
+    const line = renderStatusLine(status, t);
 
     if (first) prompts.intro(line);
     else prompts.note(line);
     first = false;
 
     // "free" read as a pricing tier. What it means is that nothing calls a model.
-    const noAiCalls = "structure only, no AI calls";
+    const noAiCalls = t("menu.hint.noAiCalls");
 
     const choice = await prompts.select<Choice>({
-      message: "What would you like to do?",
+      message: t("menu.question"),
       options: [
-        { value: "scan", label: "Scan the project", hint: noAiCalls },
+        { value: "scan", label: t("menu.scan"), hint: noAiCalls },
         {
           value: "generate",
-          label: "Generate documentation",
-          hint: `uses your ${status.provider ?? "claude-code"} session`,
+          label: t("menu.generate"),
+          hint: t("menu.hint.usesProvider", { provider: status.provider ?? "claude-code" }),
         },
-        { value: "check", label: "Check if docs are current", hint: noAiCalls },
-        { value: "doctor", label: "Connection status" },
+        { value: "check", label: t("menu.check"), hint: noAiCalls },
+        { value: "doctor", label: t("menu.doctor") },
         {
-          value: "language",
-          label: "Documentation language",
-          hint: `currently: ${languageName(language)}`,
+          value: "uiLanguage",
+          label: t("menu.uiLanguage"),
+          hint: t("menu.hint.current", { value: languageLabel(t, uiLang) }),
         },
-        { value: "exit", label: "Exit" },
+        {
+          value: "docLanguage",
+          label: t("menu.docLanguage"),
+          hint: t("menu.hint.current", { value: languageLabel(t, language) }),
+        },
+        { value: "exit", label: t("menu.exit") },
       ],
     });
 
     if (prompts.isCancel(choice) || choice === "exit") {
-      prompts.cancel("Bye.");
+      prompts.cancel(t("menu.bye"));
       return 0;
     }
 
-    if (choice === "language") {
-      const chosen = await pickLanguage(prompts, language);
+    if (choice === "uiLanguage") {
+      const chosen = await pickLanguage(prompts, t, "prompt.uiLanguage", UI_LANGUAGES, uiLang);
+      if (chosen !== undefined && chosen !== uiLang) {
+        uiLang = chosen;
+        await remember({ uiLang: chosen as "en" | "es" });
+      }
+      continue;
+    }
+
+    if (choice === "docLanguage") {
+      const codes = LANGUAGES.map((entry) => entry.code);
+      const chosen = await pickLanguage(prompts, t, "prompt.docLanguage", codes, language);
       if (chosen !== undefined && chosen !== language) {
         language = chosen;
-        await save({ lang: chosen }, location);
+        await remember({ lang: chosen });
       }
       continue;
     }
@@ -165,30 +206,32 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         providers: builtinProviders,
         adapters: builtinAdapters,
       });
-      process.stdout.write(renderDoctorReport(report));
+      process.stdout.write(renderDoctorReport(report, t));
       return report.exitCode;
     }
 
-    return generateInteractively(prompts, generate, language);
+    return generateInteractively(prompts, t, generate, language);
   }
 };
 
 const generateInteractively = async (
   prompts: PromptPort,
+  t: Translator,
   generate: typeof runGenerate,
   resolved: string,
 ): Promise<number> => {
   // Already resolved from the chain, so this is an Enter rather than a
   // decision the user has to make again.
-  const language = await pickLanguage(prompts, resolved);
-  if (language === undefined) return cancelled(prompts);
+  const codes = LANGUAGES.map((entry) => entry.code);
+  const language = await pickLanguage(prompts, t, "prompt.docLanguage", codes, resolved);
+  if (language === undefined) return cancelled(prompts, t);
 
   const out = await prompts.text({
-    message: "Where should the documentation go?",
+    message: t("prompt.outDir"),
     placeholder: "./docs",
     defaultValue: "./docs",
   });
-  if (prompts.isCancel(out) || typeof out !== "string") return cancelled(prompts);
+  if (prompts.isCancel(out) || typeof out !== "string") return cancelled(prompts, t);
 
   const options: GenerateCliOptions = {
     lang: language,
@@ -199,15 +242,16 @@ const generateInteractively = async (
   const plan = await generate(".", { ...options, dryRun: true });
 
   const confirmed = await prompts.confirm({
-    message: `Generate ${plan.plan.filter((entry) => entry.regenerate).length} units (~${Math.round(
-      plan.estimatedTokens / 1000,
-    )}k input tokens)?`,
+    message: t("prompt.confirmGenerate", {
+      units: plan.plan.filter((entry) => entry.regenerate).length,
+      tokens: Math.round(plan.estimatedTokens / 1000),
+    }),
     initialValue: true,
   });
-  if (prompts.isCancel(confirmed) || confirmed !== true) return cancelled(prompts);
+  if (prompts.isCancel(confirmed) || confirmed !== true) return cancelled(prompts, t);
 
   const result = await generate(".", options);
-  prompts.outro(`${result.generated} generated · ${result.failures.length} failed`);
+  prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
 
   return result.failures.length > 0 ? 1 : 0;
 };

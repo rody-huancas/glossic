@@ -1,6 +1,7 @@
 import type { GenerateResult } from "@glossic/core";
+import { GlossicConfigSchema } from "@glossic/schema";
 import { describe, expect, it, vi } from "vitest";
-
+import { createTranslator } from "./i18n/messages.js";
 import type { InteractiveDeps } from "./interactive.js";
 import { renderStatusLine, runInteractive } from "./interactive.js";
 import type { PromptPort } from "./ui/prompts.js";
@@ -61,13 +62,24 @@ const emptyGenerateResult = (overrides: Partial<GenerateResult> = {}): GenerateR
     ...overrides,
   }) as GenerateResult;
 
+/** A resolver that answers with the config the test cares about. */
+const fakeConfig =
+  (values: { lang?: string; uiLang?: "en" | "es" } = {}) =>
+  async () => ({
+    config: GlossicConfigSchema.parse({ lang: values.lang ?? "es", uiLang: values.uiLang ?? "en" }),
+    origins: {},
+    file: undefined,
+  });
+
 const deps = (answers: unknown[], overrides: Partial<InteractiveDeps> = {}): InteractiveDeps => ({
   prompts: scriptedPrompts(answers).port,
   cwd: process.cwd(),
-  resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+  resolveConfig: fakeConfig({ lang: "es" }),
   writePreferences: async () => "/tmp/glossic/config.json",
   ...overrides,
 });
+
+const en = createTranslator("en");
 
 describe("renderStatusLine", () => {
   it("names the language as the documentation's, not the interface's", () => {
@@ -75,7 +87,7 @@ describe("renderStatusLine", () => {
     const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
 
     expect(
-      strip(renderStatusLine({ project: "riqsi", provider: "claude-code", language: "es" })),
+      strip(renderStatusLine({ project: "riqsi", provider: "claude-code", language: "es" }, en)),
     ).toBe("riqsi · claude-code · docs in Spanish");
   });
 
@@ -83,9 +95,9 @@ describe("renderStatusLine", () => {
     // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI
     const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
 
-    expect(strip(renderStatusLine({ project: "demo", provider: undefined, language: "en" }))).toBe(
-      "demo · no provider · docs in English",
-    );
+    expect(
+      strip(renderStatusLine({ project: "demo", provider: undefined, language: "en" }, en)),
+    ).toBe("demo · no provider · docs in English");
   });
 });
 
@@ -131,7 +143,7 @@ describe("runInteractive", () => {
     const script = scriptedPrompts(["generate", "es", "./documentacion", true]);
     const code = await runInteractive({
       prompts: script.port,
-      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async () => "/tmp/glossic/config.json",
       runGenerate,
     });
@@ -188,19 +200,19 @@ describe("the documentation language option", () => {
     const script = scriptedPrompts(["exit"]);
     await runInteractive({
       prompts: script.port,
-      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      resolveConfig: fakeConfig({ lang: "es" }),
     });
 
-    expect(script.asked).toContain("hint:language:currently: Spanish");
+    expect(script.asked).toContain("hint:docLanguage:currently: Spanish");
   });
 
   it("redraws the status line with the new language and stays in the menu", async () => {
-    const script = scriptedPrompts(["language", "pt", "exit"]);
+    const script = scriptedPrompts(["docLanguage", "pt", "exit"]);
     const saved: unknown[] = [];
 
     const code = await runInteractive({
       prompts: script.port,
-      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async (update) => {
         saved.push(update);
         return "/tmp/glossic/config.json";
@@ -218,16 +230,16 @@ describe("the documentation language option", () => {
     expect(strip(lines[1] ?? "")).toContain("docs in Portuguese");
 
     // And the menu was shown again with the updated hint.
-    expect(script.asked).toContain("hint:language:currently: Portuguese");
+    expect(script.asked).toContain("hint:docLanguage:currently: Portuguese");
   });
 
   it("saves nothing when the same language is picked again", async () => {
-    const script = scriptedPrompts(["language", "es", "exit"]);
+    const script = scriptedPrompts(["docLanguage", "es", "exit"]);
     const saved: unknown[] = [];
 
     await runInteractive({
       prompts: script.port,
-      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async (update) => {
         saved.push(update);
         return "/tmp/glossic/config.json";
@@ -238,12 +250,12 @@ describe("the documentation language option", () => {
   });
 
   it("saves nothing when the picker is cancelled", async () => {
-    const script = scriptedPrompts(["language", CANCEL, "exit"]);
+    const script = scriptedPrompts(["docLanguage", CANCEL, "exit"]);
     const saved: unknown[] = [];
 
     await runInteractive({
       prompts: script.port,
-      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async (update) => {
         saved.push(update);
         return "/tmp/glossic/config.json";
@@ -260,12 +272,76 @@ describe("the documentation language option", () => {
       .mockResolvedValueOnce(emptyGenerateResult());
 
     await runInteractive({
-      prompts: scriptedPrompts(["language", "fr", "generate", "fr", "./docs", true]).port,
-      resolveLanguage: async () => ({ language: "es", origin: "system" }),
+      prompts: scriptedPrompts(["docLanguage", "fr", "generate", "fr", "./docs", true]).port,
+      resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async () => "/tmp/glossic/config.json",
       runGenerate,
     });
 
     expect(runGenerate.mock.calls[1]?.[1]).toMatchObject({ lang: "fr" });
+  });
+});
+
+describe("the interface language option", () => {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI
+  const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
+
+  it("redraws the menu translated after the interface language changes", async () => {
+    const script = scriptedPrompts(["uiLanguage", "es", "exit"]);
+    const saved: unknown[] = [];
+
+    const code = await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig({ lang: "es", uiLang: "en" }),
+      writePreferences: async (update) => {
+        saved.push(update);
+        return "/tmp/glossic/config.json";
+      },
+    });
+
+    expect(code).toBe(0);
+    expect(saved).toEqual([{ uiLang: "es" }]);
+
+    // First pass English, second pass Spanish — labels and status line both.
+    expect(script.asked).toContain("What would you like to do?");
+    expect(script.asked).toContain("¿Qué quieres hacer?");
+
+    const lines = script.asked.filter(
+      (entry) => entry.startsWith("intro:") || entry.startsWith("note:"),
+    );
+    expect(strip(lines[0] ?? "")).toContain("docs in Spanish");
+    expect(strip(lines[1] ?? "")).toContain("docs en español");
+  });
+
+  it("persists the two languages independently", async () => {
+    const saved: unknown[] = [];
+    const script = scriptedPrompts(["uiLanguage", "es", "docLanguage", "pt", "exit"]);
+
+    await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig({ lang: "es", uiLang: "en" }),
+      writePreferences: async (update) => {
+        saved.push(update);
+        return "/tmp/glossic/config.json";
+      },
+    });
+
+    // Two separate writes, each naming only its own key.
+    expect(saved).toEqual([{ uiLang: "es" }, { lang: "pt" }]);
+  });
+
+  it("offers only the languages it has a catalogue for", async () => {
+    const script = scriptedPrompts(["uiLanguage", CANCEL, "exit"]);
+
+    await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig({ uiLang: "en" }),
+      writePreferences: async () => "/tmp/glossic/config.json",
+    });
+
+    // The documentation picker offers six; this one offers two.
+    const offered = script.asked.filter((entry) => entry.startsWith("hint:"));
+    expect(offered).toContain("hint:en:current");
+    expect(offered).not.toContain("hint:pt:current");
   });
 });
