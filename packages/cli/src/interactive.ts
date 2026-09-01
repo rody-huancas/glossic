@@ -2,18 +2,21 @@ import path from "node:path";
 import process from "node:process";
 
 import { probeProviders, resolveWorkspace } from "@glossic/core";
+
 import { runCheck } from "./commands/check.js";
 import { collectDoctorReport, renderDoctorReport } from "./commands/doctor.js";
 import type { GenerateCliOptions } from "./commands/generate.js";
 import { runGenerate } from "./commands/generate.js";
 import { runScan } from "./commands/scan.js";
-import { detectLanguage, languageName } from "./language.js";
+import { LANGUAGES, languageName, resolveDocumentationLanguage } from "./language.js";
+import type { PreferencesLocation } from "./preferences.js";
+import { writePreferences } from "./preferences.js";
 import { builtinAdapters, builtinProviders } from "./registries.js";
 import type { PromptPort } from "./ui/prompts.js";
 import { clackPrompts } from "./ui/prompts.js";
 import { accent, dim } from "./ui/theme.js";
 
-type Choice = "scan" | "generate" | "check" | "doctor" | "exit";
+type Choice = "scan" | "generate" | "check" | "doctor" | "language" | "exit";
 
 export interface InteractiveDeps {
   prompts?: PromptPort;
@@ -22,7 +25,10 @@ export interface InteractiveDeps {
   runGenerate?: typeof runGenerate;
   runCheck?: typeof runCheck;
   cwd?: string;
-  detectLanguage?: typeof detectLanguage;
+  /** Injectable so tests neither read nor write the real user config. */
+  preferences?: PreferencesLocation;
+  resolveLanguage?: typeof resolveDocumentationLanguage;
+  writePreferences?: typeof writePreferences;
 }
 
 export interface StatusLine {
@@ -57,6 +63,26 @@ const readStatus = async (root: string, language: string): Promise<StatusLine> =
   };
 };
 
+const cancelled = (prompts: PromptPort): number => {
+  prompts.cancel("Cancelled.");
+  return 0;
+};
+
+/** The language picker, preselected on whatever is in force right now. */
+const pickLanguage = async (prompts: PromptPort, current: string): Promise<string | undefined> => {
+  const chosen = await prompts.select<string>({
+    message: "Which language should the documentation be written in?",
+    options: LANGUAGES.map((entry) => ({
+      value: entry.code,
+      label: entry.name,
+      ...(entry.code === current ? { hint: "current" } : {}),
+    })),
+    initialValue: current,
+  });
+
+  return prompts.isCancel(chosen) || typeof chosen !== "string" ? undefined : chosen;
+};
+
 /**
  * The menu shown by a bare `glossic`. Every branch calls the function the
  * matching flag would have called: this file asks the questions, it never
@@ -68,71 +94,94 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   const scan = deps.runScan ?? runScan;
   const generate = deps.runGenerate ?? runGenerate;
   const check = deps.runCheck ?? runCheck;
-  const language = (deps.detectLanguage ?? detectLanguage)();
+  const resolve = deps.resolveLanguage ?? resolveDocumentationLanguage;
+  const save = deps.writePreferences ?? writePreferences;
+  const location = deps.preferences ?? {};
 
-  const status = await readStatus(cwd, language);
+  const root = path.resolve(cwd);
+  let language = (await resolve({ root, location })).language;
+  let first = true;
 
-  prompts.intro(renderStatusLine(status));
+  // Choosing a language comes back here, so the status line is redrawn with
+  // the new value instead of going stale until the next run.
+  for (;;) {
+    const status = await readStatus(root, language);
+    const line = renderStatusLine(status);
 
-  // "free" read as a pricing tier. What it means is that nothing calls a model.
-  const noAiCalls = "structure only, no AI calls";
+    if (first) prompts.intro(line);
+    else prompts.note(line);
+    first = false;
 
-  const choice = await prompts.select<Choice>({
-    message: "What would you like to do?",
-    options: [
-      { value: "scan", label: "Scan the project", hint: noAiCalls },
-      {
-        value: "generate",
-        label: "Generate documentation",
-        hint: `uses your ${status.provider ?? "claude-code"} session`,
-      },
-      { value: "check", label: "Check if docs are current", hint: noAiCalls },
-      { value: "doctor", label: "Connection status" },
-      { value: "exit", label: "Exit" },
-    ],
-  });
+    // "free" read as a pricing tier. What it means is that nothing calls a model.
+    const noAiCalls = "structure only, no AI calls";
 
-  if (prompts.isCancel(choice) || choice === "exit") {
-    prompts.cancel("Bye.");
-    return 0;
-  }
-
-  if (choice === "scan") {
-    await scan(".", { json: false, write: true });
-    return 0;
-  }
-
-  if (choice === "check") {
-    const result = await check(".", {});
-    return result.ok ? 0 : 1;
-  }
-
-  if (choice === "doctor") {
-    const report = await collectDoctorReport({
-      root: path.resolve(cwd),
-      providers: builtinProviders,
-      adapters: builtinAdapters,
+    const choice = await prompts.select<Choice>({
+      message: "What would you like to do?",
+      options: [
+        { value: "scan", label: "Scan the project", hint: noAiCalls },
+        {
+          value: "generate",
+          label: "Generate documentation",
+          hint: `uses your ${status.provider ?? "claude-code"} session`,
+        },
+        { value: "check", label: "Check if docs are current", hint: noAiCalls },
+        { value: "doctor", label: "Connection status" },
+        {
+          value: "language",
+          label: "Documentation language",
+          hint: `currently: ${languageName(language)}`,
+        },
+        { value: "exit", label: "Exit" },
+      ],
     });
-    process.stdout.write(renderDoctorReport(report));
-    return report.exitCode;
-  }
 
-  return generateInteractively(prompts, generate, language);
+    if (prompts.isCancel(choice) || choice === "exit") {
+      prompts.cancel("Bye.");
+      return 0;
+    }
+
+    if (choice === "language") {
+      const chosen = await pickLanguage(prompts, language);
+      if (chosen !== undefined && chosen !== language) {
+        language = chosen;
+        await save({ lang: chosen }, location);
+      }
+      continue;
+    }
+
+    if (choice === "scan") {
+      await scan(".", { json: false, write: true });
+      return 0;
+    }
+
+    if (choice === "check") {
+      const result = await check(".", {});
+      return result.ok ? 0 : 1;
+    }
+
+    if (choice === "doctor") {
+      const report = await collectDoctorReport({
+        root,
+        providers: builtinProviders,
+        adapters: builtinAdapters,
+      });
+      process.stdout.write(renderDoctorReport(report));
+      return report.exitCode;
+    }
+
+    return generateInteractively(prompts, generate, language);
+  }
 };
 
 const generateInteractively = async (
   prompts: PromptPort,
   generate: typeof runGenerate,
-  detected: string,
+  resolved: string,
 ): Promise<number> => {
-  const language = await prompts.select<string>({
-    message: "Which language should the documentation be written in?",
-    options: [
-      { value: "es", label: "Spanish", hint: detected === "es" ? "detected" : undefined },
-      { value: "en", label: "English", hint: detected === "en" ? "detected" : undefined },
-    ],
-  });
-  if (prompts.isCancel(language) || typeof language !== "string") return cancelled(prompts);
+  // Already resolved from the chain, so this is an Enter rather than a
+  // decision the user has to make again.
+  const language = await pickLanguage(prompts, resolved);
+  if (language === undefined) return cancelled(prompts);
 
   const out = await prompts.text({
     message: "Where should the documentation go?",
@@ -161,9 +210,4 @@ const generateInteractively = async (
   prompts.outro(`${result.generated} generated · ${result.failures.length} failed`);
 
   return result.failures.length > 0 ? 1 : 0;
-};
-
-const cancelled = (prompts: PromptPort): number => {
-  prompts.cancel("Cancelled.");
-  return 0;
 };

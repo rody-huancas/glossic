@@ -15,7 +15,11 @@ export interface PromptPort {
   outro(message: string): void;
   note(message: string): void;
   cancel(message: string): void;
-  select<T>(options: { message: string; options: SelectOption<T>[] }): Promise<T | symbol>;
+  select<T>(options: {
+    message: string;
+    options: SelectOption<T>[];
+    initialValue?: T | undefined;
+  }): Promise<T | symbol>;
   text(options: {
     message: string;
     placeholder?: string | undefined;
@@ -48,8 +52,11 @@ export const clackPrompts: PromptPort = {
   cancel: (message) => {
     clack.cancel(message);
   },
-  select: <T>(options: { message: string; options: SelectOption<T>[] }) =>
-    clack.select(options as unknown as ClackOptions) as Promise<T | symbol>,
+  select: <T>(options: {
+    message: string;
+    options: SelectOption<T>[];
+    initialValue?: T | undefined;
+  }) => clack.select(options as unknown as ClackOptions) as Promise<T | symbol>,
   text: (options) => clack.text(options as Parameters<typeof clack.text>[0]),
   confirm: (options) => clack.confirm(options as Parameters<typeof clack.confirm>[0]),
   isCancel: (value) => clack.isCancel(value as symbol),

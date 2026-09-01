@@ -95,6 +95,8 @@ export interface GenerateReportContext {
   outDir: string;
   cwd: string;
   provider: string | undefined;
+  /** The resolved documentation language, and where it was resolved from. */
+  language?: { code: string; origin: string } | undefined;
 }
 
 const formatTokens = (tokens: number): string =>
@@ -116,10 +118,18 @@ export const renderGenerateReport = (
 
   const lines: string[] = [];
 
+  const language =
+    context.language === undefined
+      ? ""
+      : `  ·  language: ${context.language.code} (${context.language.origin})`;
+
   if (result.dryRun) {
-    lines.push(`dry run — no provider was called, nothing was written to ${relativeOut}`, "");
+    lines.push(
+      `dry run — no provider was called, nothing was written to ${relativeOut}${language}`,
+      "",
+    );
   } else {
-    lines.push(`provider: ${context.provider ?? "none"}`, "");
+    lines.push(`provider: ${context.provider ?? "none"}${language}`, "");
   }
 
   for (const entry of result.plan) {

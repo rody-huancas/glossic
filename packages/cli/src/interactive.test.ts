@@ -22,7 +22,12 @@ const scriptedPrompts = (answers: unknown[]) => {
     outro: (message) => asked.push(`outro:${message}`),
     note: (message) => asked.push(`note:${message}`),
     cancel: (message) => asked.push(`cancel:${message}`),
-    select: (options) => next(options.message),
+    select: (options) => {
+      for (const option of options.options) {
+        if (option.hint !== undefined) asked.push(`hint:${String(option.value)}:${option.hint}`);
+      }
+      return next(options.message);
+    },
     text: (options) => next(options.message),
     confirm: (options) => next(options.message),
     isCancel: (value) => value === CANCEL,
@@ -59,7 +64,8 @@ const emptyGenerateResult = (overrides: Partial<GenerateResult> = {}): GenerateR
 const deps = (answers: unknown[], overrides: Partial<InteractiveDeps> = {}): InteractiveDeps => ({
   prompts: scriptedPrompts(answers).port,
   cwd: process.cwd(),
-  detectLanguage: () => "es",
+  resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+  writePreferences: async () => "/tmp/glossic/config.json",
   ...overrides,
 });
 
@@ -125,7 +131,8 @@ describe("runInteractive", () => {
     const script = scriptedPrompts(["generate", "es", "./documentacion", true]);
     const code = await runInteractive({
       prompts: script.port,
-      detectLanguage: () => "es",
+      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      writePreferences: async () => "/tmp/glossic/config.json",
       runGenerate,
     });
 
@@ -170,5 +177,95 @@ describe("runInteractive", () => {
 
     expect(code).toBe(1);
     expect(runGenerate.mock.calls[1]?.[1]).toMatchObject({ out: "./docs" });
+  });
+});
+
+describe("the documentation language option", () => {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI
+  const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
+
+  it("offers the current language as the hint", async () => {
+    const script = scriptedPrompts(["exit"]);
+    await runInteractive({
+      prompts: script.port,
+      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+    });
+
+    expect(script.asked).toContain("hint:language:currently: Spanish");
+  });
+
+  it("redraws the status line with the new language and stays in the menu", async () => {
+    const script = scriptedPrompts(["language", "pt", "exit"]);
+    const saved: unknown[] = [];
+
+    const code = await runInteractive({
+      prompts: script.port,
+      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      writePreferences: async (update) => {
+        saved.push(update);
+        return "/tmp/glossic/config.json";
+      },
+    });
+
+    expect(code).toBe(0);
+    expect(saved).toEqual([{ lang: "pt" }]);
+
+    // The first status line said Spanish; the one after the change says Portuguese.
+    const lines = script.asked.filter(
+      (entry) => entry.startsWith("intro:") || entry.startsWith("note:"),
+    );
+    expect(strip(lines[0] ?? "")).toContain("docs in Spanish");
+    expect(strip(lines[1] ?? "")).toContain("docs in Portuguese");
+
+    // And the menu was shown again with the updated hint.
+    expect(script.asked).toContain("hint:language:currently: Portuguese");
+  });
+
+  it("saves nothing when the same language is picked again", async () => {
+    const script = scriptedPrompts(["language", "es", "exit"]);
+    const saved: unknown[] = [];
+
+    await runInteractive({
+      prompts: script.port,
+      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      writePreferences: async (update) => {
+        saved.push(update);
+        return "/tmp/glossic/config.json";
+      },
+    });
+
+    expect(saved).toEqual([]);
+  });
+
+  it("saves nothing when the picker is cancelled", async () => {
+    const script = scriptedPrompts(["language", CANCEL, "exit"]);
+    const saved: unknown[] = [];
+
+    await runInteractive({
+      prompts: script.port,
+      resolveLanguage: async () => ({ language: "es", origin: "preference" }),
+      writePreferences: async (update) => {
+        saved.push(update);
+        return "/tmp/glossic/config.json";
+      },
+    });
+
+    expect(saved).toEqual([]);
+  });
+
+  it("carries the chosen language into a generate run", async () => {
+    const runGenerate = vi
+      .fn()
+      .mockResolvedValueOnce(emptyGenerateResult({ dryRun: true }))
+      .mockResolvedValueOnce(emptyGenerateResult());
+
+    await runInteractive({
+      prompts: scriptedPrompts(["language", "fr", "generate", "fr", "./docs", true]).port,
+      resolveLanguage: async () => ({ language: "es", origin: "system" }),
+      writePreferences: async () => "/tmp/glossic/config.json",
+      runGenerate,
+    });
+
+    expect(runGenerate.mock.calls[1]?.[1]).toMatchObject({ lang: "fr" });
   });
 });

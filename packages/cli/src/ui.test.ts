@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import manifest from "../package.json" with { type: "json" };
-import { DEFAULT_LANGUAGE, detectLanguage, languageName } from "./language.js";
+import {
+  DEFAULT_LANGUAGE,
+  detectLanguage,
+  LANGUAGES,
+  languageName,
+  resolveLanguage,
+} from "./language.js";
 import { MIN_WIDE_COLUMNS, renderBanner, shouldDecorate, TAGLINE } from "./ui/banner.js";
 import { CLI_VERSION } from "./version.js";
 
@@ -173,6 +179,71 @@ describe("detectLanguage", () => {
   it("names the languages it offers", () => {
     expect(languageName("es")).toBe("Spanish");
     expect(languageName("en")).toBe("English");
-    expect(languageName("pt")).toBe("pt");
+    expect(languageName("ja")).toBe("ja");
+  });
+});
+
+describe("resolveLanguage", () => {
+  const all = {
+    flag: "fr",
+    project: "de",
+    preference: "it",
+    system: "pt",
+  };
+
+  it("prefers the flag over everything", () => {
+    expect(resolveLanguage(all)).toEqual({ language: "fr", origin: "flag" });
+  });
+
+  it("falls to the project config when there is no flag", () => {
+    expect(resolveLanguage({ ...all, flag: undefined })).toEqual({
+      language: "de",
+      origin: "project",
+    });
+  });
+
+  it("falls to the saved preference when the project says nothing", () => {
+    expect(resolveLanguage({ ...all, flag: undefined, project: undefined })).toEqual({
+      language: "it",
+      origin: "preference",
+    });
+  });
+
+  it("falls to the system locale when nothing was chosen", () => {
+    expect(resolveLanguage({ system: "pt" })).toEqual({ language: "pt", origin: "system" });
+  });
+
+  it("falls to English when there is nothing at all", () => {
+    expect(resolveLanguage({})).toEqual({ language: DEFAULT_LANGUAGE, origin: "default" });
+  });
+
+  it("walks the whole chain in order", () => {
+    const order = ["flag", "project", "preference", "system", "default"] as const;
+    const values: Record<string, string | undefined> = { ...all };
+
+    for (const origin of order) {
+      const resolved = resolveLanguage(values);
+      expect(resolved.origin).toBe(origin);
+      if (origin !== "default") values[origin] = undefined;
+    }
+  });
+
+  it("treats a blank value as absent", () => {
+    expect(resolveLanguage({ flag: "   ", project: "es" })).toEqual({
+      language: "es",
+      origin: "project",
+    });
+  });
+});
+
+describe("LANGUAGES", () => {
+  it("offers the six the menu promises", () => {
+    expect(LANGUAGES.map((entry) => entry.code)).toEqual(["en", "es", "pt", "fr", "de", "it"]);
+  });
+
+  it("names every one of them", () => {
+    for (const entry of LANGUAGES) {
+      expect(languageName(entry.code)).toBe(entry.name);
+    }
   });
 });
