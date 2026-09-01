@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { scan } from "@glossic/core";
 import type { Manifest } from "@glossic/schema";
+import { GlossicConfigSchema } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
 import { builtinAdapters } from "./registries.js";
@@ -11,8 +12,19 @@ const GENERATED_AT = "2026-01-01T00:00:00.000Z";
 const exampleDir = (name: string): string =>
   fileURLToPath(new URL(`../../../examples/${name}`, import.meta.url));
 
+/**
+ * The fixtures are small enough that the default subtree merge collapses each
+ * one into a single unit; these tests are about per-directory units.
+ */
+const TREE_CONFIG = GlossicConfigSchema.parse({ mergeChildrenInto: 1 });
+
 const scanExample = (name: string) =>
-  scan({ root: exampleDir(name), adapters: builtinAdapters, generatedAt: GENERATED_AT });
+  scan({
+    root: exampleDir(name),
+    adapters: builtinAdapters,
+    config: TREE_CONFIG,
+    generatedAt: GENERATED_AT,
+  });
 
 /** Absolute paths are machine-specific; everything else must be stable. */
 const portable = (manifest: Manifest): Manifest => ({
@@ -34,18 +46,16 @@ describe("glossic scan", () => {
     const { manifest } = await scanExample("monorepo");
 
     expect(manifest.workspace.isMonorepo).toBe(true);
+    // Both thin "src" directories absorbed their first child.
     expect(manifest.units.map((unit) => unit.id)).toEqual([
       "packages/api:src",
-      "packages/api:src/routes",
       "packages/api:src/services",
       "packages/web:src",
-      "packages/web:src/components",
       "packages/web:src/hooks",
     ]);
     expect(
-      manifest.units.find((unit) => unit.id === "packages/web:src/components")?.facts.base
-        .languages,
-    ).toEqual([{ language: "tsx", count: 2 }]);
+      manifest.units.find((unit) => unit.id === "packages/web:src")?.facts.base.languages,
+    ).toEqual([{ language: "tsx", count: 3 }]);
   });
 
   it("produces an identical manifest on two consecutive runs", async () => {

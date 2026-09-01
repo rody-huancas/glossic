@@ -23,6 +23,8 @@ const unit = (id: string, files: string[]): Unit => ({
   facts: {
     base: {
       files: files.map((file) => ({ path: file, language: "typescript", bytes: file.length })),
+      testFiles: [],
+      ignoredFiles: [],
       languages: [{ language: "typescript", count: files.length }],
       roleHint: null,
     },
@@ -63,6 +65,8 @@ describe("buildManifest", () => {
             facts: {
               base: {
                 files: [{ path: "a.ts", language: "typescript", bytes: 1 }],
+                testFiles: [],
+                ignoredFiles: [],
                 languages: [
                   { language: "tsx", count: 2 },
                   { language: "shell", count: 5 },

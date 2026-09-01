@@ -11,12 +11,17 @@ import { genericAdapter, genericAdapterName } from "./index.js";
 const exampleDir = (name: string): string =>
   fileURLToPath(new URL(`../../../../examples/${name}`, import.meta.url));
 
-const contextFor = (root: string, rootDir = "."): DiscoverContext => {
+/**
+ * The fixtures are small enough that the default subtree merge would collapse
+ * each one into a single unit, so these tests turn it off and exercise the
+ * directory grouping directly. One test below covers the default.
+ */
+const contextFor = (root: string, rootDir = ".", mergeChildrenInto = 1): DiscoverContext => {
   const project: Project = { id: "root", name: path.basename(root), rootDir };
   return {
     root,
     project,
-    config: GlossicConfigSchema.parse({}),
+    config: GlossicConfigSchema.parse({ mergeChildrenInto }),
     workspace: {
       name: path.basename(root),
       root,
@@ -64,9 +69,10 @@ describe("generic adapter", () => {
   it("groups directories holding source files into units", async () => {
     const units = await runAdapter(contextFor(exampleDir("nestjs-api")));
 
+    // "src/common/middleware" is gone: "src" held two files, below the floor,
+    // so it absorbed its first child.
     expect(units.map((unit) => unit.name)).toEqual([
       "src",
-      "src/common/middleware",
       "src/config",
       "src/users",
       "src/users/dto",
@@ -78,14 +84,15 @@ describe("generic adapter", () => {
   it("puts loose project-root files in a unit named root", async () => {
     const units = await runAdapter(contextFor(exampleDir("express-api")));
 
-    expect(units.map((unit) => unit.name)).toEqual([
-      "root",
-      "src/controllers",
-      "src/middleware",
-      "src/routes",
-      "src/utils",
+    expect(units.map((unit) => unit.name)).toEqual(["root", "src/routes", "src/utils"]);
+
+    // The root unit held a single file, so it absorbed children until it hit
+    // the floor of three.
+    expect(units[0]?.facts.base.files.map((file) => file.path)).toEqual([
+      "index.js",
+      "src/controllers/users.controller.js",
+      "src/middleware/error-handler.js",
     ]);
-    expect(units[0]?.facts.base.files.map((file) => file.path)).toEqual(["index.js"]);
   });
 
   it("records file facts and language counts", async () => {
@@ -105,7 +112,6 @@ describe("generic adapter", () => {
 
     expect(roleOf(units, "src/users/dto")).toBe("dtos");
     expect(roleOf(units, "src/users/entities")).toBe("entities");
-    expect(roleOf(units, "src/common/middleware")).toBe("middleware");
     expect(roleOf(units, "src/config")).toBe("config");
     expect(roleOf(units, "test")).toBe("tests");
     expect(roleOf(units, "src")).toBeNull();
@@ -156,15 +162,20 @@ describe("generic adapter", () => {
     const ctx = contextFor(exampleDir("monorepo"), "packages/api");
     const units = await runAdapter({ ...ctx, project: { ...ctx.project, id: "packages/api" } });
 
-    expect(units.map((unit) => unit.id)).toEqual([
-      "packages/api:src",
-      "packages/api:src/routes",
-      "packages/api:src/services",
-    ]);
+    expect(units.map((unit) => unit.id)).toEqual(["packages/api:src", "packages/api:src/services"]);
     expect(units[0]?.path).toBe("packages/api/src");
     expect(units[0]?.facts.base.files.map((file) => file.path)).toEqual([
       "packages/api/src/index.ts",
+      "packages/api/src/routes/index.ts",
+      "packages/api/src/routes/orders.routes.ts",
     ]);
+  });
+
+  it("collapses a whole small project into one unit by default", async () => {
+    const units = await runAdapter(contextFor(exampleDir("nestjs-api"), ".", 25));
+
+    expect(units.map((unit) => unit.name)).toEqual(["root"]);
+    expect(units[0]?.facts.base.files).toHaveLength(11);
   });
 
   it("produces the same hashes on two consecutive runs", async () => {

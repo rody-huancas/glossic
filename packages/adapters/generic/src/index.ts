@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+
 import type {
   Adapter,
   DiscoverContext,
@@ -14,6 +15,8 @@ import type {
 import { glob } from "tinyglobby";
 
 import { collectGitignores, createGitignoreFilter } from "./gitignore.js";
+import type { GroupingOptions, UnitDraft } from "./grouping.js";
+import { SPLIT_SEPARATOR, shapeUnits, unitName } from "./grouping.js";
 import { inferLanguage } from "./languages.js";
 import { inferRoleHint } from "./roles.js";
 
@@ -31,9 +34,6 @@ export const HARD_IGNORES: readonly string[] = [
   "**/vendor/**",
 ];
 
-/** Name of the unit holding the source files sitting at the project root. */
-const ROOT_UNIT = "root";
-
 const toPosix = (value: string): string => value.split(path.sep).join("/");
 
 const compareStrings = (a: string, b: string): number => {
@@ -49,34 +49,13 @@ const joinPosix = (base: string, segment: string): string => {
 
 const sha256 = (value: Buffer | string): string => createHash("sha256").update(value).digest("hex");
 
-/**
- * A unit is a directory that directly holds at least one source file. Files at
- * the project root are grouped under a unit named "root".
- */
-const groupIntoUnits = (
-  projectId: string,
-  projectDir: string,
-  files: readonly string[],
-): DiscoveredUnit[] => {
-  const byDirectory = new Map<string, string[]>();
+/** `packages/core:src` for a whole directory, `packages/core:src~~cache` for a slice. */
+const unitId = (projectId: string, draft: UnitDraft): string => `${projectId}:${unitName(draft)}`;
 
-  for (const relativeToProject of files) {
-    const dir = path.posix.dirname(relativeToProject);
-    const name = dir === "." ? ROOT_UNIT : dir;
-    const bucket = byDirectory.get(name);
-    if (bucket === undefined) byDirectory.set(name, [relativeToProject]);
-    else bucket.push(relativeToProject);
-  }
-
-  return [...byDirectory.entries()]
-    .map(([name, unitFiles]) => ({
-      id: `${projectId}:${name}`,
-      projectId,
-      name,
-      path: name === ROOT_UNIT ? projectDir : joinPosix(projectDir, name),
-      files: unitFiles.map((file) => joinPosix(projectDir, file)).sort(compareStrings),
-    }))
-    .sort((a, b) => compareStrings(a.id, b.id));
+/** A slice keeps its directory's role: "src/routes~~users" is still routes. */
+const roleSource = (name: string): string => {
+  const split = name.lastIndexOf(SPLIT_SEPARATOR);
+  return split === -1 ? name : name.slice(0, split);
 };
 
 const countLanguages = (files: readonly FileFact[]): LanguageCount[] => {
@@ -105,14 +84,40 @@ const readFile = async (root: string, relativePath: string): Promise<ReadFile | 
 };
 
 /**
- * Stable digest of a unit: the sorted (path, content digest) pairs. Independent
- * of filesystem order, file mtimes and the order files were read in.
+ * Stable digest of a unit: the sorted (path, content digest) pairs of every
+ * file it owns, tests included. A changed test means stale documentation even
+ * though the test itself is never sent to the provider.
  */
 const hashUnit = (entries: readonly ReadFile[]): string => {
   const lines = entries
     .map((entry) => `${entry.fact.path}\n${entry.digest}\n`)
     .sort(compareStrings);
   return sha256(lines.join(""));
+};
+
+const groupingOptions = (ctx: DiscoverContext): GroupingOptions => ({
+  ignoreUnits: ctx.config.ignoreUnits,
+  excludeFromContent: ctx.config.excludeFromContent,
+  mergeChildrenInto: ctx.config.mergeChildrenInto,
+  minUnitFiles: ctx.config.minUnitFiles,
+  maxUnitFiles: ctx.config.maxUnitFiles,
+});
+
+const toDiscovered = (draft: UnitDraft, projectId: string, projectDir: string): DiscoveredUnit => {
+  const name = unitName(draft);
+
+  return {
+    id: unitId(projectId, draft),
+    projectId,
+    name,
+    // Each slice needs its own path: the path is what the document is named after.
+    path: name === "root" ? projectDir : joinPosix(projectDir, name),
+    files: draft.files.map((file) => joinPosix(projectDir, file)).sort(compareStrings),
+    testFiles: draft.testFiles.map((file) => joinPosix(projectDir, file)).sort(compareStrings),
+    ignoredFiles: draft.ignoredFiles
+      .map((file) => joinPosix(projectDir, file))
+      .sort(compareStrings),
+  };
 };
 
 /**
@@ -146,20 +151,33 @@ export const genericAdapter: Adapter = {
       .filter((file) => !isGitignored(joinPosix(projectDir, file)))
       .sort(compareStrings);
 
-    return groupIntoUnits(ctx.project.id, projectDir, files);
+    return shapeUnits(files, groupingOptions(ctx)).map((draft) =>
+      toDiscovered(draft, ctx.project.id, projectDir),
+    );
   },
 
   extract: async (ctx: ExtractContext): Promise<ExtractResult> => {
     const units: Unit[] = [];
 
     for (const discovered of ctx.units) {
-      const read = await Promise.all(discovered.files.map((file) => readFile(ctx.root, file)));
-      const entries = read.filter((entry): entry is ReadFile => entry !== undefined);
-      if (entries.length === 0) continue;
+      const [documented, tested, ignored] = await Promise.all([
+        Promise.all(discovered.files.map((file) => readFile(ctx.root, file))),
+        Promise.all(discovered.testFiles.map((file) => readFile(ctx.root, file))),
+        Promise.all(discovered.ignoredFiles.map((file) => readFile(ctx.root, file))),
+      ]);
 
-      const files = entries
-        .map((entry) => entry.fact)
-        .sort((a, b) => compareStrings(a.path, b.path));
+      const present = (entries: ReadonlyArray<ReadFile | undefined>): ReadFile[] =>
+        entries.filter((entry): entry is ReadFile => entry !== undefined);
+
+      const documentedEntries = present(documented);
+      const testedEntries = present(tested);
+      const ignoredEntries = present(ignored);
+      if (documentedEntries.length === 0) continue;
+
+      const byPath = (a: FileFact, b: FileFact): number => compareStrings(a.path, b.path);
+      const files = documentedEntries.map((entry) => entry.fact).sort(byPath);
+      const testFiles = testedEntries.map((entry) => entry.fact).sort(byPath);
+      const ignoredFiles = ignoredEntries.map((entry) => entry.fact).sort(byPath);
 
       units.push({
         id: discovered.id,
@@ -170,12 +188,14 @@ export const genericAdapter: Adapter = {
         facts: {
           base: {
             files,
+            testFiles,
+            ignoredFiles,
             languages: countLanguages(files),
-            roleHint: inferRoleHint(discovered.name),
+            roleHint: inferRoleHint(roleSource(discovered.name)),
           },
           producedBy: [genericAdapterName],
         },
-        hash: hashUnit(entries),
+        hash: hashUnit([...documentedEntries, ...testedEntries, ...ignoredEntries]),
       });
     }
 
@@ -186,6 +206,7 @@ export const genericAdapter: Adapter = {
   },
 };
 
+export * from "./grouping.js";
 export { inferLanguage, isSourceFile } from "./languages.js";
 export { inferRoleHint } from "./roles.js";
 export default genericAdapter;

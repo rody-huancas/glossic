@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createFakeProvider, generate } from "@glossic/core";
+import { GlossicConfigSchema } from "@glossic/schema";
 import { afterAll, describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
@@ -10,6 +11,13 @@ import { builtinAdapters } from "./registries.js";
 
 const exampleDir = (name: string): string =>
   fileURLToPath(new URL(`../../../examples/${name}`, import.meta.url));
+
+/**
+ * The fixtures are small enough that the default subtree merge collapses each
+ * one into a single unit. These tests are about how generate mirrors a tree
+ * across several documents, so they turn that merge off.
+ */
+const TREE_CONFIG = GlossicConfigSchema.parse({ mergeChildrenInto: 1 });
 
 const tempDirs: string[] = [];
 
@@ -31,6 +39,7 @@ describe("generate over the nestjs-api fixture", () => {
     const result = await generate({
       root: exampleDir("nestjs-api"),
       adapters: builtinAdapters,
+      config: TREE_CONFIG,
       provider,
       outDir: docs,
       cachePath: path.join(docs, "cache.json"),
@@ -40,7 +49,6 @@ describe("generate over the nestjs-api fixture", () => {
     expect(result.written).toEqual([
       "index.md",
       "src.md",
-      "src/common/middleware.md",
       "src/config.md",
       "src/users.md",
       "src/users/dto.md",
@@ -53,7 +61,7 @@ describe("generate over the nestjs-api fixture", () => {
       expect(index).toContain(`(./${doc})`);
     }
 
-    expect(provider.calls).toHaveLength(7);
+    expect(provider.calls).toHaveLength(6);
   });
 
   it("stamps the unit hash from the manifest into the frontmatter", async () => {
@@ -62,6 +70,7 @@ describe("generate over the nestjs-api fixture", () => {
     const result = await generate({
       root: exampleDir("nestjs-api"),
       adapters: builtinAdapters,
+      config: TREE_CONFIG,
       provider: createFakeProvider(),
       outDir: docs,
       cachePath: path.join(docs, "cache.json"),
@@ -85,6 +94,7 @@ describe("generate over the nestjs-api fixture", () => {
     const result = await generate({
       root: exampleDir("monorepo"),
       adapters: builtinAdapters,
+      config: TREE_CONFIG,
       provider,
       outDir: await outDir(),
       cachePath: path.join(await outDir(), "cache.json"),
@@ -93,12 +103,11 @@ describe("generate over the nestjs-api fixture", () => {
     });
 
     expect(provider.calls).toEqual([]);
+    // Thin "src" directories absorbed their first child, so six units became four.
     expect(result.plan.map((entry) => entry.docPath)).toEqual([
       "packages/api/src.md",
-      "packages/api/src/routes.md",
       "packages/api/src/services.md",
       "packages/web/src.md",
-      "packages/web/src/components.md",
       "packages/web/src/hooks.md",
     ]);
   });

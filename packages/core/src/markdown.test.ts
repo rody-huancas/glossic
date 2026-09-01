@@ -15,6 +15,8 @@ const unit = (name: string, path: string, roleHint: Unit["facts"]["base"]["roleH
   facts: {
     base: {
       files: [{ path: `${path}/a.ts`, language: "typescript", bytes: 10 }],
+      testFiles: [],
+      ignoredFiles: [],
       languages: [{ language: "typescript", count: 1 }],
       roleHint,
     },

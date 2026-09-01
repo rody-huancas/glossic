@@ -22,8 +22,12 @@ export interface DiscoveredUnit {
   name: string;
   /** Posix path relative to the workspace root. */
   path: string;
-  /** Posix paths relative to the workspace root, sorted. */
+  /** Documentable files. Posix paths relative to the workspace root, sorted. */
   files: string[];
+  /** Test files: hashed with the unit, never sent as content. Sorted. */
+  testFiles: string[];
+  /** Migrations, seeders, generated output: hashed, never described. Sorted. */
+  ignoredFiles: string[];
 }
 
 export interface ExtractContext extends DiscoverContext {

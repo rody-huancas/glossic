@@ -40,9 +40,20 @@ export type LanguageCount = z.infer<typeof LanguageCountSchema>;
  * unit holds, in which languages, and what its folder name suggests.
  */
 export const BaseFactsSchema = z.object({
-  /** Sorted by path. */
+  /** Documentable files, sorted by path. This is what reaches the provider. */
   files: z.array(FileFactSchema),
-  /** Sorted by count descending, then by language. */
+  /**
+   * Test files, sorted by path. They count towards the unit hash — a changed
+   * test means stale documentation — but their content is never sent, so the
+   * prompt can say the unit is covered without paying for the test code.
+   */
+  testFiles: z.array(FileFactSchema),
+  /**
+   * Files with no documentable prose in them — migrations, seeders, generated
+   * output — that still belong to the unit. Hashed, never described.
+   */
+  ignoredFiles: z.array(FileFactSchema),
+  /** Over `files` only. Sorted by count descending, then by language. */
   languages: z.array(LanguageCountSchema),
   roleHint: RoleHintSchema.nullable(),
 });

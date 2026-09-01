@@ -3,17 +3,32 @@ import os from "node:os";
 import path from "node:path";
 import type { GenerateContext, GenerateResult } from "@glossic/core";
 import { createFakeProvider, generate, readCache } from "@glossic/core";
+import { GlossicConfigSchema } from "@glossic/schema";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { builtinAdapters } from "./registries.js";
 
+/**
+ * These tests are about the cache and the checker, not the unit grouping, so
+ * they keep the fixture as one unit per directory.
+ */
+const TREE_CONFIG = GlossicConfigSchema.parse({ mergeChildrenInto: 1 });
+
 const tempDirs: string[] = [];
 
+/**
+ * Three files directly under src keeps it at the merge floor, so these tests
+ * exercise the cache and the checker rather than the unit grouping.
+ */
 const SOURCES: Record<string, string> = {
   "package.json": '{ "name": "cache-fixture", "type": "module" }\n',
   "src/index.ts": 'export const start = (): string => "up";\n',
+  "src/server.ts": "export const server = { port: 3000 };\n",
+  "src/app.ts": "export const app = { started: false };\n",
   "src/routes/users.routes.ts": "export const usersRoutes = [];\n",
+  "src/routes/health.routes.ts": "export const healthRoutes = [];\n",
   "src/utils/logger.ts": "export const logger = console;\n",
+  "src/utils/format.ts": "export const format = (v: string): string => v.trim();\n",
 };
 
 interface Fixture {
@@ -56,6 +71,7 @@ const run = async (
   const result = await generate({
     root: fixture.root,
     adapters: builtinAdapters,
+    config: TREE_CONFIG,
     provider,
     outDir: fixture.docs,
     cachePath: fixture.cachePath,
@@ -83,7 +99,7 @@ describe("incremental cache", () => {
       "root:src/utils",
     ]);
     expect(cache.entries[0]).toMatchObject({
-      promptVersion: "1",
+      promptVersion: "2",
       model: "default",
       lang: "en",
       outputPath: "src.md",
@@ -146,9 +162,8 @@ describe("incremental cache", () => {
   it("invalidates everything when the model changes", async () => {
     await run();
 
-    const { GlossicConfigSchema } = await import("@glossic/schema");
     const { result } = await run({
-      config: GlossicConfigSchema.parse({ model: "claude-haiku-4-5" }),
+      config: { ...TREE_CONFIG, model: "claude-haiku-4-5" },
     });
 
     expect(result.generated).toBe(3);
@@ -158,8 +173,7 @@ describe("incremental cache", () => {
   it("invalidates everything when the language changes", async () => {
     await run();
 
-    const { GlossicConfigSchema } = await import("@glossic/schema");
-    const { result } = await run({ config: GlossicConfigSchema.parse({ lang: "es" }) });
+    const { result } = await run({ config: { ...TREE_CONFIG, lang: "es" } });
 
     expect(result.generated).toBe(3);
     expect(result.plan.every((entry) => entry.reason === "lang-changed")).toBe(true);

@@ -30,10 +30,12 @@
   "dependencies": {
     "@glossic/schema": "workspace:*",
     "ignore": "^7.0.5",
+    "picomatch": "^4.0.3",
     "tinyglobby": "^0.2.15"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "@types/picomatch": "^4.0.2",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
