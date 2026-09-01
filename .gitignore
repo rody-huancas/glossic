@@ -18,3 +18,6 @@ pnpm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# lo copia el prepack del CLI desde la raiz, para que viaje en el .tgz
+packages/cli/README.md

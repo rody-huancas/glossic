@@ -1,15 +1,44 @@
 {
   "name": "glossic",
   "version": "0.1.0",
-  "description": "glossic CLI",
+  "description": "Generate documentation from your codebase and fail CI when the two drift apart",
+  "keywords": [
+    "documentation",
+    "docs",
+    "docs-as-code",
+    "glossic",
+    "cli",
+    "documentation-generator",
+    "llm",
+    "ai",
+    "static-analysis",
+    "monorepo",
+    "claude",
+    "anthropic"
+  ],
   "license": "MIT",
+  "author": "Rody Huancas",
+  "homepage": "https://github.com/rody-huancas/glosik#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rody-huancas/glosik.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/rody-huancas/glosik/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "glossic": "./dist/index.js"
   },
@@ -18,7 +47,8 @@
     "dev": "tsup --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "start": "node ./dist/index.js"
+    "start": "node ./dist/index.js",
+    "prepack": "node -e \"require('node:fs').copyFileSync('../../README.md','README.md')\""
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",

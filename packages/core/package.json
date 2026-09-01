@@ -2,7 +2,28 @@
   "name": "@glossic/core",
   "version": "0.1.0",
   "description": "Glossic orchestration core: registries, pipeline and manifest plumbing",
+  "keywords": [
+    "documentation",
+    "docs",
+    "docs-as-code",
+    "glossic",
+    "orchestration",
+    "pipeline",
+    "manifest",
+    "incremental",
+    "cache"
+  ],
   "license": "MIT",
+  "author": "Rody Huancas",
+  "homepage": "https://github.com/rody-huancas/glosik#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rody-huancas/glosik.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/rody-huancas/glosik/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -10,6 +31,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
