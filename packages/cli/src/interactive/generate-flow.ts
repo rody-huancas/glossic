@@ -1,15 +1,11 @@
 import { LANGUAGES } from "../language.js";
+import { cancelled } from "./nav.js";
 import { pickLanguage } from "./language.js";
+import type { ActionOutcome } from "./nav.js";
 import type { Translator } from "../i18n/index.js";
 import type { PromptPort } from "../ui/prompts.js";
 import type { runGenerate } from "../commands/generate.js";
 import type { GenerateCliOptions } from "../commands/generate.js";
-
-/** `units` is whatever the action happened to learn, for the next menu's hint. */
-export interface ActionOutcome {
-  ok    : boolean;
-  units?: number | undefined;
-}
 
 /**
  * The language is already resolved from the chain, so its prompt is an Enter
@@ -69,11 +65,5 @@ export const generateInteractively = async (
   const result = await generate(".", options);
   prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
 
-  return { ok: result.failures.length === 0, units };
-};
-
-/** Backing out of a prompt is a choice, not a failure. */
-const cancelled = (prompts: PromptPort, t: Translator): ActionOutcome => {
-  prompts.cancel(t("menu.cancelled"));
-  return { ok: true };
+  return { ok: result.failures.length === 0, units, printed: true };
 };
