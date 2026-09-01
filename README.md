@@ -323,6 +323,47 @@ Commit `.glossic/cache.json` alongside `docs/`: it is what lets the next
 contributor regenerate one unit instead of the whole tree. `.glossic/manifest.json`
 is a scan artifact and does not need to be committed.
 
+## Configuration
+
+`glossic init` writes a `glossic.config.ts` with every option, its real default
+and one line on what it does. Every option in it has an effect — there are no
+settings that only look configurable.
+
+One precedence chain applies to all of them:
+
+```
+--flag  →  glossic.config.ts  →  saved preference  →  schema default
+```
+
+Only the keys a config file actually declares take part. A file that sets
+nothing but `adapters` does not also start dictating the language: the value it
+never wrote stays with whichever lower source owns it.
+
+`glossic doctor` prints the resolved value and the origin of every option, which
+is the fastest way to find out why glossic did something unexpected:
+
+```
+effective configuration
+  adapters            default     nestjs, treesitter, generic
+  concurrency         project     7
+  lang                preference  it
+  maxUnitFiles        project     4
+  minUnitFiles        default     3
+```
+
+The saved preference lives in the per-user config directory — `%APPDATA%` on
+Windows, `$XDG_CONFIG_HOME` or `~/.config` elsewhere — and is only written when
+you change something from the interactive menu.
+
+### Changing a grouping option invalidates the docs
+
+`include`, `exclude`, `ignoreUnits`, `excludeFromContent`, `minUnitFiles`,
+`maxUnitFiles` and `mergeChildrenInto` decide which files end up in which unit
+and which of them the provider is shown. Change one and the affected units are
+regenerated on the next run, because the unit hash covers **which bucket each
+file landed in**, not just the file's path and contents. A change that happens
+to regroup nothing costs nothing.
+
 ## Providers
 
 | Provider | Requires | Notes |

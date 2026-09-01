@@ -5,45 +5,84 @@ import process from "node:process";
 import { CONFIG_FILENAMES, findConfigFile, toPosix } from "@glossic/core";
 import { Command } from "commander";
 
+/**
+ * Every option, its real default, and one line on what it does. Commented out
+ * so the file starts as a no-op: what is written here overrides the defaults
+ * and the saved preference, but never a flag.
+ */
 const TEMPLATE = `import { defineConfig } from "@glossic/schema";
 
 export default defineConfig({
-  // Adapter ids, resolved in order; the first match wins.
-  adapters: ["generic"],
+  // ── What gets walked ──────────────────────────────────────────────────────
 
-  // Leave unset to auto-detect: claude-code first, then anthropic.
-  // provider: "claude-code",
-  // model: "claude-opus-5",
+  // Globs an adapter walks, relative to each project root.
+  // include: ["**/*"],
 
-  lang: "en",
-  concurrency: 3,
+  // Globs never walked into, on top of the adapter's own hard ignores.
+  // exclude: ["**/node_modules/**", "**/dist/**", "**/vendor/**"],
+
+  // ── How files become units ────────────────────────────────────────────────
+
+  // Adapter ids in priority order; the first whose detect() passes wins.
+  // adapters: ["nestjs", "treesitter", "generic"],
 
   // Files with no documentable content. A unit whose files all match is
-  // dropped: it never reaches the manifest, the plan or the provider.
-  // ignoreUnits: ["*.config.ts", "tsconfig*.json", "package.json", ".*"],
+  // dropped; the files still count towards the hash of the unit above them.
+  // ignoreUnits: [
+  //   "*.config.ts", "*.config.mts", "*.config.cts",
+  //   "*.config.js", "*.config.mjs", "*.config.cjs", "*.config.json",
+  //   "tsconfig*.json", "package.json", ".*",
+  //   "**/migrations/**", "**/migration/**",
+  //   "**/seeders/**", "**/seeds/**",
+  //   "**/__generated__/**", "**/generated/**", "**/*.generated.*",
+  // ],
 
-  // Files that count towards the unit hash — change a test and its unit goes
-  // stale — but whose content is never sent to the provider.
+  // Files that count towards the unit hash but are never sent as content, so
+  // the prompt can say the unit is covered without paying for the test code.
   // excludeFromContent: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**"],
 
-  // A unit below this many documentable files absorbs its child units. This
-  // is what collapses a thin package root plus its src into one document.
+  // A directory absorbs every descendant directory when their documentable
+  // files together stay at or below this. Turns a module and its dto,
+  // entities and strategies folders into one unit.
+  // mergeChildrenInto: 25,
+
+  // A unit below this many documentable files absorbs its child units.
   // minUnitFiles: 3,
 
-  // A unit above this many documentable files is split by filename root, so
-  // one directory does not turn into a single enormous prompt.
+  // A unit above this many documentable files is split by filename root.
   // maxUnitFiles: 10,
 
-  // Left unset on purpose. The recent Claude models (opus-5, sonnet-5,
-  // fable-5, opus-4.7/4.8) reject sampling parameters with a 400, so glossic
-  // only forwards this to models that accept it.
+  // ── Who writes the prose ──────────────────────────────────────────────────
+
+  // Provider id. Left unset it auto-detects: claude-code, then anthropic.
+  // provider: "claude-code",
+
+  // Model the provider should use. Left unset the provider picks its own.
+  // model: "claude-opus-5",
+
+  // ISO 639-1 code the documentation is written in. Left unset it follows
+  // your saved preference, then the system locale, then English.
+  // lang: "en",
+
+  // Sampling temperature. Left unset on purpose: the recent Claude models
+  // reject sampling parameters, so each provider decides whether to send it.
   // temperature: 0,
 
-  output: {
-    dir: "docs",
-    manifest: ".glossic/manifest.json",
-    format: "markdown",
-  },
+  // Completions in flight at once.
+  // concurrency: 3,
+
+  // Milliseconds before a single completion is abandoned. The claude-code CLI
+  // boots a whole agent before answering, which is why this is generous.
+  // timeoutMs: 300000,
+
+  // ── Where it goes ─────────────────────────────────────────────────────────
+
+  // output: {
+  //   // Where \`generate\` writes, relative to the workspace root.
+  //   dir: "docs",
+  //   // Where \`scan\` writes, relative to the workspace root.
+  //   manifest: ".glossic/manifest.json",
+  // },
 });
 `;
 
