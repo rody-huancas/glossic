@@ -4,4 +4,4 @@
 import manifest from "../package.json" with { type: "json" };
 
 export const CLI_VERSION: string = manifest.version;
-export const CLI_NAME = "glossic";
+export const CLI_NAME            = "glossic";

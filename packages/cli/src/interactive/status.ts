@@ -6,7 +6,7 @@ import { accent, dim } from "../ui/theme.js";
 import type { Translator } from "../i18n/index.js";
 
 export interface StatusLine {
-  project: string;
+  project : string;
   provider: string | undefined;
   language: string;
 }
@@ -35,7 +35,7 @@ const readStatus = async (root: string, language: string): Promise<StatusLine> =
   ]);
 
   return {
-    project: workspace.name,
+    project : workspace.name,
     provider: providers.find((entry) => entry.available)?.name,
     language,
   };

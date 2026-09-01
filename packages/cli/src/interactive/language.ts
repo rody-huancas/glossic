@@ -3,7 +3,7 @@ import type { PromptPort } from "../ui/prompts.js";
 
 export /** The language's own name, in the interface language. */
 const languageLabel = (t: Translator, code: string): string => {
-  const key = `language.${code}` as MessageKey;
+  const key  = `language.${code}` as MessageKey;
   const name = t(key);
   return name === key ? code : name;
 };

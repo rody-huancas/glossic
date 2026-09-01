@@ -12,21 +12,21 @@ import { createTranslator, defaultTranslator } from "../i18n/index.js";
 import { builtinAdapters, builtinProviders } from "../registries.js";
 
 export interface DoctorConfigEntry {
-  key: string;
-  value: string;
+  key   : string;
+  value : string;
   origin: string;
 }
 
 export interface DoctorReport {
-  node: string;
-  platform: string;
-  providers: Array<{ name: string; available: boolean }>;
-  selected: string | undefined;
-  adapters: string[];
+  node      : string;
+  platform  : string;
+  providers : Array<{ name: string; available: boolean }>;
+  selected  : string | undefined;
+  adapters  : string[];
   configFile: string | undefined;
-  config: DoctorConfigEntry[];
-  uiLang: string;
-  exitCode: number;
+  config    : DoctorConfigEntry[];
+  uiLang    : string;
+  exitCode  : number;
 }
 
 /** Values are printed, so they have to survive being printed. */
@@ -49,15 +49,15 @@ const configEntries = (
     .sort()
     .map((key) => ({
       key,
-      value: display(config[key]),
+      value : display(config[key]),
       origin: origins[key] ?? "default",
     }));
 
 export interface DoctorOptions {
-  root: string;
-  uiLang?: string | undefined;
-  providers: readonly Provider[];
-  adapters: readonly Adapter[];
+  root      : string;
+  uiLang   ?: string | undefined;
+  providers : readonly Provider[];
+  adapters  : readonly Adapter[];
 }
 
 export const collectDoctorReport = async (options: DoctorOptions): Promise<DoctorReport> => {
@@ -72,15 +72,15 @@ export const collectDoctorReport = async (options: DoctorOptions): Promise<Docto
     .catch(() => undefined);
 
   return {
-    node: process.versions.node,
+    node    : process.versions.node,
     platform: `${process.platform}-${process.arch}`,
     providers,
     selected,
-    adapters: options.adapters.map((adapter) => adapter.name),
+    adapters  : options.adapters.map((adapter) => adapter.name),
     configFile: file,
-    config: configEntries(config as unknown as Record<string, unknown>, origins),
-    uiLang: config.uiLang,
-    exitCode: providers.some((entry) => entry.available) ? 0 : 1,
+    config    : configEntries(config as unknown as Record<string, unknown>, origins),
+    uiLang    : config.uiLang,
+    exitCode  : providers.some((entry) => entry.available) ? 0 : 1,
   };
 };
 
@@ -92,10 +92,10 @@ export const collectDoctorReport = async (options: DoctorOptions): Promise<Docto
 export const renderDoctorReport = (report: DoctorReport, translator?: Translator): string => {
   const t = translator ?? createTranslator(report.uiLang) ?? defaultTranslator;
 
-  const ok = t("doctor.ok");
-  const missing = t("doctor.missing");
+  const ok        = t("doctor.ok");
+  const missing   = t("doctor.missing");
   const markWidth = Math.max(ok.length, missing.length);
-  const mark = (available: boolean): string => (available ? ok : missing).padEnd(markWidth);
+  const mark      = (available: boolean): string => (available ? ok : missing).padEnd(markWidth);
 
   const label = (key: Parameters<Translator>[0]): string =>
     t(key).padEnd(
@@ -126,7 +126,7 @@ export const renderDoctorReport = (report: DoctorReport, translator?: Translator
 
   lines.push("", t("doctor.effectiveConfig"));
 
-  const keyWidth = Math.max(0, ...report.config.map((entry) => entry.key.length));
+  const keyWidth    = Math.max(0, ...report.config.map((entry) => entry.key.length));
   const originWidth = Math.max(0, ...report.config.map((entry) => entry.origin.length));
 
   for (const entry of report.config) {
@@ -165,9 +165,9 @@ export const doctorCommand = (): Command =>
     .option("-q, --quiet", "no banner", false)
     .action(async (target: string, options: { uiLang?: string }) => {
       const report = await collectDoctorReport({
-        root: path.resolve(process.cwd(), target),
+        root     : path.resolve(process.cwd(), target),
         providers: builtinProviders,
-        adapters: builtinAdapters,
+        adapters : builtinAdapters,
         ...(options.uiLang === undefined ? {} : { uiLang: options.uiLang }),
       });
 

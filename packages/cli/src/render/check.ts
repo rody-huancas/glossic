@@ -5,9 +5,9 @@ import { defaultTranslator } from "../i18n/index.js";
 import type { Translator } from "../i18n/index.js";
 
 export interface CheckReportContext {
-  cwd: string;
-  target: string;
-  t?: Translator | undefined;
+  cwd    : string;
+  target : string;
+  t     ?: Translator | undefined;
 }
 
 /**
@@ -15,8 +15,8 @@ export interface CheckReportContext {
  * this is what a developer reads after a failing CI job.
  */
 export const renderCheckReport = (result: CheckResult, context: CheckReportContext): string => {
-  const t = context.t ?? defaultTranslator;
-  const docs = displayPath(context.cwd, result.outDir);
+  const t        = context.t ?? defaultTranslator;
+  const docs     = displayPath(context.cwd, result.outDir);
   const problems = result.missing.length + result.stale.length + result.orphaned.length;
 
   if (result.ok) {
@@ -27,8 +27,8 @@ export const renderCheckReport = (result: CheckResult, context: CheckReportConte
   }
 
   const labels = {
-    stale: t("check.stale"),
-    missing: t("check.missing"),
+    stale   : t("check.stale"),
+    missing : t("check.missing"),
     orphaned: t("check.orphaned"),
   };
   const labelPad = Math.max(...Object.values(labels).map((label) => label.length));
@@ -62,7 +62,7 @@ export const renderCheckReport = (result: CheckResult, context: CheckReportConte
     "",
     t("check.problems", {
       problems: counted(t, problems, "problem"),
-      units: counted(t, result.upToDate.length, "unit"),
+      units   : counted(t, result.upToDate.length, "unit"),
     }),
     "",
   );

@@ -13,16 +13,16 @@ import { shouldDecorate } from "../ui/banner.js";
 import { createGenerateProgress } from "../ui/progress.js";
 
 export interface GenerateCliOptions {
-  dryRun?: boolean;
-  provider?: string;
-  out?: string;
-  lang?: string;
-  uiLang?: string;
-  model?: string;
+  dryRun     ?: boolean;
+  provider   ?: string;
+  out        ?: string;
+  lang       ?: string;
+  uiLang     ?: string;
+  model      ?: string;
   concurrency?: string;
-  force?: boolean;
-  only?: string;
-  quiet?: boolean;
+  force      ?: boolean;
+  only       ?: string;
+  quiet      ?: boolean;
 }
 
 const parseConcurrency = (value: string | undefined): number | undefined => {
@@ -38,7 +38,7 @@ const parseConcurrency = (value: string | undefined): number | undefined => {
 /** `createProviders` is injected so a test can drive the whole chain without a real provider. */
 export interface GenerateDeps {
   createProviders?: typeof createProviders;
-  cwd?: string;
+  cwd            ?: string;
 }
 
 /**
@@ -53,16 +53,16 @@ export const runGenerate = async (
   options: GenerateCliOptions,
   deps: GenerateDeps = {},
 ): Promise<GenerateResult> => {
-  const cwd = deps.cwd ?? process.cwd();
+  const cwd  = deps.cwd ?? process.cwd();
   const root = path.resolve(cwd, target);
 
   const { config, origins } = await resolveEffectiveConfig({
     root,
     flags: flagsToConfig({
-      lang: options.lang,
-      uiLang: options.uiLang,
-      provider: options.provider,
-      model: options.model,
+      lang       : options.lang,
+      uiLang     : options.uiLang,
+      provider   : options.provider,
+      model      : options.model,
       concurrency: parseConcurrency(options.concurrency),
     }),
   });
@@ -72,8 +72,8 @@ export const runGenerate = async (
       ? path.resolve(root, config.output.dir)
       : path.resolve(cwd, options.out);
 
-  const t = createTranslator(config.uiLang);
-  const dryRun = options.dryRun === true;
+  const t        = createTranslator(config.uiLang);
+  const dryRun   = options.dryRun === true;
   const provider = dryRun
     ? undefined
     : await resolveProvider({

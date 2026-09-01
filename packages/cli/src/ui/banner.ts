@@ -10,7 +10,7 @@ import { accent, dim } from "./theme.js";
  */
 export interface DecorationOptions {
   isTty?: boolean | undefined;
-  json?: boolean | undefined;
+  json ?: boolean | undefined;
   quiet?: boolean | undefined;
 }
 
@@ -61,7 +61,7 @@ const terminalColumns = (): number => process.stdout.columns ?? 80;
 export const renderBanner = (options: BannerOptions = {}): string => {
   const version = options.version ?? CLI_VERSION;
   const columns = options.columns ?? terminalColumns();
-  const wide = columns >= MIN_WIDE_COLUMNS;
+  const wide    = columns >= MIN_WIDE_COLUMNS;
 
   const letters = wide ? BLOCK_LETTERS : COMPACT_LETTERS;
   const caption = wide ? `v${version} · ${TAGLINE}` : `v${version}`;

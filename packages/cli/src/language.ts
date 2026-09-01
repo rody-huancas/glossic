@@ -11,7 +11,7 @@ const LOCALE_VARIABLES = ["LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"] as const;
  * reaching the real machine, which is what tests need.
  */
 export interface LanguageSource {
-  env?: NodeJS.ProcessEnv;
+  env   ?: NodeJS.ProcessEnv;
   locale?: string | undefined;
 }
 
@@ -35,9 +35,9 @@ export const detectLanguage = (source: LanguageSource = {}): string => {
     (value) => value !== undefined && value !== "" && !/^(C|POSIX)$/i.test(value),
   );
 
-  const runtime = "locale" in source ? source.locale : resolvedLocale();
+  const runtime   = "locale" in source ? source.locale : resolvedLocale();
   const candidate = fromEnv ?? runtime;
-  const code = candidate?.split(/[._@-]/)[0]?.toLowerCase();
+  const code      = candidate?.split(/[._@-]/)[0]?.toLowerCase();
 
   return code !== undefined && /^[a-z]{2}$/.test(code) ? code : DEFAULT_LANGUAGE;
 };
@@ -63,15 +63,15 @@ export const languageName = (code: string): string => NAMES[code] ?? code;
 export type LanguageOrigin = "flag" | "project" | "preference" | "system" | "default";
 
 export interface LanguageInputs {
-  flag?: string | undefined;
-  project?: string | undefined;
+  flag      ?: string | undefined;
+  project   ?: string | undefined;
   preference?: string | undefined;
-  system?: string | undefined;
+  system    ?: string | undefined;
 }
 
 export interface ResolvedLanguage {
   language: string;
-  origin: LanguageOrigin;
+  origin  : LanguageOrigin;
 }
 
 const usable = (value: string | undefined): value is string =>
@@ -97,8 +97,8 @@ export const resolveLanguage = (inputs: LanguageInputs): ResolvedLanguage => {
 };
 
 export interface LanguageContext {
-  root: string;
-  flag?: string | undefined;
+  root     : string;
+  flag    ?: string | undefined;
   location?: PreferencesLocation;
 }
 
@@ -119,6 +119,6 @@ export const resolveDocumentationLanguage = async (
   const origin = origins.lang ?? "default";
   return {
     language: config.lang,
-    origin: origin === "preference" && context.flag === undefined ? "preference" : origin,
+    origin  : origin === "preference" && context.flag === undefined ? "preference" : origin,
   };
 };

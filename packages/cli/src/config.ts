@@ -11,13 +11,13 @@ import { readPreferences } from "./preferences.js";
 
 /** `flags` carries only the keys the user actually passed on the command line. */
 export interface ConfigRequest {
-  root: string;
-  flags?: GlossicUserConfig | undefined;
+  root     : string;
+  flags   ?: GlossicUserConfig | undefined;
   location?: PreferencesLocation | undefined;
 }
 
 export interface EffectiveConfig extends ResolvedConfig {
-  file: string | undefined;
+  file   : string | undefined;
   origins: ConfigOrigins;
 }
 
@@ -43,7 +43,7 @@ export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<Ef
 
   const preference: GlossicUserConfig = {
     ...preferences,
-    lang: preferences.lang ?? system,
+    lang  : preferences.lang ?? system,
     uiLang: preferences.uiLang ?? (hasCatalogue(system) ? (system as "en" | "es") : "en"),
   };
 
@@ -58,11 +58,11 @@ export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<Ef
 
 /** Turns `--flag` values into the config keys they stand for. */
 export const flagsToConfig = (flags: {
-  lang?: string | undefined;
-  uiLang?: string | undefined;
-  provider?: string | undefined;
+  lang       ?: string | undefined;
+  uiLang     ?: string | undefined;
+  provider   ?: string | undefined;
   concurrency?: number | undefined;
-  model?: string | undefined;
+  model      ?: string | undefined;
 }): GlossicUserConfig => ({
   ...(flags.lang === undefined ? {} : { lang: flags.lang }),
   ...(flags.uiLang === undefined ? {} : { uiLang: flags.uiLang as "en" | "es" }),

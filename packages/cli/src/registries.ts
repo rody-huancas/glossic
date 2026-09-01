@@ -30,5 +30,5 @@ export const createProviders = (
 /** The default-config instances, for callers with nothing resolved yet. */
 export const builtinProviders: Provider[] = createProviders();
 
-export const adapters: AdapterRegistry = createAdapterRegistry(builtinAdapters);
+export const adapters: AdapterRegistry   = createAdapterRegistry(builtinAdapters);
 export const providers: ProviderRegistry = createProviderRegistry(builtinProviders);

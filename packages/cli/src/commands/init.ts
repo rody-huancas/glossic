@@ -108,7 +108,7 @@ export const initCommand = (): Command =>
     .option("--ui-lang <code>", "language of the CLI itself: en or es")
     .option("-q, --quiet", "no banner", false)
     .action(async (target: string, options: { force: boolean; uiLang?: string }) => {
-      const cwd = process.cwd();
+      const cwd  = process.cwd();
       const root = path.resolve(cwd, target);
 
       const { config } = await resolveEffectiveConfig({
@@ -119,7 +119,7 @@ export const initCommand = (): Command =>
       });
 
       const written = await runInit(root, options.force);
-      const t = createTranslator(config.uiLang);
+      const t       = createTranslator(config.uiLang);
 
       process.stdout.write(
         `${t("init.created", { path: toPosix(path.relative(cwd, written)) || written })}\n`,

@@ -9,10 +9,10 @@ import { builtinAdapters } from "../registries.js";
 import { displayPath, renderScanReport } from "../render/index.js";
 
 export interface ScanOptions {
-  json: boolean;
+  json   : boolean;
   uiLang?: string;
-  out?: string;
-  write: boolean;
+  out   ?: string;
+  write  : boolean;
 }
 
 /**
@@ -20,14 +20,14 @@ export interface ScanOptions {
  * manifest belongs to the scanned project, so it follows the scanned root.
  */
 export const runScan = async (target: string, options: ScanOptions): Promise<ScanResult> => {
-  const cwd = process.cwd();
+  const cwd  = process.cwd();
   const root = path.resolve(cwd, target);
 
   const { config } = await resolveEffectiveConfig({
     root,
     flags: flagsToConfig({ uiLang: options.uiLang }),
   });
-  const t = createTranslator(config.uiLang);
+  const t      = createTranslator(config.uiLang);
   const result = await scan({ root, adapters: builtinAdapters, config });
 
   if (options.json) {

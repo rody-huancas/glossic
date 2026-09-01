@@ -5,11 +5,11 @@ import { defaultTranslator } from "../i18n/index.js";
 import type { Translator } from "../i18n/index.js";
 
 export interface GenerateReportContext {
-  outDir: string;
-  cwd: string;
-  provider: string | undefined;
+  outDir   : string;
+  cwd      : string;
+  provider : string | undefined;
   language?: { code: string; origin: string } | undefined;
-  t?: Translator | undefined;
+  t       ?: Translator | undefined;
 }
 
 const formatTokens = (tokens: number): string =>
@@ -20,9 +20,9 @@ export const renderGenerateReport = (
   result: GenerateResult,
   context: GenerateReportContext,
 ): string => {
-  const t = context.t ?? defaultTranslator;
+  const t           = context.t ?? defaultTranslator;
   const relativeOut = displayPath(context.cwd, context.outDir);
-  const nameWidth = Math.max(0, ...result.plan.map((entry) => entry.unitId.length));
+  const nameWidth   = Math.max(0, ...result.plan.map((entry) => entry.unitId.length));
 
   const language =
     context.language === undefined

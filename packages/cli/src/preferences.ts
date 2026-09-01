@@ -5,14 +5,14 @@ import process from "node:process";
 
 /** What glossic remembers between runs. Everything is optional. */
 export interface Preferences {
-  lang?: string;
+  lang  ?: string;
   uiLang?: "en" | "es";
 }
 
 export interface PreferencesLocation {
-  env?: NodeJS.ProcessEnv;
+  env     ?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
-  homedir?: string;
+  homedir ?: string;
 }
 
 /**
@@ -21,9 +21,9 @@ export interface PreferencesLocation {
  * project: this is a preference of the person, not of the repository.
  */
 export const preferencesPath = (location: PreferencesLocation = {}): string => {
-  const env = location.env ?? process.env;
+  const env      = location.env ?? process.env;
   const platform = location.platform ?? process.platform;
-  const home = location.homedir ?? os.homedir();
+  const home     = location.homedir ?? os.homedir();
 
   const base =
     platform === "win32"
@@ -40,12 +40,12 @@ export const preferencesPath = (location: PreferencesLocation = {}): string => {
  */
 export const readPreferences = async (location: PreferencesLocation = {}): Promise<Preferences> => {
   try {
-    const raw = await fs.readFile(preferencesPath(location), "utf8");
+    const raw             = await fs.readFile(preferencesPath(location), "utf8");
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return {};
 
     const record = parsed as Record<string, unknown>;
-    const lang = record.lang;
+    const lang   = record.lang;
     const uiLang = record.uiLang;
 
     return {

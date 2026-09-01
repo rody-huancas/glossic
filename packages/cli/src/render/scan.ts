@@ -77,8 +77,8 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
   lines.push(
     t("scan.summary", {
       projects: counted(t, manifest.workspace.projects.length, "project"),
-      units: counted(t, units.length, "unit"),
-      files: counted(t, totalFiles, "file"),
+      units   : counted(t, units.length, "unit"),
+      files   : counted(t, totalFiles, "file"),
     }),
   );
 

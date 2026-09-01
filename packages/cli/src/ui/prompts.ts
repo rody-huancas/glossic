@@ -1,9 +1,9 @@
 import * as clack from "@clack/prompts";
 
 export interface SelectOption<T> {
-  value: T;
-  label: string;
-  hint?: string | undefined;
+  value : T;
+  label : string;
+  hint ?: string | undefined;
 }
 
 /**
@@ -16,17 +16,17 @@ export interface PromptPort {
   note(message: string): void;
   cancel(message: string): void;
   select<T>(options: {
-    message: string;
-    options: SelectOption<T>[];
+    message      : string;
+    options      : SelectOption<T>[];
     initialValue?: T | undefined;
   }): Promise<T | symbol>;
   text(options: {
-    message: string;
-    placeholder?: string | undefined;
+    message      : string;
+    placeholder ?: string | undefined;
     defaultValue?: string | undefined;
   }): Promise<string | symbol>;
   confirm(options: {
-    message: string;
+    message      : string;
     initialValue?: boolean | undefined;
   }): Promise<boolean | symbol>;
   isCancel(value: unknown): boolean;
@@ -53,11 +53,11 @@ export const clackPrompts: PromptPort = {
     clack.cancel(message);
   },
   select: <T>(options: {
-    message: string;
-    options: SelectOption<T>[];
+    message      : string;
+    options      : SelectOption<T>[];
     initialValue?: T | undefined;
   }) => clack.select(options as unknown as ClackOptions) as Promise<T | symbol>,
-  text: (options) => clack.text(options as Parameters<typeof clack.text>[0]),
-  confirm: (options) => clack.confirm(options as Parameters<typeof clack.confirm>[0]),
+  text    : (options) => clack.text(options as Parameters<typeof clack.text>[0]),
+  confirm : (options) => clack.confirm(options as Parameters<typeof clack.confirm>[0]),
   isCancel: (value) => clack.isCancel(value as symbol),
 };

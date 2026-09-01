@@ -11,13 +11,13 @@ import { builtinAdapters } from "../registries.js";
 import { renderCheckReport } from "../render/index.js";
 
 export interface CheckCliOptions {
-  json?: boolean;
+  json  ?: boolean;
   uiLang?: string;
-  out?: string;
+  out   ?: string;
 }
 
 export const runCheck = async (target: string, options: CheckCliOptions): Promise<CheckResult> => {
-  const cwd = process.cwd();
+  const cwd  = process.cwd();
   const root = path.resolve(cwd, target);
   const { config } = await resolveEffectiveConfig({
     root,

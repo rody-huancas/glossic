@@ -8,21 +8,21 @@ import { accent, dim, symbols } from "./theme.js";
 
 const LABEL_KEYS: Record<UnitOutcome, MessageKey> = {
   generated: "progress.generated",
-  cached: "progress.cached",
-  failed: "progress.failed",
+  cached   : "progress.cached",
+  failed   : "progress.failed",
 };
 
 const MARKS: Record<UnitOutcome, string> = {
   generated: symbols.ok,
-  cached: symbols.cached,
-  failed: symbols.fail,
+  cached   : symbols.cached,
+  failed   : symbols.fail,
 };
 
 const duration = (ms: number): string => (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`);
 
 export interface Progress {
   onEvent: (event: GenerateEvent) => void;
-  finish: (message: string) => void;
+  finish : (message: string) => void;
 }
 
 /**
@@ -35,7 +35,7 @@ export interface Progress {
  */
 export const createGenerateProgress = (t: Translator = defaultTranslator): Progress => {
   const spinner = clack.spinner();
-  let running = false;
+  let running   = false;
 
   const label = (index: number, total: number, unitId: string): string =>
     `${dim(`[${index}/${total}]`)} ${accent(unitId)}`;

@@ -7,7 +7,7 @@ import type { PromptPort } from "../ui/prompts.js";
 
 /** `units` is whatever the action happened to learn, for the next menu's hint. */
 export interface ActionOutcome {
-  ok: boolean;
+  ok    : boolean;
   units?: number | undefined;
 }
 
@@ -28,12 +28,12 @@ export const generateInteractively = async (
   resolved: string,
   defaultOut: string,
 ): Promise<ActionOutcome> => {
-  const codes = LANGUAGES.map((entry) => entry.code);
+  const codes    = LANGUAGES.map((entry) => entry.code);
   const language = await pickLanguage(prompts, t, "prompt.docLanguage", codes, resolved);
   if (language === undefined) return cancelled(prompts, t);
 
   const out = await prompts.text({
-    message: t("prompt.outDir"),
+    message    : t("prompt.outDir"),
     placeholder: defaultOut,
   });
   if (prompts.isCancel(out) || typeof out !== "string") return cancelled(prompts, t);
@@ -44,12 +44,12 @@ export const generateInteractively = async (
     ...(answer === "" ? {} : { out: answer }),
   };
 
-  const plan = await generate(".", { ...options, dryRun: true });
+  const plan  = await generate(".", { ...options, dryRun: true });
   const units = plan.plan.length;
 
   const confirmed = await prompts.confirm({
     message: t("prompt.confirmGenerate", {
-      units: plan.plan.filter((entry) => entry.regenerate).length,
+      units : plan.plan.filter((entry) => entry.regenerate).length,
       tokens: Math.round(plan.estimatedTokens / 1000),
     }),
     initialValue: true,

@@ -33,13 +33,13 @@ type Choice = Action | "uiLanguage" | "docLanguage" | "exit";
  * write the real user config.
  */
 export interface InteractiveDeps {
-  prompts?: PromptPort;
-  runScan?: typeof runScan;
-  runGenerate?: typeof runGenerate;
-  runCheck?: typeof runCheck;
-  cwd?: string;
-  preferences?: PreferencesLocation;
-  resolveConfig?: typeof resolveEffectiveConfig;
+  prompts         ?: PromptPort;
+  runScan         ?: typeof runScan;
+  runGenerate     ?: typeof runGenerate;
+  runCheck        ?: typeof runCheck;
+  cwd             ?: string;
+  preferences     ?: PreferencesLocation;
+  resolveConfig   ?: typeof resolveEffectiveConfig;
   writePreferences?: typeof writePreferences;
 }
 
@@ -59,22 +59,22 @@ export interface InteractiveDeps {
  * ending the session over, so it is reported and the menu is drawn again.
  */
 export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number> => {
-  const prompts = deps.prompts ?? clackPrompts;
-  const cwd = deps.cwd ?? process.cwd();
-  const scan = deps.runScan ?? runScan;
+  const prompts  = deps.prompts ?? clackPrompts;
+  const cwd      = deps.cwd ?? process.cwd();
+  const scan     = deps.runScan ?? runScan;
   const generate = deps.runGenerate ?? runGenerate;
-  const check = deps.runCheck ?? runCheck;
-  const resolve = deps.resolveConfig ?? resolveEffectiveConfig;
-  const save = deps.writePreferences ?? writePreferences;
+  const check    = deps.runCheck ?? runCheck;
+  const resolve  = deps.resolveConfig ?? resolveEffectiveConfig;
+  const save     = deps.writePreferences ?? writePreferences;
   const location = deps.preferences ?? {};
 
   const root = path.resolve(cwd);
   const { config } = await resolve({ root, location });
 
-  let language = config.lang;
-  const defaultOut = config.output.dir;
+  let language       = config.lang;
+  const defaultOut   = config.output.dir;
   let uiLang: string = config.uiLang;
-  let first = true;
+  let first          = true;
 
   let failed = false;
   let knownUnits: number | undefined;
@@ -99,7 +99,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         const report = await collectDoctorReport({
           root,
           providers: builtinProviders,
-          adapters: builtinAdapters,
+          adapters : builtinAdapters,
         });
         process.stdout.write(renderDoctorReport(report, t));
         return { ok: report.exitCode === 0 };
@@ -114,16 +114,16 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   };
 
   for (;;) {
-    const t = createTranslator(uiLang);
+    const t      = createTranslator(uiLang);
     const status = await readStatus(root, language);
-    const line = renderStatusLine(status, t);
+    const line   = renderStatusLine(status, t);
 
     if (first) prompts.intro(line);
     else prompts.note(line);
     first = false;
 
     const noAiCalls = t("menu.hint.noAiCalls");
-    const provider = status.provider ?? "claude-code";
+    const provider  = status.provider ?? "claude-code";
 
     const generateHint =
       knownUnits === undefined
@@ -143,12 +143,12 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         {
           value: "uiLanguage",
           label: t("menu.uiLanguage"),
-          hint: t("menu.hint.current", { value: languageLabel(t, uiLang) }),
+          hint : t("menu.hint.current", { value: languageLabel(t, uiLang) }),
         },
         {
           value: "docLanguage",
           label: t("menu.docLanguage"),
-          hint: t("menu.hint.current", { value: languageLabel(t, language) }),
+          hint : t("menu.hint.current", { value: languageLabel(t, language) }),
         },
         { value: "exit", label: t("menu.exit") },
       ],
@@ -169,7 +169,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     }
 
     if (choice === "docLanguage") {
-      const codes = LANGUAGES.map((entry) => entry.code);
+      const codes  = LANGUAGES.map((entry) => entry.code);
       const chosen = await pickLanguage(prompts, t, "prompt.docLanguage", codes, language);
       if (chosen !== undefined && chosen !== language) {
         language = chosen;
