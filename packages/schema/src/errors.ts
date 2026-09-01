@@ -1,4 +1,3 @@
-/** Why a provider could not answer. Stable ids: they reach the user as advice. */
 export type ProviderErrorCode =
   | "not-installed"
   | "unauthenticated"
@@ -11,11 +10,7 @@ export type ProviderErrorCode =
   | "refused"
   | "api";
 
-/**
- * Transient failures worth retrying. Everything else — a refusal, a missing
- * binary, a bad key, malformed output, a chat reply where a document belongs —
- * repeats identically, so retrying it only burns time and money.
- */
+
 const RETRYABLE_CODES: ReadonlySet<ProviderErrorCode> = new Set([
   "timeout",
   "rate-limit",
@@ -23,32 +18,31 @@ const RETRYABLE_CODES: ReadonlySet<ProviderErrorCode> = new Set([
 ]);
 
 export interface ProviderErrorOptions {
-  provider: string;
-  code: ProviderErrorCode;
-  message: string;
-  /** Stderr, response body, or whatever helps the user fix it. */
-  detail?: string | undefined;
-  cause?: unknown;
+  provider : string;
+  code     : ProviderErrorCode;
+  message  : string;
+  detail  ?: string | undefined;
+  cause   ?: unknown;
 }
 
-/** Every provider failure is one of these: adapters never throw raw errors. */
 export class ProviderError extends Error {
   readonly provider: string;
-  readonly code: ProviderErrorCode;
-  readonly detail: string | undefined;
+  readonly code    : ProviderErrorCode;
+  readonly detail  : string | undefined;
 
   constructor(options: ProviderErrorOptions) {
     super(options.message, options.cause === undefined ? {} : { cause: options.cause });
-    this.name = "ProviderError";
+    this.name     = "ProviderError";
     this.provider = options.provider;
-    this.code = options.code;
-    this.detail = options.detail;
+    this.code     = options.code;
+    this.detail   = options.detail;
   }
 }
 
-export const isProviderError = (value: unknown): value is ProviderError =>
-  value instanceof ProviderError;
+export const isProviderError = (value: unknown): value is ProviderError => {
+  return value instanceof ProviderError;
+}
 
-/** Only ProviderErrors carry enough information to be safely retried. */
-export const isRetryableProviderError = (value: unknown): boolean =>
-  isProviderError(value) && RETRYABLE_CODES.has(value.code);
+export const isRetryableProviderError = (value: unknown): boolean => {
+  return isProviderError(value) && RETRYABLE_CODES.has(value.code);
+}

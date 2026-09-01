@@ -3,14 +3,8 @@ import { fileURLToPath } from "node:url";
 import { isProviderError, type ProviderError } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
-import {
-  buildArgs,
-  claudeCodeProvider,
-  claudeCodeProviderName,
-  createClaudeCodeProvider,
-  ISOLATION_ARGS,
-} from "./index.js";
 import { parseClaudeOutput } from "./output.js";
+import { buildArgs, claudeCodeProvider, claudeCodeProviderName, createClaudeCodeProvider, ISOLATION_ARGS } from "./index.js";
 
 const fixture = async (name: string): Promise<string> =>
   fs.readFile(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8");
@@ -161,7 +155,6 @@ describe("isolation from the scanned project", () => {
     const args = buildArgs({}, request);
 
     expect(args.slice(0, 4)).toEqual(["-p", "--output-format", "json", "--allowed-tools"]);
-    // The prompt is never an argument: it goes through stdin.
     expect(args).not.toContain(request.prompt);
   });
 
@@ -177,8 +170,6 @@ describe("isolation from the scanned project", () => {
       seen.push("failed");
     });
 
-    // The call fails because the binary is missing, but it was configured to
-    // start outside the project either way.
     expect(seen).toEqual(["failed"]);
   });
 });

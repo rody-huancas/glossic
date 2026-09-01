@@ -1,8 +1,5 @@
 {
   "extends": "../../../tsconfig.base.json",
-  // tsup owns the build; this file only drives `tsc --noEmit`. An outDir here
-  // would be wrong anyway: the @glossic/* path aliases pull sibling package
-  // sources into the program, so the computed root is packages/, not this one.
   "compilerOptions": {
     "noEmit": true
   },

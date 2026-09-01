@@ -17,10 +17,13 @@ export const readText = async (target: string): Promise<string | undefined> => {
   }
 };
 
-/** Reads and parses a JSON file. Returns undefined when missing or malformed. */
 export const readJson = async <T>(target: string): Promise<T | undefined> => {
   const raw = await readText(target);
-  if (raw === undefined) return undefined;
+  
+  if (raw === undefined) {
+    return undefined;
+  }
+
   try {
     return JSON.parse(raw) as T;
   } catch {

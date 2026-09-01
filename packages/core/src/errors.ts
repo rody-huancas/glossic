@@ -1,4 +1,3 @@
-/** Thrown by every scaffold stub until the real implementation lands. */
 export class NotImplementedError extends Error {
   constructor(what: string) {
     super(`${what} is not implemented`);
@@ -6,10 +5,7 @@ export class NotImplementedError extends Error {
   }
 }
 
-/**
- * Raised when no provider can answer. The message is the whole point: it is
- * what a first-time user sees, so it lists both ways out.
- */
+
 export class NoProviderAvailableError extends Error {
   readonly tried: string[];
 
@@ -36,7 +32,6 @@ export class NoProviderAvailableError extends Error {
   }
 }
 
-/** Raised when `--provider <name>` names something that is not registered. */
 export class UnknownProviderError extends Error {
   constructor(requested: string, known: readonly string[]) {
     super(`unknown provider "${requested}". Available: ${[...known].sort().join(", ")}`);

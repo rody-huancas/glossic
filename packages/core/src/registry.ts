@@ -1,6 +1,5 @@
 import type { Adapter, Provider } from "@glossic/schema";
 
-/** Minimal name-keyed registry used for adapters and providers. */
 export class Registry<T extends { name: string }> {
   readonly #items = new Map<string, T>();
 
@@ -26,17 +25,25 @@ export class Registry<T extends { name: string }> {
   }
 }
 
-export type AdapterRegistry = Registry<Adapter>;
+export type AdapterRegistry  = Registry<Adapter>;
 export type ProviderRegistry = Registry<Provider>;
 
 export const createAdapterRegistry = (adapters: Adapter[] = []): AdapterRegistry => {
   const registry = new Registry<Adapter>();
-  for (const adapter of adapters) registry.register(adapter);
+
+  for (const adapter of adapters) {
+    registry.register(adapter);
+  }
+
   return registry;
 };
 
 export const createProviderRegistry = (providers: Provider[] = []): ProviderRegistry => {
   const registry = new Registry<Provider>();
-  for (const provider of providers) registry.register(provider);
+
+  for (const provider of providers) {
+    registry.register(provider);
+  }
+
   return registry;
 };
