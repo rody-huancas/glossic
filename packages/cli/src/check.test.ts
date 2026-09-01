@@ -1,20 +1,34 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { check, createFakeProvider, generate } from "@glossic/core";
+import { check, createFakeProvider, generate, readCache } from "@glossic/core";
 
-import { ProviderError } from "@glossic/schema";
+import { GlossicConfigSchema, ProviderError } from "@glossic/schema";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { builtinAdapters } from "./registries.js";
 import { renderCheckReport } from "./render.js";
 
+/**
+ * These tests are about the cache and the checker, not the unit grouping, so
+ * they keep the fixture as one unit per directory.
+ */
+const TREE_CONFIG = GlossicConfigSchema.parse({ mergeChildrenInto: 1 });
+
 const tempDirs: string[] = [];
 
+/**
+ * Three files directly under src keeps it at the merge floor, so these tests
+ * exercise the cache and the checker rather than the unit grouping.
+ */
 const SOURCES: Record<string, string> = {
   "package.json": '{ "name": "check-fixture", "type": "module" }\n',
   "src/index.ts": 'export const start = (): string => "up";\n',
+  "src/server.ts": "export const server = { port: 3000 };\n",
+  "src/app.ts": "export const app = { started: false };\n",
   "src/routes/users.routes.ts": "export const usersRoutes = [];\n",
+  "src/routes/health.routes.ts": "export const healthRoutes = [];\n",
   "src/utils/logger.ts": "export const logger = console;\n",
+  "src/utils/format.ts": "export const format = (v: string): string => v.trim();\n",
 };
 
 let root: string;
@@ -42,13 +56,27 @@ const generateAll = async () =>
   generate({
     root,
     adapters: builtinAdapters,
+    config: TREE_CONFIG,
     provider: createFakeProvider(),
     outDir: docs,
     cachePath: path.join(root, ".glossic/cache.json"),
     generatedAt: "2026-01-01T00:00:00.000Z",
   });
 
-const runCheck = async () => check({ root, adapters: builtinAdapters, outDir: docs });
+/** Long enough to pass the document validation the pipeline now applies. */
+const OK_DOCUMENT = [
+  "## What it does",
+  "",
+  "Wires the module together and exposes its public surface.",
+  "",
+  "## Responsibilities",
+  "",
+  "It owns its own behaviour and delegates the rest to its neighbours, so the",
+  "dependency direction stays one way and the boundary stays legible.",
+].join("\n");
+
+const runCheck = async () =>
+  check({ root, adapters: builtinAdapters, config: TREE_CONFIG, outDir: docs });
 
 describe("glossic check", () => {
   it("is happy right after a generate", async () => {
@@ -167,13 +195,14 @@ describe("a failing unit does not abort the run", () => {
             message: "the model declined to answer",
           });
         }
-        return "## Summary\n\nok";
+        return OK_DOCUMENT;
       },
     });
 
     const result = await generate({
       root,
       adapters: builtinAdapters,
+      config: TREE_CONFIG,
       provider,
       outDir: docs,
       cachePath: path.join(root, ".glossic/cache.json"),
@@ -188,7 +217,12 @@ describe("a failing unit does not abort the run", () => {
     expect(result.written).toEqual(["index.md", "src.md", "src/routes.md"]);
 
     // The failed unit must not be cached, so the next run retries it.
-    const next = await check({ root, adapters: builtinAdapters, outDir: docs });
+    const next = await check({
+      root,
+      adapters: builtinAdapters,
+      config: TREE_CONFIG,
+      outDir: docs,
+    });
     expect(next.missing.map((entry) => entry.unitId)).toEqual(["root:src/utils"]);
   });
 
@@ -207,13 +241,14 @@ describe("a failing unit does not abort the run", () => {
             });
           }
         }
-        return "## Summary\n\nok";
+        return OK_DOCUMENT;
       },
     });
 
     const result = await generate({
       root,
       adapters: builtinAdapters,
+      config: TREE_CONFIG,
       provider,
       outDir: docs,
       cachePath: path.join(root, ".glossic/cache.json"),
@@ -243,6 +278,7 @@ describe("a failing unit does not abort the run", () => {
     const result = await generate({
       root,
       adapters: builtinAdapters,
+      config: TREE_CONFIG,
       provider,
       outDir: docs,
       cachePath: path.join(root, ".glossic/cache.json"),
@@ -254,5 +290,137 @@ describe("a failing unit does not abort the run", () => {
     expect(attempts).toBe(3);
     expect(result.failures).toHaveLength(3);
     expect(result.generated).toBe(0);
+  });
+});
+
+describe("a conversational answer never reaches disk", () => {
+  /** The exact reply that shipped a broken document before validation existed. */
+  const CHAT_REPLY = "I've drafted the documentation but need write permission to save it.";
+
+  const cachePath = () => path.join(root, ".glossic/cache.json");
+
+  const generateWith = async (respond: (unitId: unknown) => string) =>
+    generate({
+      root,
+      adapters: builtinAdapters,
+      config: TREE_CONFIG,
+      provider: createFakeProvider({ respond: (request) => respond(request.metadata.unitId) }),
+      outDir: docs,
+      cachePath: cachePath(),
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      retry: { sleep: async () => {} },
+    });
+
+  const document = (unitId: unknown): string =>
+    `## What it does
+
+${`The ${String(unitId)} unit wires the module together. `.repeat(8)}`;
+
+  it("fails the unit with invalid-content instead of writing it", async () => {
+    const result = await generateWith((unitId) =>
+      unitId === "root:src/utils" ? CHAT_REPLY : document(unitId),
+    );
+
+    expect(result.failures).toEqual([
+      {
+        unitId: "root:src/utils",
+        reason: expect.stringContaining("not a document") as unknown as string,
+        code: "invalid-content",
+        detail: expect.any(String) as unknown as string,
+      },
+    ]);
+    expect(result.written).not.toContain("src/utils.md");
+    await expect(fs.readFile(path.join(docs, "src/utils.md"), "utf8")).rejects.toThrow();
+  });
+
+  it("leaves the failed unit out of the cache so the next run retries it", async () => {
+    await generateWith((unitId) => (unitId === "root:src/utils" ? CHAT_REPLY : document(unitId)));
+
+    const cache = await readCache(cachePath());
+    expect(cache.entries.map((entry) => entry.unitId)).toEqual(["root:src", "root:src/routes"]);
+
+    // Second run: the provider behaves, and only the failed unit is asked for.
+    const second = await generateWith(document);
+    expect(second.plan.filter((entry) => entry.regenerate).map((entry) => entry.unitId)).toEqual([
+      "root:src/utils",
+    ]);
+    expect(second.failures).toEqual([]);
+  });
+
+  it("is never retried, because the same prompt gives the same answer", async () => {
+    let calls = 0;
+    const provider = createFakeProvider({
+      respond: () => {
+        calls += 1;
+        return CHAT_REPLY;
+      },
+    });
+
+    await generate({
+      root,
+      adapters: builtinAdapters,
+      config: TREE_CONFIG,
+      provider,
+      outDir: docs,
+      cachePath: cachePath(),
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      retry: { sleep: async () => {} },
+    });
+
+    // Three units, one attempt each.
+    expect(calls).toBe(3);
+  });
+});
+
+describe("a preamble is trimmed rather than rejected", () => {
+  const PREAMBLE = "The working directory is empty, so this comes from the sources given.";
+
+  it("writes the document, reports a warning and keeps the unit cached", async () => {
+    const result = await generate({
+      root,
+      adapters: builtinAdapters,
+      config: TREE_CONFIG,
+      provider: createFakeProvider({
+        respond: (request) =>
+          request.metadata.unitId === "root:src/utils"
+            ? `${PREAMBLE}\n\n# Utils\n\n${OK_DOCUMENT}`
+            : OK_DOCUMENT,
+      }),
+      outDir: docs,
+      cachePath: path.join(root, ".glossic/cache.json"),
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      retry: { sleep: async () => {} },
+    });
+
+    expect(result.failures).toEqual([]);
+    expect(result.written).toContain("src/utils.md");
+    expect(result.warnings).toEqual([
+      {
+        unitId: "root:src/utils",
+        message: expect.stringContaining("before the first heading") as unknown as string,
+      },
+    ]);
+
+    const doc = await fs.readFile(path.join(docs, "src/utils.md"), "utf8");
+    expect(doc).not.toContain(PREAMBLE);
+
+    // The frontmatter title is the only h1 the page carries.
+    const body = doc.slice(doc.indexOf("---", 3) + 3);
+    expect(body.split("\n").filter((line) => /^#\s/.test(line))).toEqual(["# src/utils"]);
+    expect(body).toContain("## Utils");
+  });
+
+  it("reports no warning when nothing needed trimming", async () => {
+    const result = await generate({
+      root,
+      adapters: builtinAdapters,
+      config: TREE_CONFIG,
+      provider: createFakeProvider(),
+      outDir: docs,
+      cachePath: path.join(root, ".glossic/cache.json"),
+      generatedAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    expect(result.warnings).toEqual([]);
   });
 });

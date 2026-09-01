@@ -156,9 +156,14 @@ export const renderGenerateReport = (
     lines.push(`${result.written.length} files written to ${relativeOut}`);
   }
 
+  for (const warning of result.warnings) {
+    lines.push(`  trimmed: ${warning.unitId} — ${warning.message}`);
+  }
+
   for (const failure of result.failures) {
     const code = failure.code === undefined ? "" : ` [${failure.code}]`;
     lines.push(`  failed: ${failure.unitId}${code} — ${failure.reason}`);
+    if (failure.detail !== undefined) lines.push(`          ${failure.detail}`);
   }
 
   return `${lines.join("\n")}\n`;

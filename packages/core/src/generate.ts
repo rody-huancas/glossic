@@ -30,6 +30,7 @@ import type { RetryOptions } from "./retry.js";
 import { withRetry } from "./retry.js";
 import type { PipelineContext } from "./scan.js";
 import { scan } from "./scan.js";
+import { excerpt, prepareDocument } from "./validate.js";
 
 export interface GenerateContext extends PipelineContext {
   /** Absolute path of the docs directory. */
@@ -44,7 +45,23 @@ export interface GenerateContext extends PipelineContext {
   /** Absolute path of the cache file. Defaults to `<root>/.glossic/cache.json`. */
   cachePath?: string;
   retry?: RetryOptions;
+  /** Live progress. Left unset when the caller has nowhere to draw it. */
+  onEvent?: (event: GenerateEvent) => void;
 }
+
+/** What happened to one unit. */
+export type UnitOutcome = "generated" | "cached" | "failed";
+
+export type GenerateEvent =
+  | { type: "unit-start"; unitId: string; index: number; total: number }
+  | {
+      type: "unit-done";
+      unitId: string;
+      index: number;
+      total: number;
+      outcome: UnitOutcome;
+      durationMs: number;
+    };
 
 /** Why a unit is being regenerated, or why it is not. */
 export type GenerateReason =
@@ -67,10 +84,17 @@ export interface GeneratePlanEntry {
   regenerate: boolean;
 }
 
+export interface GenerateWarning {
+  unitId: string;
+  message: string;
+}
+
 export interface GenerateFailure {
   unitId: string;
   reason: string;
   code: string | undefined;
+  /** The offending snippet, when the provider gave one. */
+  detail: string | undefined;
 }
 
 export interface GenerateResult {
@@ -80,6 +104,8 @@ export interface GenerateResult {
   /** One entry per unit under consideration, sorted by unit id. */
   plan: GeneratePlanEntry[];
   failures: GenerateFailure[];
+  /** Things worth knowing that did not stop the run, sorted by unit id. */
+  warnings: GenerateWarning[];
   /** Unit ids left untouched because they did not match `only`. */
   filteredOut: string[];
   /** Input tokens the run spends, cached units excluded. */
@@ -189,10 +215,11 @@ const buildJobs = async (
   return jobs.filter((job): job is Job => job !== undefined);
 };
 
-const errorCode = (cause: unknown): string | undefined =>
-  typeof cause === "object" && cause !== null && "code" in cause
-    ? String((cause as { code: unknown }).code)
-    : undefined;
+const stringField = (cause: unknown, field: string): string | undefined => {
+  if (typeof cause !== "object" || cause === null || !(field in cause)) return undefined;
+  const value = (cause as Record<string, unknown>)[field];
+  return typeof value === "string" ? value : undefined;
+};
 
 /**
  * Scan, then ask the provider to describe every unit whose documentation is
@@ -266,6 +293,7 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
       written: [],
       plan,
       failures: [],
+      warnings: [],
       filteredOut,
       estimatedTokens,
       savedTokens,
@@ -277,20 +305,57 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
 
   const provider = ctx.provider;
   const failures: GenerateFailure[] = [];
+  const warnings: GenerateWarning[] = [];
   const summaries = new Map<string, string>();
   const pending = decisions.filter(({ reason }) => reason !== "cached");
 
+  const total = decisions.length;
+  let completed = 0;
+
+  const report = (event: GenerateEvent): void => ctx.onEvent?.(event);
+
+  const finished = (unitId: string, outcome: UnitOutcome, durationMs: number): void => {
+    completed += 1;
+    report({ type: "unit-done", unitId, index: completed, total, outcome, durationMs });
+  };
+
+  // Cached units never enter the pool, but they still belong in the count.
+  for (const { job } of decisions.filter(({ reason }) => reason === "cached")) {
+    report({ type: "unit-start", unitId: job.unit.id, index: completed + 1, total });
+    finished(job.unit.id, "cached", 0);
+  }
+
   const outcomes = await mapWithConcurrency(pending, config.concurrency, async ({ job }) => {
+    const startedAt = Date.now();
+    report({ type: "unit-start", unitId: job.unit.id, index: completed + 1, total });
+
     try {
       const completion = await withRetry(() => provider.complete(job.request), ctx.retry);
-      return { job, body: completion.text };
+
+      // A provider that is really an agent answers the operator instead of
+      // writing the document. Trim what can be trimmed, reject the rest:
+      // neither the disk nor the cache ever sees a chat reply.
+      const prepared = prepareDocument(provider.name, completion.text);
+
+      if (prepared.droppedPreamble !== undefined) {
+        warnings.push({
+          unitId: job.unit.id,
+          message: `dropped ${prepared.droppedPreamble.length} characters before the first heading: ${excerpt(prepared.droppedPreamble, 120)}`,
+        });
+      }
+
+      finished(job.unit.id, "generated", Date.now() - startedAt);
+      return { job, body: prepared.body };
     } catch (cause) {
       // One unit failing must not abort the run: record it and keep going.
       failures.push({
         unitId: job.unit.id,
         reason: cause instanceof Error ? cause.message : String(cause),
-        code: errorCode(cause),
+        code: stringField(cause, "code"),
+        detail: stringField(cause, "detail"),
       });
+
+      finished(job.unit.id, "failed", Date.now() - startedAt);
       return undefined;
     }
   });
@@ -350,6 +415,7 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     written: written.sort(compareStrings),
     plan,
     failures: failures.sort((a, b) => compareStrings(a.unitId, b.unitId)),
+    warnings: warnings.sort((a, b) => compareStrings(a.unitId, b.unitId)),
     filteredOut,
     estimatedTokens,
     savedTokens,
