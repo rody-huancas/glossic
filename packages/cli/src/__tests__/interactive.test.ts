@@ -9,7 +9,7 @@ import type { PromptPort } from "../ui/prompts.js";
 const CANCEL = Symbol("cancel");
 
 /** A prompt port that answers from a script instead of a terminal. */
-const scriptedPrompts = (answers: unknown[]) => {
+const scriptedPrompts = (answers: unknown[], cleared = false) => {
   const asked: string[] = [];
   let cursor            = 0;
 
@@ -36,7 +36,15 @@ const scriptedPrompts = (answers: unknown[]) => {
       return next(options.message);
     },
     text    : (options) => next(options.message),
+    password: (options) => next(options.message),
     confirm : (options) => next(options.message),
+    clear   : () => {
+      asked.push("clear");
+      return cleared;
+    },
+    pause: async (message) => {
+      asked.push(`pause:${message}`);
+    },
     isCancel: (value) => value === CANCEL,
   };
 
@@ -371,12 +379,15 @@ describe("the menu is a loop", () => {
     const runScan  = vi.fn().mockResolvedValue(scanResult(3));
     const runCheck = vi.fn().mockResolvedValue({ ok: true });
 
-    const script = scriptedPrompts(["scan", "check", "doctor", "exit"]);
+    const runConnection = vi.fn().mockResolvedValue({ ok: true, printed: false });
+
+    const script = scriptedPrompts(["scan", "check", "connection", "exit"]);
     const code = await runInteractive({
       prompts      : script.port,
       resolveConfig: fakeConfig(),
       runScan,
       runCheck,
+      runConnection,
     });
 
     expect(code).toBe(0);

@@ -1,7 +1,7 @@
 import { probeProviders, resolveWorkspace } from "@glossic/core";
 
 import { accent, dim } from "../ui/theme.js";
-import { languageLabel } from "./language.js";
+import { languageLabel } from "../language.js";
 import { builtinProviders } from "../registries.js";
 import type { Translator } from "../i18n/index.js";
 

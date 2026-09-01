@@ -1,3 +1,5 @@
+import process from "node:process";
+
 import * as clack from "@clack/prompts";
 
 export interface SelectOption<T> {
@@ -25,10 +27,15 @@ export interface PromptPort {
     placeholder ?: string | undefined;
     defaultValue?: string | undefined;
   }): Promise<string | symbol>;
+  password(options: { message: string }): Promise<string | symbol>;
   confirm(options: {
     message      : string;
     initialValue?: boolean | undefined;
   }): Promise<boolean | symbol>;
+  /** Wipes the screen and reports whether it could. False on a pipe or in CI. */
+  clear(): boolean;
+  /** Holds the output on screen until the reader is done with it. */
+  pause(message: string): Promise<void>;
   isCancel(value: unknown): boolean;
 }
 
@@ -38,6 +45,12 @@ export interface PromptPort {
  * library, so it is cast once here and never leaks past this adapter.
  */
 type ClackOptions = Parameters<typeof clack.select>[0];
+
+/**
+ * Erase the screen, erase the scrollback, park the cursor at the top. Wiping
+ * the scrollback too is the point: without it the old menus are one scroll away.
+ */
+const ERASE = "\u001b[2J\u001b[3J\u001b[H";
 
 /** The real implementation, backed by @clack/prompts and a terminal. */
 export const clackPrompts: PromptPort = {
@@ -59,6 +72,21 @@ export const clackPrompts: PromptPort = {
     initialValue?: T | undefined;
   }) => clack.select(options as unknown as ClackOptions) as Promise<T | symbol>,
   text    : (options) => clack.text(options as Parameters<typeof clack.text>[0]),
+  password: (options) => clack.password(options as Parameters<typeof clack.password>[0]),
   confirm : (options) => clack.confirm(options as Parameters<typeof clack.confirm>[0]),
+
+  clear: () => {
+    if (process.stdout.isTTY !== true) {
+      return false;
+    }
+
+    process.stdout.write(ERASE);
+    return true;
+  },
+
+  pause: async (message) => {
+    await clack.text({ message, placeholder: "" });
+  },
+
   isCancel: (value) => clack.isCancel(value as symbol),
 };

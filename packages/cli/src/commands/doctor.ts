@@ -9,6 +9,7 @@ import { Command } from "commander";
 import { resolveEffectiveConfig } from "../config.js";
 import type { Translator } from "../i18n/index.js";
 import { createTranslator, defaultTranslator } from "../i18n/index.js";
+import { languageLabel } from "../language.js";
 import { builtinAdapters, builtinProviders } from "../registries.js";
 
 export interface DoctorConfigEntry {
@@ -25,6 +26,7 @@ export interface DoctorReport {
   adapters  : string[];
   configFile: string | undefined;
   config    : DoctorConfigEntry[];
+  lang      : string;
   uiLang    : string;
   exitCode  : number;
 }
@@ -85,10 +87,52 @@ export const collectDoctorReport = async (options: DoctorOptions): Promise<Docto
     adapters  : options.adapters.map((adapter) => adapter.name),
     configFile: file,
     config    : configEntries(config as unknown as Record<string, unknown>, origins),
+    lang      : config.lang,
     uiLang    : config.uiLang,
     exitCode  : providers.some((entry) => entry.available) ? 0 : 1,
   };
 };
+
+/**
+ * The four lines someone opening the menu wants: what runs it, what would
+ * write the prose, what reads the code and in which language. The table of
+ * effective configuration belongs to `glossic doctor`, not to a menu.
+ */
+export const renderDoctorSummary = (report: DoctorReport, translator?: Translator): string => {
+  const t = translator ?? createTranslator(report.uiLang) ?? defaultTranslator;
+
+  const label = (key: Parameters<Translator>[0]): string =>
+    t(key).padEnd(
+      Math.max(
+        t("doctor.node").length,
+        t("doctor.provider").length,
+        t("doctor.adapters").length,
+        t("doctor.languages").length,
+      ),
+    );
+
+  const provider = report.selected ?? t("status.noProvider");
+  const langs    = t("doctor.languagesValue", {
+    docs     : languageLabel(t, report.lang),
+    interface: languageLabel(t, report.uiLang),
+  });
+
+  const lines = [
+    "",
+    `${label("doctor.node")}  ${report.node}`,
+    `${label("doctor.provider")}  ${provider}`,
+    `${label("doctor.adapters")}  ${report.adapters.join(", ")}`,
+    `${label("doctor.languages")}  ${langs}`,
+    "",
+  ];
+
+  if (report.selected === undefined) {
+    lines.push(t("doctor.noProvider"), "");
+  }
+
+  return lines.join("\n");
+};
+
 
 /**
  * The effective configuration is part of the report because debugging "why did

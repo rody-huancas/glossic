@@ -1,4 +1,5 @@
 import { resolveEffectiveConfig } from "./config.js";
+import type { MessageKey, Translator } from "./i18n/index.js";
 import type { PreferencesLocation } from "./preferences.js";
 
 export const DEFAULT_LANGUAGE = "en";
@@ -55,6 +56,14 @@ export const LANGUAGES: ReadonlyArray<{ code: string; name: string }> = [
 const NAMES: Readonly<Record<string, string>> = Object.fromEntries(
   LANGUAGES.map((entry) => [entry.code, entry.name]),
 );
+
+/** The language's own name, in the interface language, falling back to the code. */
+export const languageLabel = (t: Translator, code: string): string => {
+  const key  = `language.${code}` as MessageKey;
+  const name = t(key);
+
+  return name === key ? code : name;
+};
 
 /** Human name of a language code, for the status line and the prompts. */
 export const languageName = (code: string): string => NAMES[code] ?? code;

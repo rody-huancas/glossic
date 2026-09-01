@@ -7,6 +7,7 @@ import { Command } from "commander";
 
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
 import { createTranslator } from "../i18n/index.js";
+import { readPreferences } from "../preferences.js";
 import { builtinAdapters, createProviders } from "../registries.js";
 import { renderGenerateReport } from "../render/index.js";
 import { shouldDecorate } from "../ui/banner.js";
@@ -75,10 +76,14 @@ export const runGenerate = async (target: string, options: GenerateCliOptions, d
 
   const t        = createTranslator(config.uiLang);
   const dryRun   = options.dryRun === true;
+  const saved = await readPreferences();
+
   const provider = dryRun
     ? undefined
     : await resolveProvider({
-        providers: (deps.createProviders ?? createProviders)(config),
+        providers: (deps.createProviders ?? createProviders)(config, {
+          ...(saved.anthropicApiKey === undefined ? {} : { anthropicApiKey: saved.anthropicApiKey }),
+        }),
         config,
       });
 

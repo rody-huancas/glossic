@@ -55,7 +55,10 @@ const scripted = (answers: unknown[]): PromptPort => {
     cancel  : () => {},
     select  : next,
     text    : next,
+    password: next,
     confirm : next,
+    clear   : () => false,
+    pause   : async () => {},
     isCancel: () => false,
   };
 };
