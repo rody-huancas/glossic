@@ -42,8 +42,10 @@ export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<Ef
 
   const system = detectLanguage();
 
+  const { anthropicApiKey: _secret, ...shareable } = preferences;
+
   const preference: GlossicUserConfig = {
-    ...preferences,
+    ...shareable,
     lang  : preferences.lang ?? system,
     uiLang: preferences.uiLang ?? (hasCatalogue(system) ? (system as "en" | "es") : "en"),
   };

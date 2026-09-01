@@ -13,16 +13,29 @@ import type { GlossicConfig, Provider } from "@glossic/schema";
  */
 export const builtinAdapters = [nestjsAdapter, treesitterAdapter, genericAdapter];
 
+/** A secret is not an option, so it travels beside the config and never inside it. */
+export interface ProviderSecrets {
+  anthropicApiKey?: string | undefined;
+}
+
 /**
  * Every provider shipped with the CLI, built against the resolved config so
- * that `model` and `timeoutMs` are not options the config only pretends to have.
+ * that `model` and `timeoutMs` are not options the config only pretends to
+ * have. A saved API key is handed over the same way, so the Anthropic provider
+ * works without the environment variable being set.
  */
-export const createProviders = (config?: Pick<GlossicConfig, "model" | "timeoutMs">): Provider[] => [
+export const createProviders = (
+  config ?: Pick<GlossicConfig, "model" | "timeoutMs">,
+  secrets?: ProviderSecrets,
+): Provider[] => [
   createClaudeCodeProvider({
     ...(config?.model === undefined ? {} : { model: config.model }),
     ...(config?.timeoutMs === undefined ? {} : { timeoutMs: config.timeoutMs }),
   }),
-  createAnthropicProvider(config?.model === undefined ? {} : { model: config.model }),
+  createAnthropicProvider({
+    ...(config?.model === undefined ? {} : { model: config.model }),
+    ...(secrets?.anthropicApiKey === undefined ? {} : { apiKey: secrets.anthropicApiKey }),
+  }),
 ];
 
 /** The default-config instances, for callers with nothing resolved yet. */
