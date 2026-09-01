@@ -64,8 +64,8 @@ describe("renderUnitDoc", () => {
       files: 1,
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
-    expect(body).toContain("# src/users/dto");
-    expect(body).toContain("Carries request payloads.");
+    expect(body.trim().startsWith("## What it does")).toBe(true);
+    expect(body).not.toContain("# src/users/dto");
   });
 
   it("omits role when the unit has no hint", () => {

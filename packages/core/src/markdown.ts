@@ -2,17 +2,12 @@ import type { Manifest, Project, Unit } from "@glossic/schema";
 
 import { compareStrings } from "./order.js";
 
-/** Doc path of a unit, relative to the docs root. Mirrors the source tree. */
-export const unitDocPath = (unit: Unit): string =>
-  unit.path === "." ? "root.md" : `${unit.path}.md`;
+export const unitDocPath = (unit: Unit): string => {
+  return unit.path === "." ? "root.md" : `${unit.path}.md`;
+}
 
-/** Name of the generated index, relative to the docs root. */
 export const INDEX_DOC_PATH = "index.md";
 
-/**
- * Frontmatter values are emitted as JSON scalars, which are valid YAML
- * double-quoted strings and need no separate escaping pass.
- */
 const frontmatter = (entries: ReadonlyArray<readonly [string, string | number]>): string =>
   [
     "---",
@@ -23,17 +18,13 @@ const frontmatter = (entries: ReadonlyArray<readonly [string, string | number]>)
   ].join("\n");
 
 export interface RenderUnitDocInput {
-  unit: Unit;
-  project: Project;
-  /** Markdown produced by the provider, starting at heading level 2. */
-  body: string;
+  unit       : Unit;
+  project    : Project;
+  body       : string;
   generatedAt: string;
 }
 
-/**
- * Renders one unit document: Starlight/Docusaurus-compatible frontmatter plus
- * the model's prose. Nothing here is model-generated except `body`.
- */
+
 export const renderUnitDoc = (input: RenderUnitDocInput): string => {
   const { unit } = input;
   const title = unit.name === "root" ? input.project.name : unit.name;
@@ -52,16 +43,17 @@ export const renderUnitDoc = (input: RenderUnitDocInput): string => {
     entries.splice(4, 0, ["role", unit.facts.base.roleHint]);
   }
 
-  return [frontmatter(entries), "", `# ${title}`, "", input.body.trim(), ""].join("\n");
+  return [frontmatter(entries), "", input.body.trim(), ""].join("\n");
 };
 
 export interface RenderIndexDocInput {
-  manifest: Manifest;
+  manifest   : Manifest;
   generatedAt: string;
 }
 
 const languageSummary = (units: readonly Unit[]): string => {
   const totals = new Map<string, number>();
+
   for (const unit of units) {
     for (const entry of unit.facts.base.languages) {
       totals.set(entry.language, (totals.get(entry.language) ?? 0) + entry.count);
@@ -74,7 +66,7 @@ const languageSummary = (units: readonly Unit[]): string => {
     .join(", ");
 };
 
-/** Renders the root index: one linked entry per unit, grouped by project. */
+
 export const renderIndexDoc = (input: RenderIndexDocInput): string => {
   const { manifest } = input;
   const { workspace, units } = manifest;
@@ -96,6 +88,7 @@ export const renderIndexDoc = (input: RenderIndexDocInput): string => {
 
   for (const project of workspace.projects) {
     const projectUnits = units.filter((unit) => unit.projectId === project.id);
+
     lines.push(`## ${project.name}`, "");
 
     if (projectUnits.length === 0) {
@@ -104,8 +97,9 @@ export const renderIndexDoc = (input: RenderIndexDocInput): string => {
     }
 
     for (const unit of projectUnits) {
-      const role = unit.facts.base.roleHint;
+      const role   = unit.facts.base.roleHint;
       const suffix = role === null ? "" : ` — ${role}`;
+
       lines.push(
         `- [${unit.name}](./${unitDocPath(unit)}) — ${unit.facts.base.files.length} files${suffix}`,
       );
@@ -114,7 +108,10 @@ export const renderIndexDoc = (input: RenderIndexDocInput): string => {
   }
 
   const languages = languageSummary(units);
-  if (languages !== "") lines.push(`Languages: ${languages}`, "");
+
+  if (languages !== "") {
+    lines.push(`Languages: ${languages}`, "");
+  }
 
   return lines.join("\n");
 };

@@ -186,8 +186,10 @@ describe("normalizeDocument", () => {
   });
 });
 
-describe("a single h1 per document", () => {
-  it("demotes a leading h1 and everything under it", () => {
+describe("heading levels", () => {
+  // Nothing is injected above the body any more, so the model's own h1 is
+  // the document's only title and there is nothing left to demote.
+  it("leaves a leading h1 and everything under it alone", () => {
     const raw = [
       "# Users Module",
       "",
@@ -200,12 +202,7 @@ describe("a single h1 per document", () => {
       "Text.",
     ].join("\n");
 
-    const { body } = normalizeDocument("claude-code", raw);
-
-    expect(body.split("\n").filter((line) => /^#\s/.test(line))).toEqual([]);
-    expect(body).toContain("## Users Module");
-    expect(body).toContain("### Overview");
-    expect(body).toContain("#### Routes");
+    expect(normalizeDocument("claude-code", raw).body).toBe(raw);
   });
 
   it("leaves a document that already starts at h2 alone", () => {
@@ -213,20 +210,15 @@ describe("a single h1 per document", () => {
     expect(normalizeDocument("claude-code", raw).body).toBe(raw);
   });
 
-  it("clamps at h6 rather than inventing a level", () => {
-    const raw = ["# Top", "", "###### Deep", "", "Text."].join("\n");
-    const { body } = normalizeDocument("claude-code", raw);
-
-    expect(body).toContain("## Top");
-    expect(body).toContain("###### Deep");
+  it("leaves a fenced block untouched", () => {
+    const raw = ["# Top", "", "```bash", "# a shell comment", "```"].join("\n");
+    expect(normalizeDocument("claude-code", raw).body).toBe(raw);
   });
 
-  it("does not touch a hash inside a fenced block", () => {
-    const raw = ["# Top", "", "```bash", "# a shell comment", "```"].join("\n");
-    const { body } = normalizeDocument("claude-code", raw);
+  it("does not accept a hash inside a fence as the heading", () => {
+    const raw = ["```bash", "# a shell comment", "```"].join("\n");
 
-    expect(body).toContain("## Top");
-    expect(body).toContain("# a shell comment");
+    expect(() => normalizeDocument("claude-code", raw)).toThrowError(/no markdown heading/);
   });
 });
 
@@ -243,12 +235,12 @@ describe("prepareDocument", () => {
     "- `UsersService` owns the data access.",
   ].join("\n");
 
-  it("trims, demotes and validates in one pass", () => {
+  it("trims the preamble and validates in one pass", () => {
     const raw = `The repo is not checked out here, so this comes from the sources.\n\n${DOCUMENT}`;
     const prepared = prepareDocument("claude-code", raw);
 
     expect(prepared.droppedPreamble).toContain("not checked out");
-    expect(prepared.body.startsWith("## Users Module")).toBe(true);
+    expect(prepared.body.startsWith("# Users Module")).toBe(true);
     expect(prepared.body).not.toContain("not checked out");
   });
 

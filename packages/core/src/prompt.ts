@@ -2,41 +2,31 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { CompletionRequest, Project, Unit } from "@glossic/schema";
-
 import { compareStrings } from "./order.js";
 
-/** Files larger than this are truncated so one big file cannot eat the window. */
 export const MAX_FILE_BYTES = 24_000;
 
-/** Rough chars-per-token ratio, only used by `--dry-run` estimates. */
 const CHARS_PER_TOKEN = 4;
 
 export interface UnitSource {
-  /** Posix path relative to the workspace root. */
-  path: string;
-  language: string;
-  content: string;
+  path     : string;
+  language : string;
+  content  : string;
   truncated: boolean;
 }
 
 export interface BuildPromptInput {
-  unit: Unit;
-  project: Project;
-  workspaceName: string;
-  sources: readonly UnitSource[];
-  /** ISO 639-1 code the documentation must be written in. */
-  lang: string;
-  /** Passed straight through to the provider when the config pins one. */
-  model?: string | undefined;
-  temperature?: number | undefined;
+  unit          : Unit;
+  project       : Project;
+  workspaceName : string;
+  sources       : readonly UnitSource[];
+  lang          : string;
+  model        ?: string | undefined;
+  temperature  ?: number | undefined;
 }
 
-/**
- * Bumped by hand whenever SYSTEM_PROMPT changes. Any change invalidates every
- * cache entry, which is what keeps generated docs aligned with the prompt that
- * produced them.
- */
-export const PROMPT_VERSION = "2";
+
+export const PROMPT_VERSION = "3";
 
 export const SYSTEM_PROMPT = [
   "You are a technical writer documenting a codebase for the engineers who work on it.",
@@ -60,8 +50,9 @@ export const SYSTEM_PROMPT = [
   "  - Do not restate the file listing; the reader already has it.",
   "  - No preamble, no closing summary, no offer to help.",
   "",
-  "Output GitHub-flavoured Markdown starting at heading level 2 (##).",
-  "Do not emit a top-level (#) heading and do not emit frontmatter.",
+  "Output GitHub-flavoured Markdown. Open with a single top-level (#) heading",
+  "that titles the unit for a reader, then use ## for the sections above.",
+  "Do not emit frontmatter: it is added around your response.",
   "",
   "Your entire response is the content of the document and nothing else.",
   "Begin with the first heading of that document. Do not open with a preamble,",
@@ -102,8 +93,6 @@ const factLines = (unit: Unit): string[] => {
     lines.push(`- folder role hint: ${unit.facts.base.roleHint}`);
   }
 
-  // Named, never quoted: the reader gets to know the unit is covered without
-  // the prompt paying for the test code.
   if (unit.facts.base.testFiles.length > 0) {
     const names = unit.facts.base.testFiles
       .map((file) => file.path.slice(file.path.lastIndexOf("/") + 1))
@@ -128,7 +117,7 @@ const factLines = (unit: Unit): string[] => {
   return lines;
 };
 
-/** Builds the completion request for one unit. Pure: sources are read upfront. */
+
 export const buildUnitPrompt = (input: BuildPromptInput): CompletionRequest => {
   const prompt = [
     `Workspace: ${input.workspaceName}`,
@@ -153,16 +142,17 @@ export const buildUnitPrompt = (input: BuildPromptInput): CompletionRequest => {
   };
 };
 
-/** Reads every source file of a unit, in manifest order. */
+
 export const readUnitSources = async (root: string, unit: Unit): Promise<UnitSource[]> => {
   const sources = await Promise.all(
     unit.facts.base.files.map(async (file): Promise<UnitSource> => {
-      const raw = await fs.readFile(path.resolve(root, file.path), "utf8");
+      const raw       = await fs.readFile(path.resolve(root, file.path), "utf8");
       const truncated = raw.length > MAX_FILE_BYTES;
+
       return {
-        path: file.path,
+        path    : file.path,
         language: file.language,
-        content: truncated ? raw.slice(0, MAX_FILE_BYTES) : raw,
+        content : truncated ? raw.slice(0, MAX_FILE_BYTES): raw,
         truncated,
       };
     }),
@@ -171,9 +161,7 @@ export const readUnitSources = async (root: string, unit: Unit): Promise<UnitSou
   return sources;
 };
 
-/**
- * Cheap token estimate for `--dry-run`. Deliberately approximate: it exists to
- * give an order of magnitude before spending money, not to bill anyone.
- */
-export const estimateTokens = (request: CompletionRequest): number =>
-  Math.ceil(((request.system?.length ?? 0) + request.prompt.length) / CHARS_PER_TOKEN);
+
+export const estimateTokens = (request: CompletionRequest): number => {
+  return Math.ceil(((request.system?.length ?? 0) + request.prompt.length) / CHARS_PER_TOKEN);
+}

@@ -404,10 +404,10 @@ describe("a preamble is trimmed rather than rejected", () => {
     const doc = await fs.readFile(path.join(docs, "src/utils.md"), "utf8");
     expect(doc).not.toContain(PREAMBLE);
 
-    // The frontmatter title is the only h1 the page carries.
+    // The h1 the model wrote is the only one: nothing is injected above it.
     const body = doc.slice(doc.indexOf("---", 3) + 3);
-    expect(body.split("\n").filter((line) => /^#\s/.test(line))).toEqual(["# src/utils"]);
-    expect(body).toContain("## Utils");
+    expect(body.split("\n").filter((line) => /^#\s/.test(line))).toEqual(["# Utils"]);
+    expect(body).not.toContain("# src/utils");
   });
 
   it("reports no warning when nothing needed trimming", async () => {

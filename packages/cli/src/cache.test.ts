@@ -99,7 +99,7 @@ describe("incremental cache", () => {
       "root:src/utils",
     ]);
     expect(cache.entries[0]).toMatchObject({
-      promptVersion: "2",
+      promptVersion: "3",
       model: "default",
       lang: "en",
       outputPath: "src.md",
