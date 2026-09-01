@@ -8,7 +8,7 @@ describe("@glossic/schema", () => {
 
     // No provider means "auto-detect": claude-code first, then anthropic.
     expect(config.provider).toBeUndefined();
-    expect(config.output.format).toBe("markdown");
+    expect(config.timeoutMs).toBe(300_000);
     expect(config.output.manifest).toBe(".glossic/manifest.json");
     expect(config.lang).toBe("en");
     // Unset on purpose: recent Claude models reject sampling parameters.

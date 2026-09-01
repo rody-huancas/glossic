@@ -200,6 +200,8 @@ const buildJobs = async (
         workspaceName: manifest.workspace.name,
         sources: await readUnitSources(root, unit),
         lang: config.lang,
+        model: config.model,
+        temperature: config.temperature,
       });
 
       return {

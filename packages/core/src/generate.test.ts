@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext } from "@glossic/schema";
-import { ProviderError } from "@glossic/schema";
+import { GlossicConfigSchema, ProviderError } from "@glossic/schema";
 import { afterAll, describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
@@ -88,10 +88,14 @@ const fakeAdapter: Adapter = {
   }),
 };
 
+/** The adapter has to be named in the config, or it is never tried. */
+const FAKE_CONFIG = GlossicConfigSchema.parse({ adapters: ["fake"] });
+
 const run = async (overrides: Partial<Parameters<typeof generate>[0]> = {}) =>
   generate({
     root: exampleDir("nestjs-api"),
     adapters: [fakeAdapter],
+    config: FAKE_CONFIG,
     outDir: await outDir(),
     // Never the fixture's own .glossic: tests must not leave state in the repo.
     cachePath: path.join(await outDir(), "cache.json"),
@@ -180,7 +184,7 @@ describe("generate", () => {
     await run({
       provider,
       outDir: await outDir(),
-      config: { ...(await import("@glossic/schema")).GlossicConfigSchema.parse({ lang: "es" }) },
+      config: GlossicConfigSchema.parse({ adapters: ["fake"], lang: "es" }),
     });
 
     expect(provider.calls[0]?.prompt).toContain("Write the documentation in es.");

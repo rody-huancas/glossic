@@ -26,6 +26,9 @@ export interface BuildPromptInput {
   sources: readonly UnitSource[];
   /** ISO 639-1 code the documentation must be written in. */
   lang: string;
+  /** Passed straight through to the provider when the config pins one. */
+  model?: string | undefined;
+  temperature?: number | undefined;
 }
 
 /**
@@ -144,6 +147,8 @@ export const buildUnitPrompt = (input: BuildPromptInput): CompletionRequest => {
   return {
     system: SYSTEM_PROMPT,
     prompt,
+    ...(input.model === undefined ? {} : { model: input.model }),
+    ...(input.temperature === undefined ? {} : { temperature: input.temperature }),
     metadata: { unitId: input.unit.id, projectId: input.unit.projectId },
   };
 };

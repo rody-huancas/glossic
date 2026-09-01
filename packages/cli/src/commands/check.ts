@@ -3,9 +3,9 @@ import process from "node:process";
 
 import type { CheckResult } from "@glossic/core";
 import { check } from "@glossic/core";
-import { GlossicConfigSchema } from "@glossic/schema";
 import { Command } from "commander";
 
+import { resolveEffectiveConfig } from "../config.js";
 import { builtinAdapters } from "../registries.js";
 import { renderCheckReport } from "../render.js";
 
@@ -17,7 +17,7 @@ export interface CheckCliOptions {
 export const runCheck = async (target: string, options: CheckCliOptions): Promise<CheckResult> => {
   const cwd = process.cwd();
   const root = path.resolve(cwd, target);
-  const config = GlossicConfigSchema.parse({});
+  const { config } = await resolveEffectiveConfig({ root });
 
   const outDir =
     options.out === undefined

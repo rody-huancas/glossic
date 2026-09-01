@@ -67,12 +67,20 @@ const countLanguages = (files: readonly FileFact[]): LanguageCount[] => {
     .sort((a, b) => b.count - a.count || compareStrings(a.language, b.language));
 };
 
+/** Which list of the unit a file belongs to. Part of the hash, see below. */
+type Bucket = "doc" | "test" | "ignored";
+
 interface ReadFile {
   fact: FileFact;
   digest: string;
+  bucket: Bucket;
 }
 
-const readFile = async (root: string, relativePath: string): Promise<ReadFile | undefined> => {
+const readFile = async (
+  root: string,
+  relativePath: string,
+  bucket: Bucket,
+): Promise<ReadFile | undefined> => {
   const language = inferLanguage(relativePath);
   if (language === undefined) return undefined;
 
@@ -80,17 +88,23 @@ const readFile = async (root: string, relativePath: string): Promise<ReadFile | 
   return {
     fact: { path: relativePath, language, bytes: content.byteLength },
     digest: sha256(content),
+    bucket,
   };
 };
 
 /**
- * Stable digest of a unit: the sorted (path, content digest) pairs of every
- * file it owns, tests included. A changed test means stale documentation even
- * though the test itself is never sent to the provider.
+ * Stable digest of a unit: the sorted (bucket, path, content digest) triples
+ * of every file it owns.
+ *
+ * The bucket is in there on purpose. A changed test means stale documentation
+ * even though the test is never sent to the provider — and moving a file
+ * between buckets, which is what editing `ignoreUnits` or `excludeFromContent`
+ * does, changes what the provider is shown while leaving every path and digest
+ * untouched. Without the bucket the hash would call that unchanged.
  */
 const hashUnit = (entries: readonly ReadFile[]): string => {
   const lines = entries
-    .map((entry) => `${entry.fact.path}\n${entry.digest}\n`)
+    .map((entry) => `${entry.bucket}\n${entry.fact.path}\n${entry.digest}\n`)
     .sort(compareStrings);
   return sha256(lines.join(""));
 };
@@ -134,9 +148,9 @@ export const genericAdapter: Adapter = {
     const projectRoot = path.resolve(ctx.root, projectDir);
 
     const entries = await glob({
-      patterns: ["**/*"],
+      patterns: [...ctx.config.include],
       cwd: projectRoot,
-      ignore: [...HARD_IGNORES],
+      ignore: [...HARD_IGNORES, ...ctx.config.exclude],
       onlyFiles: true,
       followSymbolicLinks: false,
       dot: true,
@@ -161,9 +175,9 @@ export const genericAdapter: Adapter = {
 
     for (const discovered of ctx.units) {
       const [documented, tested, ignored] = await Promise.all([
-        Promise.all(discovered.files.map((file) => readFile(ctx.root, file))),
-        Promise.all(discovered.testFiles.map((file) => readFile(ctx.root, file))),
-        Promise.all(discovered.ignoredFiles.map((file) => readFile(ctx.root, file))),
+        Promise.all(discovered.files.map((file) => readFile(ctx.root, file, "doc"))),
+        Promise.all(discovered.testFiles.map((file) => readFile(ctx.root, file, "test"))),
+        Promise.all(discovered.ignoredFiles.map((file) => readFile(ctx.root, file, "ignored"))),
       ]);
 
       const present = (entries: ReadonlyArray<ReadFile | undefined>): ReadFile[] =>

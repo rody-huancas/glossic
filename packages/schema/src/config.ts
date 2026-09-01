@@ -1,20 +1,23 @@
 import { z } from "zod";
 
-export const OutputFormatSchema = z.enum(["markdown", "json"]);
-export type OutputFormat = z.infer<typeof OutputFormatSchema>;
-
 export const OutputConfigSchema = z.object({
+  /** Where `generate` writes, relative to the workspace root. */
   dir: z.string().default("docs"),
+  /** Where `scan` writes, relative to the workspace root. */
   manifest: z.string().default(".glossic/manifest.json"),
-  format: OutputFormatSchema.default("markdown"),
 });
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 
 export const GlossicConfigSchema = z.object({
+  /** Globs an adapter walks, relative to each project root. */
   include: z.array(z.string()).default(["**/*"]),
+  /** Globs never walked into, on top of the adapter's own hard ignores. */
   exclude: z.array(z.string()).default(["**/node_modules/**", "**/dist/**", "**/vendor/**"]),
-  /** Adapter ids, resolved in order; the first match wins. */
-  adapters: z.array(z.string()).default(["generic"]),
+  /**
+   * Adapter ids in priority order; the first whose `detect` passes wins.
+   * An adapter left off this list is never tried.
+   */
+  adapters: z.array(z.string()).default(["nestjs", "treesitter", "generic"]),
 
   /**
    * Files with no documentable content. A unit whose files all match is
@@ -76,12 +79,16 @@ export const GlossicConfigSchema = z.object({
    * with a 400, so each provider decides whether to forward it.
    */
   temperature: z.number().min(0).max(2).optional(),
-  output: OutputConfigSchema.default({
-    dir: "docs",
-    manifest: ".glossic/manifest.json",
-    format: "markdown",
-  }),
+  output: OutputConfigSchema.default({ dir: "docs", manifest: ".glossic/manifest.json" }),
+
+  /** Completions in flight at once. */
   concurrency: z.number().int().positive().default(3),
+
+  /**
+   * Milliseconds before a single completion is abandoned. The claude-code CLI
+   * boots a whole agent before answering, which is why the default is generous.
+   */
+  timeoutMs: z.number().int().positive().default(300_000),
 });
 
 /** Fully resolved config (defaults applied). */

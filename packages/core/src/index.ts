@@ -6,6 +6,7 @@ export const CORE_VERSION: string = manifest.version;
 export * from "./cache.js";
 export * from "./check.js";
 export * from "./config-file.js";
+export * from "./config-resolve.js";
 export * from "./errors.js";
 export * from "./generate.js";
 export * from "./manifest.js";
