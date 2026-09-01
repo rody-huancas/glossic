@@ -6,11 +6,9 @@ import { GlossicConfigSchema } from "@glossic/schema";
 import type { CompletionRequest, GlossicConfig, Manifest, Project, Provider, Unit } from "@glossic/schema";
 
 import { scan } from "./scan.js";
-import { toPosix } from "./paths.js";
 import { withRetry } from "./retry.js";
-import { pathExists } from "./fs-utils.js";
-import { compareStrings } from "./order.js";
 import { excerpt, prepareDocument } from "./validate.js";
+import { compareStrings, pathExists, toPosix } from "./utils/index.js";
 import { INDEX_DOC_PATH, renderIndexDoc, renderUnitDoc, unitDocPath } from "./markdown.js";
 import { buildUnitPrompt, estimateTokens, PROMPT_VERSION, readUnitSources } from "./prompt.js";
 import type { RetryOptions } from "./retry.js";

@@ -1,7 +1,7 @@
 import type { GlossicConfig, Provider } from "@glossic/schema";
 
 import { NoProviderAvailableError, UnknownProviderError } from "./errors.js";
-import { compareStrings } from "./order.js";
+import { compareStrings } from "./utils/index.js";
 
 
 export const PROVIDER_PREFERENCE = ["claude-code", "anthropic"];

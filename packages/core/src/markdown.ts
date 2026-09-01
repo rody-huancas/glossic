@@ -1,6 +1,6 @@
 import type { Manifest, Project, Unit } from "@glossic/schema";
 
-import { compareStrings } from "./order.js";
+import { compareStrings } from "./utils/index.js";
 
 export const unitDocPath = (unit: Unit): string => {
   return unit.path === "." ? "root.md" : `${unit.path}.md`;

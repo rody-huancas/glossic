@@ -3,9 +3,7 @@ import type { Project, Workspace, WorkspaceTool } from "@glossic/schema";
 import { glob } from "tinyglobby";
 import { parse as parseYaml } from "yaml";
 
-import { sortBy } from "./order.js";
-import { toPosix } from "./paths.js";
-import { pathExists, readJson, readText } from "./fs-utils.js";
+import { pathExists, readJson, readText, sortBy, toPosix } from "./utils/index.js";
 
 interface PackageJson {
   name          ?: string;

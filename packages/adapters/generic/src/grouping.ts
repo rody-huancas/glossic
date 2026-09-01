@@ -1,4 +1,5 @@
 import picomatch from "picomatch";
+import { compareStrings } from "@glossic/schema";
 
 export const SPLIT_SEPARATOR = "~~";
 
@@ -26,13 +27,6 @@ export interface GroupingOptions {
   minUnitFiles      : number;
   maxUnitFiles      : number;
 }
-
-const compareStrings = (a: string, b: string): number => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-
-  return 0;
-};
 
 const basename = (filePath: string): string => filePath.slice(filePath.lastIndexOf("/") + 1);
 

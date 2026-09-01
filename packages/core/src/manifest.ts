@@ -4,7 +4,7 @@ import path from "node:path";
 import type { ExtractResult, Manifest, Relation, Unit, Workspace } from "@glossic/schema";
 import { MANIFEST_VERSION, ManifestSchema } from "@glossic/schema";
 
-import { compareStrings, sortBy } from "./order.js";
+import { compareStrings, sortBy } from "./utils/index.js";
 
 export const DEFAULT_MANIFEST_PATH = ".glossic/manifest.json";
 

@@ -4,8 +4,7 @@ import { createJiti } from "jiti";
 import { GlossicConfigSchema } from "@glossic/schema";
 import type { GlossicUserConfig } from "@glossic/schema";
 
-import { toPosix } from "./paths.js";
-import { pathExists } from "./fs-utils.js";
+import { pathExists, toPosix } from "./utils/index.js";
 
 export const CONFIG_FILENAMES = [
   "glossic.config.ts",

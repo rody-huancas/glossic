@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { sortBy } from "./order.js";
+import { sortBy } from "./utils/index.js";
 
 export const DEFAULT_CACHE_PATH = ".glossic/cache.json";
 export const CACHE_VERSION      = "1";

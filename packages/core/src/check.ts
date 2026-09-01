@@ -6,9 +6,8 @@ import { glob } from "tinyglobby";
 import { parse as parseYaml } from "yaml";
 
 import { scan } from "./scan.js";
-import { toPosix } from "./paths.js";
-import { compareStrings, sortBy } from "./order.js";
 import { INDEX_DOC_PATH, unitDocPath } from "./markdown.js";
+import { compareStrings, sortBy, toPosix } from "./utils/index.js";
 import type { PipelineContext } from "./scan.js";
 
 export interface CheckContext extends PipelineContext {

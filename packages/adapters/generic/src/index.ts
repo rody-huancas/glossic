@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { glob } from "tinyglobby";
+import { compareStrings, joinPosix, toPosix } from "@glossic/schema";
 import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext, ExtractResult, FileFact, LanguageCount, Unit } from "@glossic/schema";
+
 import { inferRoleHint } from "./roles.js";
 import { inferLanguage } from "./languages.js";
 import { SPLIT_SEPARATOR, shapeUnits, unitName } from "./grouping.js";
@@ -22,23 +24,6 @@ export const HARD_IGNORES: readonly string[] = [
   "**/target/**",
   "**/vendor/**",
 ];
-
-const toPosix = (value: string): string => value.split(path.sep).join("/");
-
-const compareStrings = (a: string, b: string): number => {
-  if (a < b) return -1;
-  if (a > b) return 1;
-
-  return 0;
-};
-
-const joinPosix = (base: string, segment: string): string => {
-  if (base === "." || base === "") {
-    return segment;
-  }
-
-  return `${base}/${segment}`;
-};
 
 const sha256 = (value: Buffer | string): string => {
   return createHash("sha256").update(value).digest("hex");

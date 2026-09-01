@@ -4,4 +4,6 @@ export * from "./errors.js";
 export * from "./manifest.js";
 export * from "./provider.js";
 export * from "./unit.js";
+export * from "./utils/paths.js";
+export * from "./utils/strings.js";
 export * from "./workspace.js";
