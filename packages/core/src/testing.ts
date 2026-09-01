@@ -1,5 +1,6 @@
 import type { CompletionRequest, CompletionResult, Provider } from "@glossic/schema";
 
+/** A provider that records what it was asked, for assertions. */
 export interface FakeProvider extends Provider {
   readonly calls: CompletionRequest[];
 }
@@ -32,6 +33,7 @@ const defaultDocument = (request: CompletionRequest, index: number): string =>
   ].join("\n");
 
 
+/** A provider that answers from memory, so a test can drive the pipeline end to end. */
 export const createFakeProvider = (options: FakeProviderOptions = {}): FakeProvider => {
   const calls: CompletionRequest[] = [];
 

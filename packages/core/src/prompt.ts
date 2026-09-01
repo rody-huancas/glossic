@@ -4,6 +4,7 @@ import path from "node:path";
 import type { CompletionRequest, Project, Unit } from "@glossic/schema";
 import { compareStrings } from "./utils/index.js";
 
+/** A file longer than this is truncated before it goes into a prompt. */
 export const MAX_FILE_BYTES = 24_000;
 
 const CHARS_PER_TOKEN = 4;
@@ -26,8 +27,10 @@ export interface BuildPromptInput {
 }
 
 
+/** Bumped by hand when the prompt changes, which invalidates every cached unit. */
 export const PROMPT_VERSION = "3";
 
+/** The rules the model is held to; assertDocumentContent checks the answer against them. */
 export const SYSTEM_PROMPT = [
   "You are a technical writer documenting a codebase for the engineers who work on it.",
   "",
@@ -118,6 +121,7 @@ const factLines = (unit: Unit): string[] => {
 };
 
 
+/** Turns a unit and its sources into the one request a provider will answer. */
 export const buildUnitPrompt = (input: BuildPromptInput): CompletionRequest => {
   const prompt = [
     `Workspace: ${input.workspaceName}`,
@@ -143,6 +147,7 @@ export const buildUnitPrompt = (input: BuildPromptInput): CompletionRequest => {
 };
 
 
+/** Reads a unit's documentable files, truncating any that run too long. */
 export const readUnitSources = async (root: string, unit: Unit): Promise<UnitSource[]> => {
   const sources = await Promise.all(
     unit.facts.base.files.map(async (file): Promise<UnitSource> => {
@@ -162,6 +167,7 @@ export const readUnitSources = async (root: string, unit: Unit): Promise<UnitSou
 };
 
 
+/** Rough token count, for the estimate a dry run prints before anything is spent. */
 export const estimateTokens = (request: CompletionRequest): number => {
   return Math.ceil(((request.system?.length ?? 0) + request.prompt.length) / CHARS_PER_TOKEN);
 }

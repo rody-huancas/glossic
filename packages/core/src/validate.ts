@@ -1,6 +1,8 @@
 import { ProviderError } from "@glossic/schema";
 
+/** Under this many characters the answer reads as a refusal, not as a document. */
 export const MIN_DOCUMENT_LENGTH = 200;
+/** Over this, what precedes the first heading is an answer rather than a preamble. */
 export const MAX_PREAMBLE_LENGTH = 500;
 
 interface ContentRule {
@@ -8,6 +10,7 @@ interface ContentRule {
   pattern: RegExp;
 }
 
+/** Shapes that mean the model addressed the reader instead of writing the document. */
 const CONVERSATIONAL_RULES: readonly ContentRule[] = [
   {
     reason : "the model asked for permission instead of writing the document",
@@ -45,6 +48,7 @@ interface SourceLine {
   fenced: boolean;
 }
 
+/** Lines tagged with whether they sit inside a fenced code block. */
 const scanLines = (text: string): SourceLine[] => {
   const lines: SourceLine[] = [];
   let fence: string | undefined;
@@ -81,11 +85,13 @@ const invalidContent = (providerName: string, reason: string, detail: string): P
     detail,
   });
 
+/** Shortens text for an error message, onto a single line. */
 export const excerpt = (text: string, limit: number): string => {
   const flat = text.replace(/\s+/g, " ").trim();
   return flat.length <= limit ? flat : `${flat.slice(0, limit - 1)}…`;
 };
 
+/** Splits a response into the document and whatever the model said before it. */
 export const normalizeDocument = (providerName: string, text: string): NormalizedDocument => {
   const lines = scanLines(text);
   const first = lines.findIndex((line) => !line.fenced && TOP_HEADING.test(line.text));
@@ -131,6 +137,7 @@ const excerptAround = (text: string, index: number): string => {
   return excerpt(text.slice(start, Math.min(text.length, index + 90)), 200);
 };
 
+/** The first conversational tell in the text, ignoring fenced code. */
 export const findContentProblem = (text: string): ContentProblem | undefined => {
   const trimmed = text.trim();
 
@@ -152,6 +159,7 @@ export const findContentProblem = (text: string): ContentProblem | undefined => 
   return undefined;
 };
 
+/** Throws a ProviderError when the response reads as conversation, not documentation. */
 export const assertDocumentContent = (providerName: string, text: string): void => {
   const problem = findContentProblem(text);
 
@@ -165,6 +173,7 @@ export interface PreparedDocument {
   droppedPreamble: string | undefined;
 }
 
+/** Normalises and validates in one pass: what generate writes is what survives this. */
 export const prepareDocument = (providerName: string, text: string): PreparedDocument => {
   const { body, preamble } = normalizeDocument(providerName, text);
   assertDocumentContent(providerName, body);

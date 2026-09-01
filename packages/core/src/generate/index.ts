@@ -22,6 +22,7 @@ export * from "./types.js";
 export { modelCacheKey } from "./decide.js";
 
 
+/** One string field off an unknown error cause, for the failure report. */
 const stringField = (cause: unknown, field: string): string | undefined => {
   if (typeof cause !== "object" || cause === null || !(field in cause)) {
     return undefined;
@@ -33,6 +34,10 @@ const stringField = (cause: unknown, field: string): string | undefined => {
 };
 
 
+/**
+ * Scans, works out what the cache still covers, and writes a page for the
+ * rest. With no provider, or with dryRun, it stops at the plan and spends nothing.
+ */
 export const generate = async (ctx: GenerateContext): Promise<GenerateResult> => {
   const config  = ctx.config ?? GlossicConfigSchema.parse({});
   const scanned = await scan(ctx);

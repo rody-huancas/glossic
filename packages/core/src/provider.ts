@@ -4,6 +4,7 @@ import { NoProviderAvailableError, UnknownProviderError } from "./errors.js";
 import { compareStrings } from "./utils/index.js";
 
 
+/** Auto-detection order: the local CLI first, the paid API second. */
 export const PROVIDER_PREFERENCE = ["claude-code", "anthropic"];
 
 export interface ResolveProviderOptions {
@@ -17,6 +18,7 @@ export interface ProviderStatus {
   available: boolean;
 }
 
+/** Providers in auto-detection order, with unknown names last and sorted. */
 const byPreference = (providers: readonly Provider[]): Provider[] =>
   [...providers].sort((a, b) => {
     const rankA = PROVIDER_PREFERENCE.indexOf(a.name);
@@ -32,6 +34,7 @@ const byPreference = (providers: readonly Provider[]): Provider[] =>
     return compareStrings(a.name, b.name);
   });
 
+/** Asks every provider whether it can run, in preference order. Never throws. */
 export const probeProviders = async (providers: readonly Provider[]): Promise<ProviderStatus[]> =>
   Promise.all(
     byPreference(providers).map(async (provider) => ({
@@ -41,6 +44,10 @@ export const probeProviders = async (providers: readonly Provider[]): Promise<Pr
   );
 
 
+/**
+ * The provider to use: the one named by a flag or the config, otherwise the
+ * first one available in preference order.
+ */
 export const resolveProvider = async (options: ResolveProviderOptions): Promise<Provider> => {
   const known    = options.providers.map((provider) => provider.name);
   const explicit = options.requested ?? options.config?.provider;

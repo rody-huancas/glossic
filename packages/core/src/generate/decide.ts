@@ -8,6 +8,7 @@ import type { Job } from "./jobs.js";
 import type { CacheEntry } from "../cache.js";
 import type { GenerateReason } from "./types.js";
 
+/** The model a cache entry was written under, with a name for the unset case. */
 export const modelCacheKey = (config: GlossicConfig): string => config.model ?? "default";
 
 export interface DecisionContext {
@@ -17,6 +18,7 @@ export interface DecisionContext {
   force : boolean;
 }
 
+/** Why this unit has to be regenerated, or `cached` when nothing changed. */
 export const decide = async (job: Job, entry: CacheEntry | undefined, context: DecisionContext): Promise<GenerateReason> => {
   if (context.force) {
     return "forced";

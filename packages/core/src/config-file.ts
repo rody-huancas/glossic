@@ -6,6 +6,7 @@ import type { GlossicUserConfig } from "@glossic/schema";
 
 import { pathExists, toPosix } from "./utils/index.js";
 
+/** Config filenames, in the order they are looked for. */
 export const CONFIG_FILENAMES = [
   "glossic.config.ts",
   "glossic.config.mts",
@@ -14,6 +15,7 @@ export const CONFIG_FILENAMES = [
 ];
 
 
+/** Posix path of the project's config file, when it has one. */
 export const findConfigFile = async (root: string): Promise<string | undefined> => {
   for (const filename of CONFIG_FILENAMES) {
     const candidate = path.resolve(root, filename);
@@ -30,6 +32,7 @@ export interface LoadedConfig {
   values: GlossicUserConfig;
 }
 
+/** The module's default export, when it looks like a config object. */
 const asUserConfig = (value: unknown): GlossicUserConfig | undefined => {
   if (typeof value !== "object" || value === null) {
     return undefined;
@@ -49,6 +52,7 @@ const asUserConfig = (value: unknown): GlossicUserConfig | undefined => {
 };
 
 
+/** Loads and validates glossic.config.ts, ignoring a file that exports nothing usable. */
 export const loadProjectConfig = async (root: string): Promise<LoadedConfig | undefined> => {
   const file = await findConfigFile(root);
   if (file === undefined) return undefined;

@@ -6,6 +6,7 @@ import type { CompletionRequest, GlossicConfig, Manifest, Project, Unit } from "
 import { unitDocPath } from "../markdown.js";
 import { buildUnitPrompt, estimateTokens, readUnitSources } from "../prompt.js";
 
+/** One unit ready to be sent: its prompt built and its destination known. */
 export interface Job {
   unit           : Unit;
   project        : Project;
@@ -15,6 +16,7 @@ export interface Job {
 }
 
 
+/** Writes a page under the output directory, creating the directories it needs. */
 export const writeDoc = async (outDir: string, relative: string, content: string): Promise<void> => {
   const target = path.resolve(outDir, relative);
 
@@ -23,6 +25,7 @@ export const writeDoc = async (outDir: string, relative: string, content: string
 };
 
 
+/** Reads the sources and builds a prompt for every unit in the manifest. */
 export const buildJobs = async (manifest: Manifest, config: GlossicConfig, root: string): Promise<Job[]> => {
   const projectById = new Map(manifest.workspace.projects.map((entry) => [entry.id, entry]));
 

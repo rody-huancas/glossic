@@ -1,5 +1,6 @@
 import { isRetryableProviderError } from "@glossic/schema";
 
+/** `sleep` and `onRetry` exist so a test can drive the loop without waiting. */
 export interface RetryOptions {
   attempts   ?: number;
   baseDelayMs?: number;
@@ -17,11 +18,13 @@ const defaultSleep = (ms: number): Promise<void> => {
 }
 
 
+/** Exponential backoff: the delay doubles with every attempt. */
 export const backoffDelay = (attempt: number, baseDelayMs: number): number => {
   return baseDelayMs * 2 ** (attempt - 1);
 }
 
 
+/** Runs a task again while it fails with a retryable provider error. */
 export const withRetry = async <T>(task: () => Promise<T>, options: RetryOptions = {}): Promise<T> => {
   const attempts    = options.attempts ?? DEFAULT_ATTEMPTS;
   const baseDelayMs = options.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;

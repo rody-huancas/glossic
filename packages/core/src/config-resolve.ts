@@ -1,6 +1,7 @@
 import type { GlossicConfig, GlossicUserConfig } from "@glossic/schema";
 import { GlossicConfigSchema } from "@glossic/schema";
 
+/** Which source decided one option's value; `glossic doctor` prints it. */
 export type ConfigOrigin = "flag" | "project" | "preference" | "default";
 
 export type ConfigOrigins = Record<string, ConfigOrigin>;
@@ -27,6 +28,10 @@ const isSet = (value: unknown): boolean => {
 }
 
 
+/**
+ * Merges the sources under one precedence chain (flags, project config, saved
+ * preference, schema defaults) and records which one won each key.
+ */
 export const resolveConfig = (sources: ConfigSources = {}): ResolvedConfig => {
   const merged : Record<string, unknown> = {};
   const origins: ConfigOrigins           = {};
@@ -54,6 +59,7 @@ export const resolveConfig = (sources: ConfigSources = {}): ResolvedConfig => {
 };
 
 
+/** The options that change how files become units, and so invalidate a scan. */
 export const GROUPING_KEYS = [
   "include",
   "exclude",

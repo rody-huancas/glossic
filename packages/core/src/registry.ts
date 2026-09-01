@@ -1,5 +1,6 @@
 import type { Adapter, Provider } from "@glossic/schema";
 
+/** A name-keyed collection of adapters or providers, kept in insertion order. */
 export class Registry<T extends { name: string }> {
   readonly #items = new Map<string, T>();
 

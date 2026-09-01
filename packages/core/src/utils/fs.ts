@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 
+/** True when the path can be reached; never throws. */
 export const pathExists = async (target: string): Promise<boolean> => {
   try {
     await fs.access(target);
@@ -9,6 +10,7 @@ export const pathExists = async (target: string): Promise<boolean> => {
   }
 };
 
+/** File contents, or undefined when it cannot be read. */
 export const readText = async (target: string): Promise<string | undefined> => {
   try {
     return await fs.readFile(target, "utf8");
@@ -17,6 +19,7 @@ export const readText = async (target: string): Promise<string | undefined> => {
   }
 };
 
+/** Parsed JSON, or undefined when the file is missing or malformed. */
 export const readJson = async <T>(target: string): Promise<T | undefined> => {
   const raw = await readText(target);
   

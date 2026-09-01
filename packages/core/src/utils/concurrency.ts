@@ -1,3 +1,4 @@
+/** Maps over items with at most `limit` tasks in flight, preserving input order. */
 export const mapWithConcurrency = async <T, R>(items: readonly T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> => {
   const results = new Array<R>(items.length);
   let cursor    = 0;

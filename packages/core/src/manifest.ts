@@ -12,6 +12,7 @@ export interface BuildManifestOptions {
   generatedAt?: string;
 }
 
+/** Sorts everything inside one unit, so its hash does not depend on walk order. */
 const sortUnit = (unit: Unit): Unit => ({
   ...unit,
   facts: {
@@ -32,6 +33,7 @@ const compareRelations = (a: Relation, b: Relation): number => {
 }
 
 
+/** Assembles the manifest, sorting every list so two runs over the same code match. */
 export const buildManifest = (workspace: Workspace, results: readonly ExtractResult[], options: BuildManifestOptions = {}): Manifest => {
   const units     = results.flatMap((result) => result.units).map(sortUnit);
   const relations = results.flatMap((result) => result.relations);
@@ -48,11 +50,13 @@ export const buildManifest = (workspace: Workspace, results: readonly ExtractRes
   });
 };
 
+/** The manifest as it lands on disk: JSON, two-space indent, trailing newline. */
 export const serializeManifest = (manifest: Manifest): string => {
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
 
+/** Writes the manifest, creating its directory. Returns the absolute path written. */
 export const writeManifest = async (manifest: Manifest, target: string): Promise<string> => {
   const absolute = path.resolve(target);
 
@@ -62,6 +66,7 @@ export const writeManifest = async (manifest: Manifest, target: string): Promise
   return absolute;
 };
 
+/** Reads and validates a manifest, or undefined when it is missing or invalid. */
 export const readManifest = async (target: string): Promise<Manifest | undefined> => {
   try {
     const raw = await fs.readFile(path.resolve(target), "utf8");

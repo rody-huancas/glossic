@@ -2,6 +2,7 @@ import type { Manifest, Project, Unit } from "@glossic/schema";
 
 import { compareStrings } from "./utils/index.js";
 
+/** Where a unit's page goes, relative to the output directory. */
 export const unitDocPath = (unit: Unit): string => {
   return unit.path === "." ? "root.md" : `${unit.path}.md`;
 }
@@ -25,6 +26,7 @@ export interface RenderUnitDocInput {
 }
 
 
+/** One unit's page: frontmatter carrying the hash, then the prose the provider wrote. */
 export const renderUnitDoc = (input: RenderUnitDocInput): string => {
   const { unit } = input;
   const title = unit.name === "root" ? input.project.name : unit.name;
@@ -67,6 +69,7 @@ const languageSummary = (units: readonly Unit[]): string => {
 };
 
 
+/** The index page listing every unit in the workspace. */
 export const renderIndexDoc = (input: RenderIndexDocInput): string => {
   const { manifest } = input;
   const { workspace, units } = manifest;

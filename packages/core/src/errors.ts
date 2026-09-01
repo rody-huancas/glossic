@@ -1,3 +1,4 @@
+/** Placeholder for a code path that is scaffolded but not written yet. */
 export class NotImplementedError extends Error {
   constructor(what: string) {
     super(`${what} is not implemented`);
@@ -6,6 +7,10 @@ export class NotImplementedError extends Error {
 }
 
 
+/**
+ * Nothing on this machine can write prose. The message is the install
+ * instructions, because this is the first wall a new user hits.
+ */
 export class NoProviderAvailableError extends Error {
   readonly tried: string[];
 
@@ -32,6 +37,7 @@ export class NoProviderAvailableError extends Error {
   }
 }
 
+/** The provider named by a flag or by the config does not exist. */
 export class UnknownProviderError extends Error {
   constructor(requested: string, known: readonly string[]) {
     super(`unknown provider "${requested}". Available: ${[...known].sort().join(", ")}`);

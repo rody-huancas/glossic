@@ -31,6 +31,7 @@ const LOCKFILE_PACKAGE_MANAGERS: ReadonlyArray<readonly [string, string]> = [
 const asStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
+/** The package manager in use, from the packageManager field or from the lockfile. */
 const detectPackageManager = async (dir: string, pkg: PackageJson | undefined): Promise<string | undefined> => {
   const declared = pkg?.packageManager;
 
@@ -52,6 +53,7 @@ const detectPackageManager = async (dir: string, pkg: PackageJson | undefined): 
 };
 
 
+/** The monorepo tool and the globs defining its projects, when this repo is one. */
 const detectMonorepo = async (root: string, pkg: PackageJson | undefined): Promise<MonorepoMarker | undefined> => {
   const pnpmWorkspace = await readText(path.join(root, "pnpm-workspace.yaml"));
 
@@ -132,6 +134,7 @@ const buildProject = async (root: string, rootDir: string, fallbackManager: stri
 };
 
 
+/** Identifies the repository and lists its projects, monorepo or not. */
 export const resolveWorkspace = async (root: string): Promise<Workspace> => {
   const absoluteRoot   = path.resolve(root);
   const pkg            = await readJson<PackageJson>(path.join(absoluteRoot, "package.json"));

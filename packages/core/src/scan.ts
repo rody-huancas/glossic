@@ -6,6 +6,7 @@ import type { Adapter, AdapterContext, DiscoverContext, ExtractResult, GlossicCo
 import { buildManifest } from "./manifest.js";
 import { resolveWorkspace } from "./workspace.js";
 
+/** What every pipeline stage needs: where to scan, with which adapters and config. */
 export interface PipelineContext {
   root        : string;
   adapters    : readonly Adapter[];
@@ -20,6 +21,7 @@ export interface ScanResult {
 }
 
 
+/** Puts the adapters in the order the config asks for, dropping the ones it omits. */
 export const orderAdapters = (adapters: readonly Adapter[], wanted: readonly string[]): Adapter[] => {
   const byName = new Map(adapters.map((adapter) => [adapter.name, adapter]));
 
@@ -28,6 +30,7 @@ export const orderAdapters = (adapters: readonly Adapter[], wanted: readonly str
     .filter((adapter): adapter is Adapter => adapter !== undefined);
 };
 
+/** The first adapter that claims the project. */
 const selectAdapter = async (adapters: readonly Adapter[], ctx: DiscoverContext): Promise<Adapter | undefined> => {
   for (const adapter of adapters) {
     if (await adapter.detect(ctx)) {
@@ -39,6 +42,7 @@ const selectAdapter = async (adapters: readonly Adapter[], ctx: DiscoverContext)
 };
 
 
+/** Walks the workspace and turns it into a manifest, calling no provider. */
 export const scan = async (ctx: PipelineContext): Promise<ScanResult> => {
   const config                         = ctx.config ?? GlossicConfigSchema.parse({});
   const workspace                      = await resolveWorkspace(path.resolve(ctx.root));
