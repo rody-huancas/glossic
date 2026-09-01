@@ -1,4 +1,7 @@
-export const CORE_VERSION = "0.0.0";
+// Same reason as the CLI: a retyped version is a version that goes stale.
+import manifest from "../package.json" with { type: "json" };
+
+export const CORE_VERSION: string = manifest.version;
 
 export * from "./cache.js";
 export * from "./check.js";

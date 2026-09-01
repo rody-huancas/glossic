@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import manifest from "../package.json" with { type: "json" };
 import { CORE_VERSION, createAdapterRegistry, NotImplementedError } from "./index.js";
 
 describe("@glossic/core", () => {
-  it("exposes a version", () => {
-    expect(CORE_VERSION).toBe("0.0.0");
+  it("exposes the version from its own manifest", () => {
+    expect(CORE_VERSION).toBe(manifest.version);
+    expect(CORE_VERSION).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it("registers adapters by name", () => {
