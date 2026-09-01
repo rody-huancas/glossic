@@ -64,13 +64,13 @@ const deps = (answers: unknown[], overrides: Partial<InteractiveDeps> = {}): Int
 });
 
 describe("renderStatusLine", () => {
-  it("shows the project, the provider and the language", () => {
+  it("names the language as the documentation's, not the interface's", () => {
     // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI
     const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
 
     expect(
       strip(renderStatusLine({ project: "riqsi", provider: "claude-code", language: "es" })),
-    ).toBe("riqsi · claude-code connected · Spanish");
+    ).toBe("riqsi · claude-code · docs in Spanish");
   });
 
   it("says so when no provider answered", () => {
@@ -78,7 +78,7 @@ describe("renderStatusLine", () => {
     const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
 
     expect(strip(renderStatusLine({ project: "demo", provider: undefined, language: "en" }))).toBe(
-      "demo · no provider · English",
+      "demo · no provider · docs in English",
     );
   });
 });

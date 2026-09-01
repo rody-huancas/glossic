@@ -1,7 +1,20 @@
 import { afterEach, describe, expect, it } from "vitest";
 
+import manifest from "../package.json" with { type: "json" };
 import { DEFAULT_LANGUAGE, detectLanguage, languageName } from "./language.js";
-import { renderBanner, shouldDecorate } from "./ui/banner.js";
+import { MIN_WIDE_COLUMNS, renderBanner, shouldDecorate, TAGLINE } from "./ui/banner.js";
+import { CLI_VERSION } from "./version.js";
+
+// biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI colour
+const ANSI = /\[[0-9;]*m/g;
+
+const strip = (value: string): string => value.replace(ANSI, "");
+
+/** The banner as plain lines, colour codes and blank padding removed. */
+const plainBanner = (options: Parameters<typeof renderBanner>[0] = {}): string[] =>
+  strip(renderBanner(options))
+    .split("\n")
+    .filter((line) => line.trim() !== "");
 
 describe("shouldDecorate", () => {
   it("draws on a terminal", () => {
@@ -52,12 +65,10 @@ describe("printBanner", () => {
   };
 
   it("prints the name and the version on a terminal", async () => {
-    const written = await capture({ isTty: true });
+    const written = strip(await capture({ isTty: true }));
 
-    expect(written).toContain("v");
-    // The block letters, stripped of colour.
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI
-    expect(written.replace(/\[[0-9;]*m/g, "")).toContain("╔═╗┬");
+    expect(written).toContain(`v${manifest.version}`);
+    expect(written).toMatch(/██████╗|╔═╗┬/);
   });
 
   it("prints nothing without a terminal", async () => {
@@ -71,14 +82,63 @@ describe("printBanner", () => {
   it("prints nothing with --quiet", async () => {
     expect(await capture({ isTty: true, quiet: true })).toBe("");
   });
+});
 
-  it("renders three lines of letters plus the version", () => {
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI
-    const plain = renderBanner("1.2.3").replace(/\[[0-9;]*m/g, "");
-    const lines = plain.split("\n").filter((line) => line.trim() !== "");
+describe("banner width", () => {
+  it("renders the block letters plus a caption on a wide terminal", () => {
+    const lines = plainBanner({ version: "1.2.3", columns: 100 });
 
-    expect(lines).toHaveLength(4);
-    expect(lines[3]?.trim()).toBe("v1.2.3");
+    expect(lines).toHaveLength(7);
+    expect(lines[0]).toContain("██████╗");
+    expect(lines[6]?.trim()).toBe(`v1.2.3 · ${TAGLINE}`);
+  });
+
+  it("uses the block letters from 60 columns up", () => {
+    for (const columns of [MIN_WIDE_COLUMNS, 80, 200]) {
+      const lines = plainBanner({ columns });
+
+      expect(lines).toHaveLength(7);
+      expect(lines[0]).toContain("██████╗");
+    }
+  });
+
+  it("falls back to the compact letters below 60 columns", () => {
+    for (const columns of [MIN_WIDE_COLUMNS - 1, 40, 20]) {
+      const lines = plainBanner({ columns });
+
+      expect(lines).toHaveLength(4);
+      expect(lines[0]).toContain("╔═╗┬");
+      expect(lines[0]).not.toContain("██████╗");
+    }
+  });
+
+  it("drops the tagline when the compact banner takes over", () => {
+    expect(plainBanner({ columns: 40 }).join("\n")).not.toContain(TAGLINE);
+    expect(plainBanner({ columns: 100 }).join("\n")).toContain(TAGLINE);
+  });
+
+  it("never draws wider than the terminal", () => {
+    for (const columns of [20, 40, MIN_WIDE_COLUMNS, 100]) {
+      for (const line of plainBanner({ columns })) {
+        expect(line.length).toBeLessThanOrEqual(columns);
+      }
+    }
+  });
+});
+
+describe("the version on show", () => {
+  it("is the one in the CLI package.json", () => {
+    expect(CLI_VERSION).toBe(manifest.version);
+    expect(CLI_VERSION).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it("reaches the banner", () => {
+    expect(plainBanner({ columns: 100 }).at(-1)).toContain(`v${manifest.version}`);
+    expect(plainBanner({ columns: 40 }).at(-1)).toContain(`v${manifest.version}`);
+  });
+
+  it("is not the placeholder it used to be", () => {
+    expect(CLI_VERSION).not.toBe("0.0.0");
   });
 });
 

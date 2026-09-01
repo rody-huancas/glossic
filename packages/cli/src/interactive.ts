@@ -31,12 +31,17 @@ export interface StatusLine {
   language: string;
 }
 
-/** `riqsi · claude-code connected · Spanish` */
+/**
+ * `riqsi-frontend · claude-code · docs in Spanish`
+ *
+ * The language is spelled out as the documentation's, not the interface's:
+ * "· Spanish" on its own read as though the menu had been translated.
+ */
 export const renderStatusLine = (status: StatusLine): string =>
   [
     accent(status.project),
-    status.provider === undefined ? dim("no provider") : `${status.provider} ${dim("connected")}`,
-    dim(languageName(status.language)),
+    status.provider ?? dim("no provider"),
+    dim(`docs in ${languageName(status.language)}`),
   ].join(dim(" · "));
 
 const readStatus = async (root: string, language: string): Promise<StatusLine> => {
@@ -69,12 +74,19 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
 
   prompts.intro(renderStatusLine(status));
 
+  // "free" read as a pricing tier. What it means is that nothing calls a model.
+  const noAiCalls = "structure only, no AI calls";
+
   const choice = await prompts.select<Choice>({
     message: "What would you like to do?",
     options: [
-      { value: "scan", label: "Scan the project", hint: "free" },
-      { value: "generate", label: "Generate documentation" },
-      { value: "check", label: "Check whether the docs are current" },
+      { value: "scan", label: "Scan the project", hint: noAiCalls },
+      {
+        value: "generate",
+        label: "Generate documentation",
+        hint: `uses your ${status.provider ?? "claude-code"} session`,
+      },
+      { value: "check", label: "Check if docs are current", hint: noAiCalls },
       { value: "doctor", label: "Connection status" },
       { value: "exit", label: "Exit" },
     ],
