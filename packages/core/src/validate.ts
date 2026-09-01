@@ -37,11 +37,11 @@ const CONVERSATIONAL_RULES: readonly ContentRule[] = [
   },
 ];
 
-const FENCE = /^\s{0,3}(```|~~~)/;
+const FENCE       = /^\s{0,3}(```|~~~)/;
 const TOP_HEADING = /^\s{0,3}#{1,2}\s+\S/;
 
 interface SourceLine {
-  text: string;
+  text  : string;
   fenced: boolean;
 }
 
@@ -69,15 +69,15 @@ const scanLines = (text: string): SourceLine[] => {
 };
 
 export interface NormalizedDocument {
-  body: string;
+  body    : string;
   preamble: string | undefined;
 }
 
 const invalidContent = (providerName: string, reason: string, detail: string): ProviderError =>
   new ProviderError({
     provider: providerName,
-    code: "invalid-content",
-    message: `the response is not a document: ${reason}`,
+    code    : "invalid-content",
+    message : `the response is not a document: ${reason}`,
     detail,
   });
 
@@ -122,7 +122,7 @@ export const normalizeDocument = (providerName: string, text: string): Normalize
 };
 
 export interface ContentProblem {
-  reason: string;
+  reason : string;
   excerpt: string;
 }
 
@@ -161,7 +161,7 @@ export const assertDocumentContent = (providerName: string, text: string): void 
 };
 
 export interface PreparedDocument {
-  body: string;
+  body           : string;
   droppedPreamble: string | undefined;
 }
 
