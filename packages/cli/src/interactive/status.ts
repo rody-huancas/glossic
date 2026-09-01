@@ -25,11 +25,11 @@ export const renderStatusLine = (status: StatusLine, t: Translator): string =>
     dim(t("status.docsIn", { language: languageLabel(t, status.language) })),
   ].join(dim(" · "));
 
-export /**
+/**
  * Re-read on every turn: a provider can come up, a config can change, and the
  * line is the only thing telling the user what the next action will do.
  */
-const readStatus = async (root: string, language: string): Promise<StatusLine> => {
+export const readStatus = async (root: string, language: string): Promise<StatusLine> => {
   const [workspace, providers] = await Promise.all([
     resolveWorkspace(root),
     probeProviders(builtinProviders),

@@ -1,15 +1,15 @@
 import type { MessageKey, Translator } from "../i18n/index.js";
 import type { PromptPort } from "../ui/prompts.js";
 
-export /** The language's own name, in the interface language. */
-const languageLabel = (t: Translator, code: string): string => {
+/** The language's own name, in the interface language. */
+export const languageLabel = (t: Translator, code: string): string => {
   const key  = `language.${code}` as MessageKey;
   const name = t(key);
   return name === key ? code : name;
 };
 
-export /** A picker over language codes, preselected on the one in force. */
-const pickLanguage = async (
+/** A picker over language codes, preselected on the one in force. */
+export const pickLanguage = async (
   prompts: PromptPort,
   t      : Translator,
   message: MessageKey,
