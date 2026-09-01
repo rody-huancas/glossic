@@ -12,10 +12,7 @@
     ]
   },
   "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100
+    "enabled": false
   },
   "linter": {
     "enabled": true,
@@ -31,22 +28,16 @@
     }
   },
   "assist": {
-    "actions": {
-      "source": {
-        "organizeImports": "on"
-      }
-    }
+    "enabled": false
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "double",
-      "semicolons": "always",
-      "trailingCommas": "all"
+      "enabled": false
     }
   },
   "json": {
     "formatter": {
-      "enabled": true
+      "enabled": false
     }
   }
 }

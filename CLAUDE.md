@@ -27,25 +27,46 @@ import { inferLanguage } from "./languages.js";
 
 ## Formatting
 
-**Biome owns the formatting.** Do not hand-align anything, do not argue with
-the formatter, and do not add editor directives to work around it. Run
-`pnpm lint:fix` and let it decide line breaks and spacing; `pnpm lint` is the
-source of truth in CI.
+**The author owns the formatting, not the tool.** Biome's formatter is off.
+`pnpm lint` runs the linter alone: it reports real errors, never rewrites a
+file and never fails over style.
 
-Keep the readability effort where the formatter cannot reach: one property per
-line, grouped and ordered on purpose, short functions, names that do not need
-a comment.
+- Align the values of object properties, type members and consecutive
+  assignments so the block reads as a column.
+- Do not align imports.
+- **Never run a formatter over existing code.** No `biome format`, no
+  format-on-save, no bulk reflow of a file you are editing in one place.
+
+```ts
+export interface RunOptions {
+  binary    : string;
+  args      : readonly string[];
+  input    ?: string;
+  timeoutMs : number;
+}
+
+const MAX_FILE_BYTES  = 24_000;
+const CHARS_PER_TOKEN = 4;
+const SPLIT_SEPARATOR = "~~";
+```
 
 ## Comments
 
-Write a comment only when it earns its place: a non-obvious invariant, a
-deliberate trade-off, a reference to an external contract. Never restate what
-the code already says.
+Only the essential. A comment earns its place when it records a non-obvious
+invariant, a deliberate trade-off or an external contract.
+
+- Never explain the obvious or restate what the code already says.
+- No comments interleaved inside an interface or a block of code. If a
+  declaration needs context, put it above the whole declaration.
 
 ```ts
 // Bad
-// increment the counter
-count += 1;
+export interface CacheEntry {
+  // the unit this entry belongs to
+  unitId  : string;
+  // bumped by hand when the prompt changes
+  version : string;
+}
 
 // Good
 // Sorted before hashing so the digest does not depend on filesystem order.
