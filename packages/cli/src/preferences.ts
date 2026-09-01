@@ -5,8 +5,10 @@ import process from "node:process";
 
 /** What glossic remembers between runs. Everything is optional. */
 export interface Preferences {
-  /** ISO 639-1 code chosen from the interactive menu. */
+  /** Documentation language chosen from the interactive menu. */
   lang?: string;
+  /** Interface language chosen from the interactive menu. */
+  uiLang?: "en" | "es";
 }
 
 export interface PreferencesLocation {
@@ -44,8 +46,14 @@ export const readPreferences = async (location: PreferencesLocation = {}): Promi
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return {};
 
-    const lang = (parsed as Record<string, unknown>).lang;
-    return typeof lang === "string" && lang !== "" ? { lang } : {};
+    const record = parsed as Record<string, unknown>;
+    const lang = record.lang;
+    const uiLang = record.uiLang;
+
+    return {
+      ...(typeof lang === "string" && lang !== "" ? { lang } : {}),
+      ...(uiLang === "en" || uiLang === "es" ? { uiLang } : {}),
+    };
   } catch {
     return {};
   }

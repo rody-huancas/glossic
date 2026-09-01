@@ -2,12 +2,14 @@ import path from "node:path";
 import { scan, serializeManifest, writeManifest } from "@glossic/core";
 import { Command } from "commander";
 
-import { resolveEffectiveConfig } from "../config.js";
+import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
+import { createTranslator } from "../i18n/messages.js";
 import { builtinAdapters } from "../registries.js";
 import { displayPath, renderScanReport } from "../render.js";
 
 export interface ScanOptions {
   json: boolean;
+  uiLang?: string;
   out?: string;
   write: boolean;
 }
@@ -16,7 +18,11 @@ export const runScan = async (target: string, options: ScanOptions): Promise<voi
   const cwd = process.cwd();
   const root = path.resolve(cwd, target);
 
-  const { config } = await resolveEffectiveConfig({ root });
+  const { config } = await resolveEffectiveConfig({
+    root,
+    flags: flagsToConfig({ uiLang: options.uiLang }),
+  });
+  const t = createTranslator(config.uiLang);
   const result = await scan({ root, adapters: builtinAdapters, config });
 
   if (options.json) {
@@ -24,7 +30,7 @@ export const runScan = async (target: string, options: ScanOptions): Promise<voi
     return;
   }
 
-  process.stdout.write(renderScanReport(result));
+  process.stdout.write(renderScanReport(result, t));
 
   if (!options.write) return;
 
@@ -49,6 +55,7 @@ export const scanCommand = (): Command =>
       "manifest destination; relative to the cwd, default <root>/.glossic/manifest.json",
     )
     .option("--no-write", "print the report only, write no file")
+    .option("--ui-lang <code>", "language of the CLI itself: en or es")
     .option("-q, --quiet", "no banner", false)
     .action(async (pathArg: string, options: ScanOptions) => {
       await runScan(pathArg, options);

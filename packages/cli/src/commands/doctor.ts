@@ -7,6 +7,8 @@ import type { Adapter, Provider } from "@glossic/schema";
 import { Command } from "commander";
 
 import { resolveEffectiveConfig } from "../config.js";
+import type { Translator } from "../i18n/messages.js";
+import { createTranslator, defaultTranslator } from "../i18n/messages.js";
 import { builtinAdapters, builtinProviders } from "../registries.js";
 
 export interface DoctorConfigEntry {
@@ -24,6 +26,8 @@ export interface DoctorReport {
   configFile: string | undefined;
   /** Every effective option and where its value came from. */
   config: DoctorConfigEntry[];
+  /** The interface language the report should be rendered in. */
+  uiLang: string;
   /** 0 when at least one provider can be used. */
   exitCode: number;
 }
@@ -54,13 +58,17 @@ const configEntries = (
 
 export interface DoctorOptions {
   root: string;
+  uiLang?: string | undefined;
   providers: readonly Provider[];
   adapters: readonly Adapter[];
 }
 
 export const collectDoctorReport = async (options: DoctorOptions): Promise<DoctorReport> => {
   const providers = await probeProviders(options.providers);
-  const { config, origins, file } = await resolveEffectiveConfig({ root: options.root });
+  const { config, origins, file } = await resolveEffectiveConfig({
+    root: options.root,
+    ...(options.uiLang === undefined ? {} : { flags: { uiLang: options.uiLang as "en" | "es" } }),
+  });
 
   const selected = await resolveProvider({ providers: options.providers })
     .then((provider) => provider.name)
@@ -74,33 +82,49 @@ export const collectDoctorReport = async (options: DoctorOptions): Promise<Docto
     adapters: options.adapters.map((adapter) => adapter.name),
     configFile: file,
     config: configEntries(config as unknown as Record<string, unknown>, origins),
+    uiLang: config.uiLang,
     exitCode: providers.some((entry) => entry.available) ? 0 : 1,
   };
 };
 
-const mark = (ok: boolean): string => (ok ? "ok     " : "missing");
+export const renderDoctorReport = (report: DoctorReport, translator?: Translator): string => {
+  const t = translator ?? createTranslator(report.uiLang) ?? defaultTranslator;
 
-export const renderDoctorReport = (report: DoctorReport): string => {
+  const ok = t("doctor.ok");
+  const missing = t("doctor.missing");
+  const markWidth = Math.max(ok.length, missing.length);
+  const mark = (available: boolean): string => (available ? ok : missing).padEnd(markWidth);
+
+  const label = (key: Parameters<Translator>[0]): string =>
+    t(key).padEnd(
+      Math.max(
+        t("doctor.node").length,
+        t("doctor.platform").length,
+        t("doctor.adapters").length,
+        t("doctor.config").length,
+      ),
+    );
+
   const lines = [
-    "glossic doctor",
+    t("doctor.title"),
     "",
-    `node        ${report.node}`,
-    `platform    ${report.platform}`,
+    `${label("doctor.node")}  ${report.node}`,
+    `${label("doctor.platform")}  ${report.platform}`,
     "",
-    "providers",
+    t("doctor.providers"),
   ];
 
   for (const provider of report.providers) {
-    const selected = provider.name === report.selected ? "  <- would be used" : "";
+    const selected = provider.name === report.selected ? `  ${t("doctor.wouldBeUsed")}` : "";
     lines.push(`  ${mark(provider.available)}  ${provider.name}${selected}`);
   }
 
-  lines.push("", `adapters    ${report.adapters.join(", ")}`);
-  lines.push(`config      ${report.configFile ?? "none (glossic.config.ts not found)"}`);
+  lines.push("", `${label("doctor.adapters")}  ${report.adapters.join(", ")}`);
+  lines.push(`${label("doctor.config")}  ${report.configFile ?? t("doctor.noConfigFile")}`);
 
   // Debugging "why did glossic do that" is guesswork without knowing which
   // source won for each option.
-  lines.push("", "effective configuration");
+  lines.push("", t("doctor.effectiveConfig"));
 
   const keyWidth = Math.max(0, ...report.config.map((entry) => entry.key.length));
   const originWidth = Math.max(0, ...report.config.map((entry) => entry.origin.length));
@@ -115,19 +139,19 @@ export const renderDoctorReport = (report: DoctorReport): string => {
 
   if (report.selected === undefined) {
     lines.push(
-      "No provider is available. Pick one:",
+      t("doctor.noProvider"),
       "",
-      "  1. Claude Code — install the CLI and sign in:",
+      `  ${t("provider.option1")}`,
       "       https://claude.com/claude-code",
-      "     glossic picks it up as soon as `claude --version` works.",
+      `     ${t("provider.option1Detail")}`,
       "",
-      "  2. Anthropic API — export an API key:",
+      `  ${t("provider.option2")}`,
       "       export ANTHROPIC_API_KEY=sk-ant-...",
       "       https://console.anthropic.com/settings/keys",
       "",
     );
   } else {
-    lines.push(`Ready: \`glossic generate\` would use ${report.selected}.`, "");
+    lines.push(t("doctor.ready", { provider: report.selected }), "");
   }
 
   return lines.join("\n");
@@ -137,12 +161,14 @@ export const doctorCommand = (): Command =>
   new Command("doctor")
     .description("check node, providers, adapters and config")
     .argument("[path]", "workspace root", ".")
+    .option("--ui-lang <code>", "language of the CLI itself: en or es")
     .option("-q, --quiet", "no banner", false)
-    .action(async (target: string) => {
+    .action(async (target: string, options: { uiLang?: string }) => {
       const report = await collectDoctorReport({
         root: path.resolve(process.cwd(), target),
         providers: builtinProviders,
         adapters: builtinAdapters,
+        ...(options.uiLang === undefined ? {} : { uiLang: options.uiLang }),
       });
 
       process.stdout.write(renderDoctorReport(report));

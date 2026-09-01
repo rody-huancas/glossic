@@ -4,6 +4,7 @@ import type { ConfigOrigins, ResolvedConfig } from "@glossic/core";
 import { loadProjectConfig, resolveConfig } from "@glossic/core";
 import type { GlossicUserConfig } from "@glossic/schema";
 
+import { hasCatalogue } from "./i18n/messages.js";
 import { detectLanguage } from "./language.js";
 import type { PreferencesLocation } from "./preferences.js";
 import { readPreferences } from "./preferences.js";
@@ -38,9 +39,14 @@ export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<Ef
     readPreferences(request.location ?? {}),
   ]);
 
+  const system = detectLanguage();
+
   const preference: GlossicUserConfig = {
     ...preferences,
-    lang: preferences.lang ?? detectLanguage(),
+    lang: preferences.lang ?? system,
+    // Only fall back to the system language when there is a catalogue for it;
+    // a French machine gets an English menu rather than a pile of keys.
+    uiLang: preferences.uiLang ?? (hasCatalogue(system) ? (system as "en" | "es") : "en"),
   };
 
   const resolved = resolveConfig({
@@ -55,11 +61,13 @@ export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<Ef
 /** Turns `--flag` values into the config keys they stand for. */
 export const flagsToConfig = (flags: {
   lang?: string | undefined;
+  uiLang?: string | undefined;
   provider?: string | undefined;
   concurrency?: number | undefined;
   model?: string | undefined;
 }): GlossicUserConfig => ({
   ...(flags.lang === undefined ? {} : { lang: flags.lang }),
+  ...(flags.uiLang === undefined ? {} : { uiLang: flags.uiLang as "en" | "es" }),
   ...(flags.provider === undefined ? {} : { provider: flags.provider }),
   ...(flags.concurrency === undefined ? {} : { concurrency: flags.concurrency }),
   ...(flags.model === undefined ? {} : { model: flags.model }),

@@ -5,19 +5,25 @@ import type { CheckResult } from "@glossic/core";
 import { check } from "@glossic/core";
 import { Command } from "commander";
 
-import { resolveEffectiveConfig } from "../config.js";
+import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
+import { createTranslator } from "../i18n/messages.js";
 import { builtinAdapters } from "../registries.js";
 import { renderCheckReport } from "../render.js";
 
 export interface CheckCliOptions {
   json?: boolean;
+  uiLang?: string;
   out?: string;
 }
 
 export const runCheck = async (target: string, options: CheckCliOptions): Promise<CheckResult> => {
   const cwd = process.cwd();
   const root = path.resolve(cwd, target);
-  const { config } = await resolveEffectiveConfig({ root });
+  const { config } = await resolveEffectiveConfig({
+    root,
+    flags: flagsToConfig({ uiLang: options.uiLang }),
+  });
+  const t = createTranslator(config.uiLang);
 
   const outDir =
     options.out === undefined
@@ -29,7 +35,7 @@ export const runCheck = async (target: string, options: CheckCliOptions): Promis
   process.stdout.write(
     options.json === true
       ? `${JSON.stringify(result, null, 2)}\n`
-      : renderCheckReport(result, { cwd, target }),
+      : renderCheckReport(result, { cwd, target, t }),
   );
 
   if (!result.ok) process.exitCode = 1;
@@ -42,6 +48,7 @@ export const checkCommand = (): Command =>
     .argument("[path]", "workspace root", ".")
     .option("--json", "machine-readable output for CI", false)
     .option("--out <dir>", "docs directory; relative to the cwd, default <root>/docs")
+    .option("--ui-lang <code>", "language of the CLI itself: en or es")
     .option("-q, --quiet", "no banner", false)
     .action(async (target: string, options: CheckCliOptions) => {
       await runCheck(target, options);

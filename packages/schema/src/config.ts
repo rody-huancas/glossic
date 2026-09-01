@@ -72,8 +72,15 @@ export const GlossicConfigSchema = z.object({
   /** Provider id used by `glossic generate`. Empty means "auto-detect". */
   provider: z.string().optional(),
   model: z.string().optional(),
-  /** ISO 639-1 code the documentation is written in. */
+  /** ISO 639-1 code the documentation is written in. Any code goes. */
   lang: z.string().default("en"),
+
+  /**
+   * ISO 639-1 code the CLI itself speaks. Independent of `lang`: documenting
+   * a codebase in Spanish is not the same as wanting a Spanish menu. Limited
+   * to the languages there is a catalogue for.
+   */
+  uiLang: z.enum(["en", "es"]).default("en"),
   /**
    * Left unset on purpose: the recent Claude models reject sampling parameters
    * with a 400, so each provider decides whether to forward it.

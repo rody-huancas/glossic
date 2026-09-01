@@ -6,6 +6,7 @@ import { generate, resolveProvider } from "@glossic/core";
 import { Command } from "commander";
 
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
+import { createTranslator } from "../i18n/messages.js";
 import { builtinAdapters, createProviders } from "../registries.js";
 import { renderGenerateReport } from "../render.js";
 import { shouldDecorate } from "../ui/banner.js";
@@ -16,6 +17,7 @@ export interface GenerateCliOptions {
   provider?: string;
   out?: string;
   lang?: string;
+  uiLang?: string;
   model?: string;
   concurrency?: string;
   force?: boolean;
@@ -46,6 +48,7 @@ export const runGenerate = async (
     root,
     flags: flagsToConfig({
       lang: options.lang,
+      uiLang: options.uiLang,
       provider: options.provider,
       model: options.model,
       concurrency: parseConcurrency(options.concurrency),
@@ -59,6 +62,7 @@ export const runGenerate = async (
       ? path.resolve(root, config.output.dir)
       : path.resolve(cwd, options.out);
 
+  const t = createTranslator(config.uiLang);
   const dryRun = options.dryRun === true;
   const provider = dryRun
     ? undefined
@@ -66,7 +70,7 @@ export const runGenerate = async (
 
   // A dry run has nothing to watch: it never calls the provider.
   const progress =
-    dryRun || !shouldDecorate({ quiet: options.quiet }) ? undefined : createGenerateProgress();
+    dryRun || !shouldDecorate({ quiet: options.quiet }) ? undefined : createGenerateProgress(t);
 
   const result = await generate({
     root,
@@ -87,6 +91,7 @@ export const runGenerate = async (
       cwd,
       provider: provider?.name,
       language: { code: config.lang, origin: origins.lang ?? "default" },
+      t,
     }),
   );
 
@@ -107,6 +112,7 @@ export const generateCommand = (): Command =>
     // No eager defaults: resolving them here would make `--help` print a
     // different line on every machine. The action resolves them instead.
     .option("--lang <code>", "language of the documentation (default: system language)")
+    .option("--ui-lang <code>", "language of the CLI itself: en or es (default: system language)")
     .option("--concurrency <n>", "parallel completions (default: 3)")
     .option("--force", "ignore the cache and regenerate everything", false)
     .option("--only <glob>", "regenerate only the units matching this glob")

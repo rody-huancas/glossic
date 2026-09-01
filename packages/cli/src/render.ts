@@ -4,8 +4,12 @@ import type { CheckResult, GenerateResult, ScanResult } from "@glossic/core";
 import { toPosix } from "@glossic/core";
 import type { Manifest, Unit } from "@glossic/schema";
 
-const plural = (count: number, singular: string): string =>
-  `${count} ${count === 1 ? singular : `${singular}s`}`;
+import type { MessageKey, Translator } from "./i18n/messages.js";
+import { defaultTranslator } from "./i18n/messages.js";
+
+/** Counted nouns need both forms, and Spanish does not pluralise with an "s". */
+const counted = (t: Translator, count: number, noun: "project" | "unit" | "file" | "problem") =>
+  t(`count.${noun}${count === 1 ? "" : "s"}` as MessageKey, { count });
 
 const dominantLanguage = (unit: Unit): string => unit.facts.base.languages[0]?.language ?? "-";
 
@@ -22,9 +26,11 @@ const countLanguages = (units: readonly Unit[]): Array<[string, number]> => {
   );
 };
 
-const workspaceHeadline = (manifest: Manifest): string => {
+const workspaceHeadline = (manifest: Manifest, t: Translator): string => {
   const { workspace } = manifest;
-  const kind = workspace.isMonorepo ? `${workspace.tool} monorepo` : "single project";
+  const kind = workspace.isMonorepo
+    ? t("scan.monorepo", { tool: workspace.tool })
+    : t("scan.singleProject");
   const manager = workspace.packageManager;
 
   // The tool already names the package manager for pnpm workspaces.
@@ -36,35 +42,34 @@ const workspaceHeadline = (manifest: Manifest): string => {
  * Renders the scan report. Every list it walks is already sorted by
  * `buildManifest`, so the output only depends on the code that was scanned.
  */
-export const renderScanReport = (result: ScanResult): string => {
+export const renderScanReport = (result: ScanResult, t: Translator = defaultTranslator): string => {
   const { manifest } = result;
   const { units } = manifest;
 
   const nameWidth = Math.max(0, ...units.map((unit) => unit.name.length));
   const filesWidth = Math.max(
     0,
-    ...units.map((unit) => plural(unit.facts.base.files.length, "file").length),
+    ...units.map((unit) => counted(t, unit.facts.base.files.length, "file").length),
   );
   const languageWidth = Math.max(0, ...units.map((unit) => dominantLanguage(unit).length));
 
-  const lines: string[] = [workspaceHeadline(manifest), ""];
+  const lines: string[] = [workspaceHeadline(manifest, t), ""];
 
   for (const project of manifest.workspace.projects) {
     const projectUnits = units.filter((unit) => unit.projectId === project.id);
     lines.push(`${project.name} (${project.rootDir})`);
 
     if (projectUnits.length === 0) {
-      lines.push("  no source files");
+      lines.push(`  ${t("scan.noSourceFiles")}`);
       lines.push("");
       continue;
     }
 
     projectUnits.forEach((unit, index) => {
       const branch = index === projectUnits.length - 1 ? "└─" : "├─";
-      const files = plural(unit.facts.base.files.length, "file");
       const columns = [
         unit.name.padEnd(nameWidth),
-        files.padStart(filesWidth),
+        counted(t, unit.facts.base.files.length, "file").padStart(filesWidth),
         dominantLanguage(unit).padEnd(languageWidth),
         unit.facts.base.roleHint ?? "",
       ];
@@ -76,16 +81,20 @@ export const renderScanReport = (result: ScanResult): string => {
 
   const totalFiles = units.reduce((sum, unit) => sum + unit.facts.base.files.length, 0);
   lines.push(
-    [
-      plural(manifest.workspace.projects.length, "project"),
-      plural(units.length, "unit"),
-      plural(totalFiles, "file"),
-    ].join(", "),
+    t("scan.summary", {
+      projects: counted(t, manifest.workspace.projects.length, "project"),
+      units: counted(t, units.length, "unit"),
+      files: counted(t, totalFiles, "file"),
+    }),
   );
 
   const languages = countLanguages(units);
   if (languages.length > 0) {
-    lines.push(`languages: ${languages.map(([lang, count]) => `${lang} ${count}`).join(", ")}`);
+    lines.push(
+      t("scan.languages", {
+        list: languages.map(([lang, count]) => `${lang} ${count}`).join(", "),
+      }),
+    );
   }
 
   return `${lines.join("\n")}\n`;
@@ -97,6 +106,7 @@ export interface GenerateReportContext {
   provider: string | undefined;
   /** The resolved documentation language, and where it was resolved from. */
   language?: { code: string; origin: string } | undefined;
+  t?: Translator | undefined;
 }
 
 const formatTokens = (tokens: number): string =>
@@ -113,31 +123,33 @@ export const renderGenerateReport = (
   result: GenerateResult,
   context: GenerateReportContext,
 ): string => {
+  const t = context.t ?? defaultTranslator;
   const relativeOut = displayPath(context.cwd, context.outDir);
   const nameWidth = Math.max(0, ...result.plan.map((entry) => entry.unitId.length));
-
-  const lines: string[] = [];
 
   const language =
     context.language === undefined
       ? ""
-      : `  ·  language: ${context.language.code} (${context.language.origin})`;
+      : `  ·  ${t("generate.language", {
+          code: context.language.code,
+          origin: context.language.origin,
+        })}`;
 
-  if (result.dryRun) {
-    lines.push(
-      `dry run — no provider was called, nothing was written to ${relativeOut}${language}`,
-      "",
-    );
-  } else {
-    lines.push(`provider: ${context.provider ?? "none"}${language}`, "");
-  }
+  const lines: string[] = [];
+
+  lines.push(
+    result.dryRun
+      ? `${t("generate.dryRun", { out: relativeOut })}${language}`
+      : `${t("generate.provider", { provider: context.provider ?? "none" })}${language}`,
+    "",
+  );
 
   for (const entry of result.plan) {
     lines.push(
       [
         `  ${entry.unitId.padEnd(nameWidth)}`,
-        plural(entry.files, "file").padStart(9),
-        `${formatTokens(entry.estimatedTokens)} tokens`.padStart(13),
+        counted(t, entry.files, "file").padStart(9),
+        t("generate.tokens", { tokens: formatTokens(entry.estimatedTokens) }).padStart(13),
         entry.reason.padEnd(22),
         entry.docPath,
       ].join("  "),
@@ -146,33 +158,44 @@ export const renderGenerateReport = (
 
   if (result.plan.length > 0) lines.push("");
 
+  const generated = result.dryRun
+    ? result.plan.filter((entry) => entry.regenerate).length
+    : result.generated;
+
   const counts = [
-    `${result.dryRun ? result.plan.filter((entry) => entry.regenerate).length : result.generated} generated`,
-    `${result.fromCache} from cache`,
-    `${result.failures.length} failed`,
+    t("generate.counts", {
+      generated,
+      cached: result.fromCache,
+      failed: result.failures.length,
+    }),
   ];
-  if (result.filteredOut.length > 0) counts.push(`${result.filteredOut.length} filtered out`);
+  if (result.filteredOut.length > 0) {
+    counts.push(t("generate.filteredOut", { count: result.filteredOut.length }));
+  }
   lines.push(counts.join(", "));
 
+  const tokens = formatTokens(result.estimatedTokens);
   lines.push(
-    `${formatTokens(result.estimatedTokens)} input tokens${result.dryRun ? " estimated" : ""}`,
+    result.dryRun
+      ? t("generate.inputTokensEstimated", { tokens })
+      : t("generate.inputTokens", { tokens }),
   );
 
   if (result.savedTokens > 0) {
-    lines.push(`${formatTokens(result.savedTokens)} input tokens saved by the cache`);
+    lines.push(t("generate.savedTokens", { tokens: formatTokens(result.savedTokens) }));
   }
 
   if (!result.dryRun) {
-    lines.push(`${result.written.length} files written to ${relativeOut}`);
+    lines.push(t("generate.written", { count: result.written.length, out: relativeOut }));
   }
 
   for (const warning of result.warnings) {
-    lines.push(`  trimmed: ${warning.unitId} — ${warning.message}`);
+    lines.push(`  ${t("generate.trimmed", { unit: warning.unitId, message: warning.message })}`);
   }
 
   for (const failure of result.failures) {
     const code = failure.code === undefined ? "" : ` [${failure.code}]`;
-    lines.push(`  failed: ${failure.unitId}${code} — ${failure.reason}`);
+    lines.push(`  ${t("generate.failed", { unit: failure.unitId, code, reason: failure.reason })}`);
     if (failure.detail !== undefined) lines.push(`          ${failure.detail}`);
   }
 
@@ -183,6 +206,7 @@ export interface CheckReportContext {
   cwd: string;
   /** The path argument the user passed, echoed back in the fix instructions. */
   target: string;
+  t?: Translator | undefined;
 }
 
 /**
@@ -190,51 +214,66 @@ export interface CheckReportContext {
  * this is what a developer reads after a failing CI job.
  */
 export const renderCheckReport = (result: CheckResult, context: CheckReportContext): string => {
+  const t = context.t ?? defaultTranslator;
   const docs = displayPath(context.cwd, result.outDir);
   const problems = result.missing.length + result.stale.length + result.orphaned.length;
 
   if (result.ok) {
-    return `documentation is up to date — ${plural(result.upToDate.length, "unit")} in ${docs}\n`;
+    return `${t("check.upToDate", {
+      units: counted(t, result.upToDate.length, "unit"),
+      out: docs,
+    })}\n`;
   }
 
-  const labelWidth = Math.max(
+  const labels = {
+    stale: t("check.stale"),
+    missing: t("check.missing"),
+    orphaned: t("check.orphaned"),
+  };
+  const labelPad = Math.max(...Object.values(labels).map((label) => label.length));
+
+  const pathWidth = Math.max(
     0,
     ...[...result.stale, ...result.missing].map((entry) => `${docs}/${entry.docPath}`.length),
     ...result.orphaned.map((doc) => `${docs}/${doc}`.length),
   );
 
-  const lines = ["documentation is out of date", ""];
+  const row = (label: string, file: string, reason: string): string =>
+    `  ${label.padEnd(labelPad)}  ${`${docs}/${file}`.padEnd(pathWidth)}  ${reason}`;
+
+  const lines = [t("check.outOfDate"), ""];
 
   for (const entry of result.stale) {
-    lines.push(
-      `  stale     ${`${docs}/${entry.docPath}`.padEnd(labelWidth)}  ${entry.unitId} changed`,
-    );
+    lines.push(row(labels.stale, entry.docPath, t("check.staleReason", { unit: entry.unitId })));
   }
 
   for (const entry of result.missing) {
     lines.push(
-      `  missing   ${`${docs}/${entry.docPath}`.padEnd(labelWidth)}  ${entry.unitId} is undocumented`,
+      row(labels.missing, entry.docPath, t("check.missingReason", { unit: entry.unitId })),
     );
   }
 
   for (const doc of result.orphaned) {
-    lines.push(`  orphaned  ${`${docs}/${doc}`.padEnd(labelWidth)}  no unit produces this file`);
+    lines.push(row(labels.orphaned, doc, t("check.orphanedReason")));
   }
 
   lines.push(
     "",
-    `${plural(problems, "problem")}, ${plural(result.upToDate.length, "unit")} up to date`,
+    t("check.problems", {
+      problems: counted(t, problems, "problem"),
+      units: counted(t, result.upToDate.length, "unit"),
+    }),
     "",
   );
 
   if (result.stale.length + result.missing.length > 0) {
-    lines.push("Regenerate the stale and missing documents with:", "");
+    lines.push(t("check.regenerate"), "");
     lines.push(`  glossic generate ${context.target}`, "");
-    lines.push("The cache regenerates exactly the units listed above.", "");
+    lines.push(t("check.cacheNote"), "");
   }
 
   if (result.orphaned.length > 0) {
-    lines.push("Delete the orphaned documents:", "");
+    lines.push(t("check.deleteOrphans"), "");
     for (const doc of result.orphaned) lines.push(`  rm ${docs}/${doc}`);
     lines.push("");
   }

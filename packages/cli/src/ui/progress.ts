@@ -2,12 +2,14 @@ import * as clack from "@clack/prompts";
 
 import type { GenerateEvent, UnitOutcome } from "@glossic/core";
 
+import type { MessageKey, Translator } from "../i18n/messages.js";
+import { defaultTranslator } from "../i18n/messages.js";
 import { accent, dim, symbols } from "./theme.js";
 
-const LABELS: Record<UnitOutcome, string> = {
-  generated: "generated",
-  cached: "cached",
-  failed: "failed",
+const LABEL_KEYS: Record<UnitOutcome, MessageKey> = {
+  generated: "progress.generated",
+  cached: "progress.cached",
+  failed: "progress.failed",
 };
 
 const MARKS: Record<UnitOutcome, string> = {
@@ -29,7 +31,7 @@ export interface Progress {
  * persistent line per unit as it lands. Only ever built when the caller has a
  * terminal to draw on — with --json or in CI the events go nowhere.
  */
-export const createGenerateProgress = (): Progress => {
+export const createGenerateProgress = (t: Translator = defaultTranslator): Progress => {
   const spinner = clack.spinner();
   let running = false;
 
@@ -51,7 +53,7 @@ export const createGenerateProgress = (): Progress => {
       const line = [
         MARKS[event.outcome],
         event.unitId,
-        dim(`— ${LABELS[event.outcome]}`),
+        dim(`— ${t(LABEL_KEYS[event.outcome])}`),
         event.outcome === "cached" ? "" : dim(duration(event.durationMs)),
       ]
         .filter((part) => part !== "")

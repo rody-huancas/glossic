@@ -7,6 +7,7 @@ import { createFakeProvider } from "@glossic/core";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { collectDoctorReport, renderDoctorReport } from "./commands/doctor.js";
+import { createTranslator } from "./i18n/messages.js";
 import { builtinAdapters } from "./registries.js";
 
 const exampleRoot = (name: string): string =>
@@ -45,7 +46,7 @@ describe("glossic doctor", () => {
     expect(report.exitCode).toBe(1);
     expect(report.selected).toBeUndefined();
 
-    const rendered = renderDoctorReport(report);
+    const rendered = renderDoctorReport(report, createTranslator("en"));
     expect(rendered).toContain("claude.com/claude-code");
     expect(rendered).toContain("ANTHROPIC_API_KEY");
     expect(rendered).toContain("missing");
@@ -60,7 +61,9 @@ describe("glossic doctor", () => {
 
     expect(report.node).toBe(process.versions.node);
     expect(report.configFile).toBeUndefined();
-    expect(renderDoctorReport(report)).toContain("glossic.config.ts not found");
+    expect(renderDoctorReport(report, createTranslator("en"))).toContain(
+      "glossic.config.ts not found",
+    );
   });
 });
 
@@ -123,7 +126,7 @@ describe("the effective configuration", () => {
   });
 
   it("renders the block so a human can read it", async () => {
-    const rendered = renderDoctorReport(await report(await project()));
+    const rendered = renderDoctorReport(await report(await project()), createTranslator("en"));
 
     expect(rendered).toContain("effective configuration");
     expect(rendered).toMatch(/maxUnitFiles\s+default\s+10/);

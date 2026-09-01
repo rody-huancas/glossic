@@ -5,6 +5,9 @@ import process from "node:process";
 import { CONFIG_FILENAMES, findConfigFile, toPosix } from "@glossic/core";
 import { Command } from "commander";
 
+import { resolveEffectiveConfig } from "../config.js";
+import { createTranslator } from "../i18n/messages.js";
+
 /**
  * Every option, its real default, and one line on what it does. Commented out
  * so the file starts as a no-op: what is written here overrides the defaults
@@ -102,9 +105,23 @@ export const initCommand = (): Command =>
     .description("create glossic.config.ts")
     .argument("[path]", "workspace root", ".")
     .option("-f, --force", "overwrite an existing config", false)
+    .option("--ui-lang <code>", "language of the CLI itself: en or es")
     .option("-q, --quiet", "no banner", false)
-    .action(async (target: string, options: { force: boolean }) => {
+    .action(async (target: string, options: { force: boolean; uiLang?: string }) => {
       const cwd = process.cwd();
-      const written = await runInit(path.resolve(cwd, target), options.force);
-      process.stdout.write(`created ${toPosix(path.relative(cwd, written)) || written}\n`);
+      const root = path.resolve(cwd, target);
+
+      const { config } = await resolveEffectiveConfig({
+        root,
+        ...(options.uiLang === undefined
+          ? {}
+          : { flags: { uiLang: options.uiLang as "en" | "es" } }),
+      });
+
+      const written = await runInit(root, options.force);
+      const t = createTranslator(config.uiLang);
+
+      process.stdout.write(
+        `${t("init.created", { path: toPosix(path.relative(cwd, written)) || written })}\n`,
+      );
     });
