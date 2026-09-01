@@ -63,25 +63,46 @@ const SPLIT_SEPARATOR = "~~";
 
 ## Comments
 
-Only the essential. A comment earns its place when it records a non-obvious
-invariant, a deliberate trade-off or an external contract.
+Every exported function and constant carries a one-line JSDoc, and so does
+every exported type in `@glossic/schema`, every error class, and any internal
+function whose intent its name does not give away. English, above the
+declaration, never anywhere else.
 
-- Never explain the obvious or restate what the code already says.
-- No comments interleaved inside an interface or a block of code. If a
-  declaration needs context, put it above the whole declaration.
+- **Say what it does, and why when the why is not obvious. Never how.**
+- **One line.** Use the multi-line form only when a second line is genuinely
+  needed; there is no third line.
+- No `@param` and no `@returns`. The types already say that. Document a
+  parameter only when it carries a constraint the type cannot express.
+- **Never inside an interface or inside a block of code.** If a member needs
+  context, name it in the JSDoc above the whole declaration.
+- Never restate the name. `checkCommand(): Command` is finished as it is; a
+  getter, a one-line wrapper and a barrel re-export take nothing. Prefer a
+  missing comment to a redundant one.
+
+```ts
+/** Bumped by hand when the prompt changes, which invalidates every cached unit. */
+export const PROMPT_VERSION = "3";
+
+/**
+ * Merges the sources under one precedence chain (flags, project config, saved
+ * preference, schema defaults) and records which one won each key.
+ */
+export const resolveConfig = (sources: ConfigSources = {}): ResolvedConfig => {
+```
+
+A member that needs explaining is explained from above, not beside:
 
 ```ts
 // Bad
-export interface CacheEntry {
-  // the unit this entry belongs to
-  unitId  : string;
-  // bumped by hand when the prompt changes
-  version : string;
+export interface RetryOptions {
+  attempts?: number;
+  /** injected so a test can drive the loop without waiting */
+  sleep   ?: (ms: number) => Promise<void>;
 }
 
 // Good
-// Sorted before hashing so the digest does not depend on filesystem order.
-files.sort();
+/** `sleep` and `onRetry` exist so a test can drive the loop without waiting. */
+export interface RetryOptions {
 ```
 
 ## File layout
