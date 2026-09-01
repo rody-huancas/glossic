@@ -15,6 +15,12 @@ const scriptedPrompts = (answers: unknown[]) => {
 
   const next = async (message: string): Promise<never> => {
     asked.push(message);
+
+    // Running out must not look like a cancel, or "only Exit ends the loop"
+    // would pass for a test that simply forgot to say Exit.
+    if (cursor >= answers.length) {
+      throw new Error(`the script ran out after ${asked.length} prompts: ${message}`);
+    }
     return answers[cursor++] as never;
   };
 
@@ -120,7 +126,7 @@ describe("runInteractive", () => {
 
   it("scanning calls the very function the scan command calls", async () => {
     const runScan = vi.fn().mockResolvedValue(undefined);
-    await runInteractive(deps(["scan"], { runScan }));
+    await runInteractive(deps(["scan", "exit"], { runScan }));
 
     expect(runScan).toHaveBeenCalledTimes(1);
     expect(runScan.mock.calls[0]?.[0]).toBe(".");
@@ -128,7 +134,7 @@ describe("runInteractive", () => {
 
   it("checking calls the very function the check command calls", async () => {
     const runCheck = vi.fn().mockResolvedValue({ ok: false });
-    const code = await runInteractive(deps(["check"], { runCheck }));
+    const code = await runInteractive(deps(["check", "exit"], { runCheck }));
 
     expect(runCheck).toHaveBeenCalledTimes(1);
     expect(code).toBe(1);
@@ -140,7 +146,7 @@ describe("runInteractive", () => {
       .mockResolvedValueOnce(emptyGenerateResult({ dryRun: true }))
       .mockResolvedValueOnce(emptyGenerateResult());
 
-    const script = scriptedPrompts(["generate", "es", "./documentacion", true]);
+    const script = scriptedPrompts(["generate", "es", "./documentacion", true, "exit"]);
     const code = await runInteractive({
       prompts: script.port,
       resolveConfig: fakeConfig({ lang: "es" }),
@@ -167,7 +173,9 @@ describe("runInteractive", () => {
   it("does not call the provider when the confirmation is declined", async () => {
     const runGenerate = vi.fn().mockResolvedValue(emptyGenerateResult({ dryRun: true }));
 
-    const code = await runInteractive(deps(["generate", "en", "./docs", false], { runGenerate }));
+    const code = await runInteractive(
+      deps(["generate", "en", "./docs", false, "exit"], { runGenerate }),
+    );
 
     expect(code).toBe(0);
     // Only the dry run happened.
@@ -185,7 +193,7 @@ describe("runInteractive", () => {
         }),
       );
 
-    const code = await runInteractive(deps(["generate", "es", "", true], { runGenerate }));
+    const code = await runInteractive(deps(["generate", "es", "", true, "exit"], { runGenerate }));
 
     expect(code).toBe(1);
     expect(runGenerate.mock.calls[1]?.[1]).toMatchObject({ out: "./docs" });
@@ -272,7 +280,8 @@ describe("the documentation language option", () => {
       .mockResolvedValueOnce(emptyGenerateResult());
 
     await runInteractive({
-      prompts: scriptedPrompts(["docLanguage", "fr", "generate", "fr", "./docs", true]).port,
+      prompts: scriptedPrompts(["docLanguage", "fr", "generate", "fr", "./docs", true, "exit"])
+        .port,
       resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async () => "/tmp/glossic/config.json",
       runGenerate,
@@ -343,5 +352,150 @@ describe("the interface language option", () => {
     const offered = script.asked.filter((entry) => entry.startsWith("hint:"));
     expect(offered).toContain("hint:en:current");
     expect(offered).not.toContain("hint:pt:current");
+  });
+});
+
+describe("the menu is a loop", () => {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI
+  const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
+
+  const scanResult = (units: number) => ({
+    manifest: { units: Array.from({ length: units }, (_, i) => ({ id: `u${i}` })) },
+  });
+
+  const menus = (asked: string[]): string[] =>
+    asked.filter((entry) => entry === "What would you like to do?");
+
+  it("comes back after every action, and only Exit ends it", async () => {
+    const runScan = vi.fn().mockResolvedValue(scanResult(3));
+    const runCheck = vi.fn().mockResolvedValue({ ok: true });
+
+    const script = scriptedPrompts(["scan", "check", "doctor", "exit"]);
+    const code = await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig(),
+      runScan,
+      runCheck,
+    });
+
+    expect(code).toBe(0);
+    expect(runScan).toHaveBeenCalledTimes(1);
+    expect(runCheck).toHaveBeenCalledTimes(1);
+
+    // Four menus: one before each of the three actions, one before Exit.
+    expect(menus(script.asked)).toHaveLength(4);
+  });
+
+  it("runs the same action twice when asked twice", async () => {
+    const runScan = vi.fn().mockResolvedValue(scanResult(1));
+
+    await runInteractive({
+      prompts: scriptedPrompts(["scan", "scan", "exit"]).port,
+      resolveConfig: fakeConfig(),
+      runScan,
+    });
+
+    expect(runScan).toHaveBeenCalledTimes(2);
+  });
+
+  it("ends on a cancel, which is what Ctrl+C arrives as", async () => {
+    const runScan = vi.fn().mockResolvedValue(scanResult(1));
+
+    const script = scriptedPrompts(["scan", CANCEL]);
+    const code = await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig(),
+      runScan,
+    });
+
+    expect(code).toBe(0);
+    expect(runScan).toHaveBeenCalledTimes(1);
+    expect(script.asked).toContain("cancel:Bye.");
+  });
+
+  it("survives an action that throws and keeps the session going", async () => {
+    const runScan = vi.fn().mockRejectedValue(new Error("provider is down"));
+    const runCheck = vi.fn().mockResolvedValue({ ok: true });
+
+    const script = scriptedPrompts(["scan", "check", "exit"]);
+    const code = await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig(),
+      runScan,
+      runCheck,
+    });
+
+    // The failure is remembered, but the session carried on to the next action.
+    expect(code).toBe(1);
+    expect(runCheck).toHaveBeenCalledTimes(1);
+    expect(menus(script.asked)).toHaveLength(3);
+    expect(script.asked).toContain("note:That did not work. You are still in the menu.");
+  });
+
+  it("reports a failing check in the exit code without ending the session", async () => {
+    const runCheck = vi.fn().mockResolvedValue({ ok: false });
+
+    const code = await runInteractive({
+      prompts: scriptedPrompts(["check", "check", "exit"]).port,
+      resolveConfig: fakeConfig(),
+      runCheck,
+    });
+
+    expect(code).toBe(1);
+    expect(runCheck).toHaveBeenCalledTimes(2);
+  });
+
+  it("exits 0 when nothing failed", async () => {
+    const code = await runInteractive({
+      prompts: scriptedPrompts(["check", "exit"]).port,
+      resolveConfig: fakeConfig(),
+      runCheck: vi.fn().mockResolvedValue({ ok: true }),
+    });
+
+    expect(code).toBe(0);
+  });
+
+  it("redraws the status line on every turn", async () => {
+    const script = scriptedPrompts(["scan", "scan", "exit"]);
+    await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig({ lang: "es" }),
+      runScan: vi.fn().mockResolvedValue(scanResult(2)),
+    });
+
+    const lines = script.asked.filter(
+      (entry) => entry.startsWith("intro:") || entry.startsWith("note:"),
+    );
+
+    // One introduction plus a redraw before each subsequent menu.
+    expect(lines).toHaveLength(3);
+    for (const line of lines) expect(strip(line)).toContain("docs in Spanish");
+  });
+
+  it("tells the generate option what the last scan found", async () => {
+    const script = scriptedPrompts(["scan", "exit"]);
+    await runInteractive({
+      prompts: script.port,
+      resolveConfig: fakeConfig(),
+      runScan: vi.fn().mockResolvedValue(scanResult(11)),
+    });
+
+    const hints = script.asked.filter((entry) => entry.startsWith("hint:generate:"));
+
+    // Nothing known on the first menu; the count on the second.
+    expect(hints[0]).not.toContain("11");
+    expect(hints[1]).toContain("11 units");
+  });
+
+  it("never scans just to fill in that hint", async () => {
+    const runScan = vi.fn().mockResolvedValue(scanResult(4));
+    const script = scriptedPrompts(["exit"]);
+
+    await runInteractive({ prompts: script.port, resolveConfig: fakeConfig(), runScan });
+
+    expect(runScan).not.toHaveBeenCalled();
+    expect(script.asked.filter((entry) => entry.startsWith("hint:generate:"))[0]).toContain(
+      "session",
+    );
   });
 });

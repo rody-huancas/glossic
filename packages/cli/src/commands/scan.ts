@@ -1,4 +1,5 @@
 import path from "node:path";
+import type { ScanResult } from "@glossic/core";
 import { scan, serializeManifest, writeManifest } from "@glossic/core";
 import { Command } from "commander";
 
@@ -14,7 +15,7 @@ export interface ScanOptions {
   write: boolean;
 }
 
-export const runScan = async (target: string, options: ScanOptions): Promise<void> => {
+export const runScan = async (target: string, options: ScanOptions): Promise<ScanResult> => {
   const cwd = process.cwd();
   const root = path.resolve(cwd, target);
 
@@ -27,12 +28,12 @@ export const runScan = async (target: string, options: ScanOptions): Promise<voi
 
   if (options.json) {
     process.stdout.write(serializeManifest(result.manifest));
-    return;
+    return result;
   }
 
   process.stdout.write(renderScanReport(result, t));
 
-  if (!options.write) return;
+  if (!options.write) return result;
 
   // An explicit --out is the user's path, so it follows the cwd. The default
   // belongs to the scanned project, so it follows the scanned root.
@@ -43,6 +44,8 @@ export const runScan = async (target: string, options: ScanOptions): Promise<voi
 
   const out = await writeManifest(result.manifest, manifestPath);
   process.stdout.write(`\n${t("scan.manifest", { path: displayPath(cwd, out) })}\n`);
+
+  return result;
 };
 
 export const scanCommand = (): Command =>

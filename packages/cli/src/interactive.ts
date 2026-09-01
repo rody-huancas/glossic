@@ -9,17 +9,20 @@ import type { GenerateCliOptions } from "./commands/generate.js";
 import { runGenerate } from "./commands/generate.js";
 import { runScan } from "./commands/scan.js";
 import { resolveEffectiveConfig } from "./config.js";
+import { formatCliError } from "./errors.js";
 import type { MessageKey, Translator } from "./i18n/messages.js";
 import { createTranslator, UI_LANGUAGES } from "./i18n/messages.js";
 import { LANGUAGES } from "./language.js";
 import type { Preferences, PreferencesLocation } from "./preferences.js";
 import { writePreferences } from "./preferences.js";
 import { builtinAdapters, builtinProviders } from "./registries.js";
+import { counted } from "./render.js";
 import type { PromptPort } from "./ui/prompts.js";
 import { clackPrompts } from "./ui/prompts.js";
 import { accent, dim } from "./ui/theme.js";
 
-type Choice = "scan" | "generate" | "check" | "doctor" | "uiLanguage" | "docLanguage" | "exit";
+type Action = "scan" | "generate" | "check" | "doctor";
+type Choice = Action | "uiLanguage" | "docLanguage" | "exit";
 
 export interface InteractiveDeps {
   prompts?: PromptPort;
@@ -61,6 +64,10 @@ export const renderStatusLine = (status: StatusLine, t: Translator): string =>
     dim(t("status.docsIn", { language: languageLabel(t, status.language) })),
   ].join(dim(" · "));
 
+/**
+ * Re-read on every turn: a provider can come up, a config can change, and the
+ * line is the only thing telling the user what the next action will do.
+ */
 const readStatus = async (root: string, language: string): Promise<StatusLine> => {
   const [workspace, providers] = await Promise.all([
     resolveWorkspace(root),
@@ -72,11 +79,6 @@ const readStatus = async (root: string, language: string): Promise<StatusLine> =
     provider: providers.find((entry) => entry.available)?.name,
     language,
   };
-};
-
-const cancelled = (prompts: PromptPort, t: Translator): number => {
-  prompts.cancel(t("menu.cancelled"));
-  return 0;
 };
 
 /** A picker over language codes, preselected on the one in force. */
@@ -100,10 +102,20 @@ const pickLanguage = async (
   return prompts.isCancel(chosen) || typeof chosen !== "string" ? undefined : chosen;
 };
 
+interface ActionOutcome {
+  ok: boolean;
+  /** Units the action happened to learn about, for the next menu's hint. */
+  units?: number | undefined;
+}
+
 /**
  * The menu shown by a bare `glossic`. Every branch calls the function the
  * matching flag would have called: this file asks the questions, it never
  * reimplements the work.
+ *
+ * It is a loop. Opening the menu means staying in it: every action prints its
+ * output, leaves it on screen and draws the menu again underneath. Only Exit
+ * — or Ctrl+C, which clack surfaces as a cancel — ends the process.
  */
 export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number> => {
   const prompts = deps.prompts ?? clackPrompts;
@@ -122,13 +134,47 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   let uiLang: string = config.uiLang;
   let first = true;
 
+  // Remembered across the session so the exit code can report it, and so the
+  // menu can say what the last scan found without scanning again.
+  let failed = false;
+  let knownUnits: number | undefined;
+
   const remember = async (update: Preferences): Promise<void> => {
     await save(update, location);
   };
 
-  // Choosing a language comes back here, so both the status line and every
-  // label are redrawn with the new value instead of going stale until the
-  // next run.
+  const perform = async (choice: Action, t: Translator): Promise<ActionOutcome> => {
+    try {
+      if (choice === "scan") {
+        const result = await scan(".", { json: false, write: true });
+        return { ok: true, units: result.manifest.units.length };
+      }
+
+      if (choice === "check") {
+        const result = await check(".", {});
+        return { ok: result.ok };
+      }
+
+      if (choice === "doctor") {
+        const report = await collectDoctorReport({
+          root,
+          providers: builtinProviders,
+          adapters: builtinAdapters,
+        });
+        process.stdout.write(renderDoctorReport(report, t));
+        return { ok: report.exitCode === 0 };
+      }
+
+      return generateInteractively(prompts, t, generate, language);
+    } catch (error) {
+      // A dead provider, a timeout, a bad path: worth reading, not worth
+      // ending the session over.
+      process.stderr.write(`${formatCliError(error)}\n`);
+      prompts.note(t("menu.actionFailed"));
+      return { ok: false };
+    }
+  };
+
   for (;;) {
     const t = createTranslator(uiLang);
     const status = await readStatus(root, language);
@@ -140,16 +186,21 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
 
     // "free" read as a pricing tier. What it means is that nothing calls a model.
     const noAiCalls = t("menu.hint.noAiCalls");
+    const provider = status.provider ?? "claude-code";
+
+    const generateHint =
+      knownUnits === undefined
+        ? t("menu.hint.usesProvider", { provider })
+        : t("menu.hint.usesProviderUnits", {
+            provider,
+            units: counted(t, knownUnits, "unit"),
+          });
 
     const choice = await prompts.select<Choice>({
       message: t("menu.question"),
       options: [
         { value: "scan", label: t("menu.scan"), hint: noAiCalls },
-        {
-          value: "generate",
-          label: t("menu.generate"),
-          hint: t("menu.hint.usesProvider", { provider: status.provider ?? "claude-code" }),
-        },
+        { value: "generate", label: t("menu.generate"), hint: generateHint },
         { value: "check", label: t("menu.check"), hint: noAiCalls },
         { value: "doctor", label: t("menu.doctor") },
         {
@@ -166,9 +217,10 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       ],
     });
 
-    if (prompts.isCancel(choice) || choice === "exit") {
+    // Ctrl+C reaches here as a cancel, and is the only other way out.
+    if (prompts.isCancel(choice) || typeof choice !== "string" || choice === "exit") {
       prompts.cancel(t("menu.bye"));
-      return 0;
+      return failed ? 1 : 0;
     }
 
     if (choice === "uiLanguage") {
@@ -190,27 +242,9 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       continue;
     }
 
-    if (choice === "scan") {
-      await scan(".", { json: false, write: true });
-      return 0;
-    }
-
-    if (choice === "check") {
-      const result = await check(".", {});
-      return result.ok ? 0 : 1;
-    }
-
-    if (choice === "doctor") {
-      const report = await collectDoctorReport({
-        root,
-        providers: builtinProviders,
-        adapters: builtinAdapters,
-      });
-      process.stdout.write(renderDoctorReport(report, t));
-      return report.exitCode;
-    }
-
-    return generateInteractively(prompts, t, generate, language);
+    const outcome = await perform(choice, t);
+    if (!outcome.ok) failed = true;
+    if (outcome.units !== undefined) knownUnits = outcome.units;
   }
 };
 
@@ -219,7 +253,7 @@ const generateInteractively = async (
   t: Translator,
   generate: typeof runGenerate,
   resolved: string,
-): Promise<number> => {
+): Promise<ActionOutcome> => {
   // Already resolved from the chain, so this is an Enter rather than a
   // decision the user has to make again.
   const codes = LANGUAGES.map((entry) => entry.code);
@@ -240,6 +274,7 @@ const generateInteractively = async (
 
   // The plan and the estimate come from the real dry run, not a guess.
   const plan = await generate(".", { ...options, dryRun: true });
+  const units = plan.plan.length;
 
   const confirmed = await prompts.confirm({
     message: t("prompt.confirmGenerate", {
@@ -248,10 +283,16 @@ const generateInteractively = async (
     }),
     initialValue: true,
   });
-  if (prompts.isCancel(confirmed) || confirmed !== true) return cancelled(prompts, t);
+  if (prompts.isCancel(confirmed) || confirmed !== true) return { ...cancelled(prompts, t), units };
 
   const result = await generate(".", options);
   prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
 
-  return result.failures.length > 0 ? 1 : 0;
+  return { ok: result.failures.length === 0, units };
+};
+
+/** Backing out of a prompt is a choice, not a failure. */
+const cancelled = (prompts: PromptPort, t: Translator): ActionOutcome => {
+  prompts.cancel(t("menu.cancelled"));
+  return { ok: true };
 };

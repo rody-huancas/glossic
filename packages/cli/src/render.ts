@@ -8,8 +8,11 @@ import type { MessageKey, Translator } from "./i18n/messages.js";
 import { defaultTranslator } from "./i18n/messages.js";
 
 /** Counted nouns need both forms, and Spanish does not pluralise with an "s". */
-const counted = (t: Translator, count: number, noun: "project" | "unit" | "file" | "problem") =>
-  t(`count.${noun}${count === 1 ? "" : "s"}` as MessageKey, { count });
+export const counted = (
+  t: Translator,
+  count: number,
+  noun: "project" | "unit" | "file" | "problem",
+) => t(`count.${noun}${count === 1 ? "" : "s"}` as MessageKey, { count });
 
 const dominantLanguage = (unit: Unit): string => unit.facts.base.languages[0]?.language ?? "-";
 

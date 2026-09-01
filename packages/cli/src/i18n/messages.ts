@@ -21,6 +21,8 @@ export const en = {
   "menu.hint.noAiCalls": "structure only, no AI calls",
   "menu.hint.usesProvider": "uses your {provider} session",
   "menu.hint.current": "currently: {value}",
+  "menu.hint.usesProviderUnits": "uses your {provider} session · {units} found",
+  "menu.actionFailed": "That did not work. You are still in the menu.",
   "menu.bye": "Bye.",
   "menu.cancelled": "Cancelled.",
 
@@ -131,6 +133,8 @@ export const es: Partial<Record<MessageKey, string>> = {
   "menu.hint.noAiCalls": "solo estructura, sin llamadas de IA",
   "menu.hint.usesProvider": "usa tu sesión de {provider}",
   "menu.hint.current": "actual: {value}",
+  "menu.hint.usesProviderUnits": "usa tu sesión de {provider} · {units} detectadas",
+  "menu.actionFailed": "Eso no funcionó. Sigues en el menú.",
   "menu.bye": "Hasta luego.",
   "menu.cancelled": "Cancelado.",
 
