@@ -35,11 +35,18 @@ const parseConcurrency = (value: string | undefined): number | undefined => {
   return parsed;
 };
 
+export interface GenerateDeps {
+  /** Injected so a test can drive the whole chain without a real provider. */
+  createProviders?: typeof createProviders;
+  cwd?: string;
+}
+
 export const runGenerate = async (
   target: string,
   options: GenerateCliOptions,
+  deps: GenerateDeps = {},
 ): Promise<GenerateResult> => {
-  const cwd = process.cwd();
+  const cwd = deps.cwd ?? process.cwd();
   const root = path.resolve(cwd, target);
 
   // One chain for every option: flags, then glossic.config.ts, then the saved
@@ -66,7 +73,10 @@ export const runGenerate = async (
   const dryRun = options.dryRun === true;
   const provider = dryRun
     ? undefined
-    : await resolveProvider({ providers: createProviders(config), config });
+    : await resolveProvider({
+        providers: (deps.createProviders ?? createProviders)(config),
+        config,
+      });
 
   // A dry run has nothing to watch: it never calls the provider.
   const progress =

@@ -131,6 +131,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   const { config } = await resolve({ root, location });
 
   let language = config.lang;
+  const defaultOut = config.output.dir;
   let uiLang: string = config.uiLang;
   let first = true;
 
@@ -165,7 +166,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         return { ok: report.exitCode === 0 };
       }
 
-      return generateInteractively(prompts, t, generate, language);
+      return generateInteractively(prompts, t, generate, language, defaultOut);
     } catch (error) {
       // A dead provider, a timeout, a bad path: worth reading, not worth
       // ending the session over.
@@ -253,6 +254,7 @@ const generateInteractively = async (
   t: Translator,
   generate: typeof runGenerate,
   resolved: string,
+  defaultOut: string,
 ): Promise<ActionOutcome> => {
   // Already resolved from the chain, so this is an Enter rather than a
   // decision the user has to make again.
@@ -260,16 +262,19 @@ const generateInteractively = async (
   const language = await pickLanguage(prompts, t, "prompt.docLanguage", codes, resolved);
   if (language === undefined) return cancelled(prompts, t);
 
+  // The placeholder names the directory the config already points at, and an
+  // empty answer accepts it. Substituting "./docs" here would quietly override
+  // a project that configured somewhere else.
   const out = await prompts.text({
     message: t("prompt.outDir"),
-    placeholder: "./docs",
-    defaultValue: "./docs",
+    placeholder: defaultOut,
   });
   if (prompts.isCancel(out) || typeof out !== "string") return cancelled(prompts, t);
 
+  const answer = out.trim();
   const options: GenerateCliOptions = {
     lang: language,
-    out: out === "" ? "./docs" : out,
+    ...(answer === "" ? {} : { out: answer }),
   };
 
   // The plan and the estimate come from the real dry run, not a guess.

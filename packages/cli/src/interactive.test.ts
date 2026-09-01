@@ -196,7 +196,8 @@ describe("runInteractive", () => {
     const code = await runInteractive(deps(["generate", "es", "", true, "exit"], { runGenerate }));
 
     expect(code).toBe(1);
-    expect(runGenerate.mock.calls[1]?.[1]).toMatchObject({ out: "./docs" });
+    // An empty answer leaves the destination to the config chain.
+    expect(runGenerate.mock.calls[1]?.[1]).not.toHaveProperty("out");
   });
 });
 
