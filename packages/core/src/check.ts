@@ -49,6 +49,7 @@ export const readDocFrontmatter = async (file: string): Promise<DocumentFrontmat
     }
 
     const parsed: unknown = parseYaml(match[1] ?? "");
+    
     if (typeof parsed !== "object" || parsed === null) {
       return { unit: undefined, hash: undefined };
     }

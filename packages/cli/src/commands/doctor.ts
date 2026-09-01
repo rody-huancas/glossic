@@ -31,21 +31,25 @@ export interface DoctorReport {
 
 /** Values are printed, so they have to survive being printed. */
 const display = (value: unknown): string => {
-  if (value === undefined) return "—";
-  if (Array.isArray(value)) return value.length === 0 ? "[]" : value.join(", ");
+  if (value === undefined) {
+    return "—";
+  }
+
+  if (Array.isArray(value)) {
+    return value.length === 0 ? "[]" : value.join(", ");
+  }
+
   if (typeof value === "object" && value !== null) {
     return Object.entries(value)
       .map(([key, nested]) => `${key}=${String(nested)}`)
       .join(", ");
   }
+
   return String(value);
 };
 
 /** Every resolved option paired with the source that decided its value. */
-const configEntries = (
-  config: Record<string, unknown>,
-  origins: ConfigOrigins,
-): DoctorConfigEntry[] =>
+const configEntries = (config: Record<string, unknown>, origins: ConfigOrigins): DoctorConfigEntry[] =>
   Object.keys(config)
     .sort()
     .map((key) => ({

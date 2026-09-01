@@ -13,6 +13,7 @@ export const groupByDirectory = (files: readonly string[], classifier: FileClass
     const name = dir === "" ? ROOT_UNIT : dir;
 
     let draft = drafts.get(name);
+    
     if (draft === undefined) {
       draft = emptyDraft(name);
       drafts.set(name, draft);

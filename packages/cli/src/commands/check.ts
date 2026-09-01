@@ -29,17 +29,15 @@ export const runCheck = async (target: string, options: CheckCliOptions): Promis
   });
   const t = createTranslator(config.uiLang);
 
-  const outDir =
-    options.out === undefined
-      ? path.resolve(root, config.output.dir)
-      : path.resolve(cwd, options.out);
+  const outDir = options.out === undefined
+    ? path.resolve(root, config.output.dir)
+    : path.resolve(cwd, options.out);
 
   const result = await check({ root, adapters: builtinAdapters, config, outDir });
 
-  process.stdout.write(
-    options.json === true
-      ? `${JSON.stringify(result, null, 2)}\n`
-      : renderCheckReport(result, { cwd, target, t }),
+  process.stdout.write( options.json === true
+    ? `${JSON.stringify(result, null, 2)}\n`
+    : renderCheckReport(result, { cwd, target, t }),
   );
 
   if (!result.ok) process.exitCode = 1;

@@ -62,10 +62,7 @@ export const readPreferences = async (location: PreferencesLocation = {}): Promi
  * Merges and saves. Only ever called when the user changes something from the
  * menu, so an unwritable config directory is reported rather than swallowed.
  */
-export const writePreferences = async (
-  update: Preferences,
-  location: PreferencesLocation = {},
-): Promise<string> => {
+export const writePreferences = async (update: Preferences, location: PreferencesLocation = {}): Promise<string> => {
   const target = preferencesPath(location);
   const merged = { ...(await readPreferences(location)), ...update };
 

@@ -1,11 +1,5 @@
 import { Command } from "commander";
-import {
-  checkCommand,
-  doctorCommand,
-  generateCommand,
-  initCommand,
-  scanCommand,
-} from "./commands/index.js";
+import { checkCommand, doctorCommand, generateCommand, initCommand, scanCommand } from "./commands/index.js";
 import { printBanner } from "./ui/banner.js";
 import { CLI_NAME, CLI_VERSION } from "./version.js";
 

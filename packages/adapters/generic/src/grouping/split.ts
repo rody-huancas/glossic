@@ -85,9 +85,13 @@ export const splitLargeUnit = (draft: UnitDraft, maxUnitFiles: number): UnitDraf
     binSize += group.files.length;
   }
 
-  if (bin.length > 0) bins.push(bin);
+  if (bin.length > 0) {
+    bins.push(bin);
+  }
 
-  if (bins.length <= 1) return [draft];
+  if (bins.length <= 1) {
+    return [draft];
+  }
 
   const labels   = bins.map((entries) => entries[0]?.root ?? "");
   const readable = labels.every(isReadableLabel);

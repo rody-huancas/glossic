@@ -101,7 +101,9 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
           providers: builtinProviders,
           adapters : builtinAdapters,
         });
+
         process.stdout.write(renderDoctorReport(report, t));
+
         return { ok: report.exitCode === 0 };
       }
 
@@ -118,8 +120,12 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     const status = await readStatus(root, language);
     const line   = renderStatusLine(status, t);
 
-    if (first) prompts.intro(line);
-    else prompts.note(line);
+    if (first) {
+      prompts.intro(line);
+    } else {
+      prompts.note(line);
+    }
+
     first = false;
 
     const noAiCalls = t("menu.hint.noAiCalls");
@@ -171,6 +177,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     if (choice === "docLanguage") {
       const codes  = LANGUAGES.map((entry) => entry.code);
       const chosen = await pickLanguage(prompts, t, "prompt.docLanguage", codes, language);
+
       if (chosen !== undefined && chosen !== language) {
         language = chosen;
         await remember({ lang: chosen });
@@ -179,7 +186,12 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     }
 
     const outcome = await perform(choice, t);
-    if (!outcome.ok) failed = true;
-    if (outcome.units !== undefined) knownUnits = outcome.units;
+    if (!outcome.ok) {
+      failed = true;
+    }
+
+    if (outcome.units !== undefined) {
+      knownUnits = outcome.units;
+    }
   }
 };

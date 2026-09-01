@@ -62,11 +62,15 @@ const scanLines = (text: string): SourceLine[] => {
       }
 
       lines.push({ text: line, fenced: match !== null });
+
       continue;
     }
 
     lines.push({ text: line, fenced: true });
-    if (match !== null && match[1] === fence) fence = undefined;
+
+    if (match !== null && match[1] === fence) {
+      fence = undefined;
+    }
   }
 
   return lines;

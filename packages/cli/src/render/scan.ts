@@ -61,6 +61,7 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
 
     projectUnits.forEach((unit, index) => {
       const branch = index === projectUnits.length - 1 ? "└─" : "├─";
+
       const columns = [
         unit.name.padEnd(nameWidth),
         counted(t, unit.facts.base.files.length, "file").padStart(filesWidth),
@@ -83,6 +84,7 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
   );
 
   const languages = countLanguages(units);
+  
   if (languages.length > 0) {
     lines.push(
       t("scan.languages", {

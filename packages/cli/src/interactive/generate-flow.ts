@@ -28,15 +28,22 @@ export const generateInteractively = async (
   resolved: string,
   defaultOut: string,
 ): Promise<ActionOutcome> => {
+
   const codes    = LANGUAGES.map((entry) => entry.code);
   const language = await pickLanguage(prompts, t, "prompt.docLanguage", codes, resolved);
-  if (language === undefined) return cancelled(prompts, t);
+
+  if (language === undefined) {
+    return cancelled(prompts, t);
+  }
 
   const out = await prompts.text({
     message    : t("prompt.outDir"),
     placeholder: defaultOut,
   });
-  if (prompts.isCancel(out) || typeof out !== "string") return cancelled(prompts, t);
+
+  if (prompts.isCancel(out) || typeof out !== "string") {
+    return cancelled(prompts, t);
+  }
 
   const answer = out.trim();
   const options: GenerateCliOptions = {
@@ -54,7 +61,10 @@ export const generateInteractively = async (
     }),
     initialValue: true,
   });
-  if (prompts.isCancel(confirmed) || confirmed !== true) return { ...cancelled(prompts, t), units };
+
+  if (prompts.isCancel(confirmed) || confirmed !== true) {
+    return { ...cancelled(prompts, t), units };
+  }
 
   const result = await generate(".", options);
   prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));

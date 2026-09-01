@@ -27,6 +27,7 @@ export const runScan = async (target: string, options: ScanOptions): Promise<Sca
     root,
     flags: flagsToConfig({ uiLang: options.uiLang }),
   });
+
   const t      = createTranslator(config.uiLang);
   const result = await scan({ root, adapters: builtinAdapters, config });
 
@@ -37,12 +38,13 @@ export const runScan = async (target: string, options: ScanOptions): Promise<Sca
 
   process.stdout.write(renderScanReport(result, t));
 
-  if (!options.write) return result;
+  if (!options.write) {
+    return result;
+  }
 
-  const manifestPath =
-    options.out === undefined
-      ? path.resolve(root, config.output.manifest)
-      : path.resolve(cwd, options.out);
+  const manifestPath = options.out === undefined
+    ? path.resolve(root, config.output.manifest)
+    : path.resolve(cwd, options.out);
 
   const out = await writeManifest(result.manifest, manifestPath);
   process.stdout.write(`\n${t("scan.manifest", { path: displayPath(cwd, out) })}\n`);

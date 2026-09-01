@@ -55,7 +55,10 @@ const asUserConfig = (value: unknown): GlossicUserConfig | undefined => {
 /** Loads and validates glossic.config.ts, ignoring a file that exports nothing usable. */
 export const loadProjectConfig = async (root: string): Promise<LoadedConfig | undefined> => {
   const file = await findConfigFile(root);
-  if (file === undefined) return undefined;
+
+  if (file === undefined) {
+    return undefined;
+  }
 
   try {
     const jiti   = createJiti(import.meta.url, { moduleCache: false });

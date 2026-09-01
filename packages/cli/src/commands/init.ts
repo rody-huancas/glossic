@@ -92,12 +92,15 @@ export default defineConfig({
 /** Writes glossic.config.ts and returns its path, refusing to overwrite one unless forced. */
 export const runInit = async (root: string, force: boolean): Promise<string> => {
   const existing = await findConfigFile(root);
+
   if (existing !== undefined && !force) {
     throw new Error(`${existing} already exists. Pass --force to overwrite it.`);
   }
 
   const target = path.resolve(root, CONFIG_FILENAMES[0] ?? "glossic.config.ts");
+
   await fs.writeFile(target, TEMPLATE, "utf8");
+  
   return toPosix(target);
 };
 

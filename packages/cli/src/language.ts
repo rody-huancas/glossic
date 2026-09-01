@@ -75,8 +75,9 @@ export interface ResolvedLanguage {
 }
 
 /** A non-empty string, which is what a language source has to yield to count as set. */
-const usable = (value: string | undefined): value is string =>
-  value !== undefined && value.trim() !== "";
+const usable = (value: string | undefined): value is string => {
+  return value !== undefined && value.trim() !== "";
+}
 
 /**
  * The precedence chain: an explicit flag beats the project's config, which
@@ -91,7 +92,9 @@ export const resolveLanguage = (inputs: LanguageInputs): ResolvedLanguage => {
   ];
 
   for (const [origin, value] of chain) {
-    if (usable(value)) return { language: value.trim(), origin };
+    if (usable(value)) {
+      return { language: value.trim(), origin };
+    }
   }
 
   return { language: DEFAULT_LANGUAGE, origin: "default" };
@@ -108,9 +111,7 @@ export interface LanguageContext {
  * Delegates to the one config resolver so the menu can never disagree with
  * the command it is about to run.
  */
-export const resolveDocumentationLanguage = async (
-  context: LanguageContext,
-): Promise<ResolvedLanguage> => {
+export const resolveDocumentationLanguage = async (context: LanguageContext): Promise<ResolvedLanguage> => {
   const { config, origins } = await resolveEffectiveConfig({
     root: context.root,
     ...(context.flag === undefined ? {} : { flags: { lang: context.flag } }),
@@ -118,6 +119,7 @@ export const resolveDocumentationLanguage = async (
   });
 
   const origin = origins.lang ?? "default";
+  
   return {
     language: config.lang,
     origin  : origin === "preference" && context.flag === undefined ? "preference" : origin,

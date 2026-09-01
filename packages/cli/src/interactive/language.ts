@@ -16,6 +16,7 @@ const pickLanguage = async (
   codes: readonly string[],
   current: string,
 ): Promise<string | undefined> => {
+  
   const chosen = await prompts.select<string>({
     message: t(message),
     options: codes.map((code) => ({

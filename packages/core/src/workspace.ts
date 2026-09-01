@@ -99,6 +99,7 @@ const expandProjectDirs = async (root: string, globs: string[]): Promise<string[
       ignore.push(`${entry.slice(1)}/**`);
       continue;
     }
+    
     patterns.push(`${entry}/package.json`);
   }
 

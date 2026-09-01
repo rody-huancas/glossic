@@ -27,12 +27,16 @@ export interface GenerateCliOptions {
 
 /** Reads --concurrency, rejecting anything that is not a positive integer. */
 const parseConcurrency = (value: string | undefined): number | undefined => {
-  if (value === undefined) return undefined;
+  if (value === undefined) {
+    return undefined;
+  }
 
   const parsed = Number.parseInt(value, 10);
+
   if (!Number.isInteger(parsed) || parsed < 1) {
     throw new Error(`--concurrency must be a positive integer, got "${value}"`);
   }
+
   return parsed;
 };
 
@@ -49,11 +53,7 @@ export interface GenerateDeps {
  * A failed unit does not abort the run, but it does set a non-zero exit code:
  * CI must not pass on documentation that was never written.
  */
-export const runGenerate = async (
-  target: string,
-  options: GenerateCliOptions,
-  deps: GenerateDeps = {},
-): Promise<GenerateResult> => {
+export const runGenerate = async (target: string, options: GenerateCliOptions, deps: GenerateDeps = {}): Promise<GenerateResult> => {
   const cwd  = deps.cwd ?? process.cwd();
   const root = path.resolve(cwd, target);
 

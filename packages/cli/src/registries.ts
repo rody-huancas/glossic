@@ -17,9 +17,7 @@ export const builtinAdapters = [nestjsAdapter, treesitterAdapter, genericAdapter
  * Every provider shipped with the CLI, built against the resolved config so
  * that `model` and `timeoutMs` are not options the config only pretends to have.
  */
-export const createProviders = (
-  config?: Pick<GlossicConfig, "model" | "timeoutMs">,
-): Provider[] => [
+export const createProviders = (config?: Pick<GlossicConfig, "model" | "timeoutMs">): Provider[] => [
   createClaudeCodeProvider({
     ...(config?.model === undefined ? {} : { model: config.model }),
     ...(config?.timeoutMs === undefined ? {} : { timeoutMs: config.timeoutMs }),

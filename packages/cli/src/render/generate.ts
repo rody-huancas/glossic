@@ -16,10 +16,7 @@ const formatTokens = (tokens: number): string =>
   tokens < 1000 ? `${tokens}` : `~${Math.round(tokens / 1000)}k`;
 
 /** Renders the generate report, for both a dry run and a real run. */
-export const renderGenerateReport = (
-  result: GenerateResult,
-  context: GenerateReportContext,
-): string => {
+export const renderGenerateReport = (result: GenerateResult, context: GenerateReportContext): string => {
   const t           = context.t ?? defaultTranslator;
   const relativeOut = displayPath(context.cwd, context.outDir);
   const nameWidth   = Math.max(0, ...result.plan.map((entry) => entry.unitId.length));
@@ -66,9 +63,11 @@ export const renderGenerateReport = (
       failed: result.failures.length,
     }),
   ];
+
   if (result.filteredOut.length > 0) {
     counts.push(t("generate.filteredOut", { count: result.filteredOut.length }));
   }
+
   lines.push(counts.join(", "));
 
   const tokens = formatTokens(result.estimatedTokens);
@@ -92,8 +91,12 @@ export const renderGenerateReport = (
 
   for (const failure of result.failures) {
     const code = failure.code === undefined ? "" : ` [${failure.code}]`;
+
     lines.push(`  ${t("generate.failed", { unit: failure.unitId, code, reason: failure.reason })}`);
-    if (failure.detail !== undefined) lines.push(`          ${failure.detail}`);
+    
+    if (failure.detail !== undefined) {
+      lines.push(`          ${failure.detail}`);
+    }
   }
 
   return `${lines.join("\n")}\n`;
