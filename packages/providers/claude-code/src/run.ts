@@ -1,6 +1,7 @@
 import { ProviderError } from "@glossic/schema";
 import { type ChildProcess, spawn } from "node:child_process";
 
+/** `timeoutMs` is enforced by killing the child, since the CLI has no budget of its own. */
 export interface RunOptions {
   binary    : string;
   args      : readonly string[];
@@ -17,6 +18,7 @@ export interface RunOutcome {
 }
 
 
+/** Accumulates a child stream as utf8, tolerating a stream that was never opened. */
 const collect = (stream: NodeJS.ReadableStream | null, onChunk: (chunk: string) => void): void => {
   if (stream === null) return;
 
@@ -24,6 +26,7 @@ const collect = (stream: NodeJS.ReadableStream | null, onChunk: (chunk: string) 
   stream.on("data", onChunk);
 };
 
+/** Sends the prompt on stdin and closes it, so the CLI knows the input ended. */
 const writeInput = (child: ChildProcess, input: string | undefined): void => {
   if (child.stdin === null) return;
 
@@ -31,6 +34,10 @@ const writeInput = (child: ChildProcess, input: string | undefined): void => {
   child.stdin.end(input ?? "");
 };
 
+/**
+ * Runs the CLI to completion. A missing binary, a timeout and a crash all come
+ * back as a tagged ProviderError rather than a raw spawn failure.
+ */
 export const run = (providerName: string, options: RunOptions): Promise<RunOutcome> =>
   new Promise<RunOutcome>((resolve, reject) => {
     let child: ChildProcess;

@@ -6,6 +6,7 @@ export const anthropicProviderName   = "anthropic";
 export const ANTHROPIC_DEFAULT_MODEL = "claude-opus-5";
 const  DEFAULT_MAX_TOKENS            = 16_000;
 
+/** Model prefixes that reject a sampling parameter outright, so temperature is dropped. */
 const SAMPLING_REJECTED_BY = [
   "claude-fable-",
   "claude-mythos-",
@@ -15,6 +16,7 @@ const SAMPLING_REJECTED_BY = [
   "claude-sonnet-5",
 ];
 
+/** Whether this model will take a temperature, rather than refusing the request. */
 export const acceptsTemperature = (model: string): boolean =>
   !SAMPLING_REJECTED_BY.some((prefix) => model.startsWith(prefix));
 
@@ -26,12 +28,14 @@ export interface AnthropicProviderOptions {
   createClient?: (apiKey: string) => Anthropic;
 }
 
+/** The API key from the options or the environment, empty treated as absent. */
 const readApiKey = (options: AnthropicProviderOptions): string | undefined => {
   const key = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
 
   return key === undefined || key.trim() === "" ? undefined : key;
 };
 
+/** Maps an SDK failure onto the shared error vocabulary, so retry knows what to do. */
 const toProviderError = (cause: unknown): ProviderError => {
   if (isProviderError(cause)) return cause;
 
@@ -85,6 +89,7 @@ const toProviderError = (cause: unknown): ProviderError => {
   });
 };
 
+/** The text blocks of a response, joined; other block types are dropped. */
 const extractText = (message: Anthropic.Message): string => {
   return   message.content
     .filter((block): block is Anthropic.TextBlock => block.type === "text")
@@ -93,6 +98,10 @@ const extractText = (message: Anthropic.Message): string => {
 }
 
 
+/**
+ * Provider backed by the Anthropic API. Reports itself unavailable when no key
+ * is set, which is how auto-detection falls through to the next one.
+ */
 export const createAnthropicProvider = (options: AnthropicProviderOptions = {}): Provider => {
   const model     = options.model ?? ANTHROPIC_DEFAULT_MODEL;
   const maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
@@ -167,6 +176,7 @@ export const createAnthropicProvider = (options: AnthropicProviderOptions = {}):
   };
 };
 
+/** The default-configured instance, for callers with nothing to override. */
 export const anthropicProvider: Provider = createAnthropicProvider();
 
 export default anthropicProvider;

@@ -2,6 +2,7 @@ import { ProviderError } from "@glossic/schema";
 import type { CompletionResult } from "@glossic/schema";
 
 
+/** The result envelope of `claude -p --output-format json`, all of it untrusted. */
 interface ClaudeResultPayload {
   type          ?: string;
   subtype       ?: string;
@@ -25,6 +26,7 @@ const asInteger = (value: unknown): number | undefined => {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
 }
 
+/** The result object, whether the CLI answered with one object or a stream of them. */
 const pickResult = (parsed: unknown): ClaudeResultPayload | undefined => {
   if (isRecord(parsed)) {
     return parsed as ClaudeResultPayload;
@@ -44,6 +46,7 @@ const pickResult = (parsed: unknown): ClaudeResultPayload | undefined => {
   return undefined;
 };
 
+/** Token counts, when the payload carries a usable pair of them. */
 const buildUsage = (payload: ClaudeResultPayload): CompletionResult["usage"] => {
   const inputTokens  = asInteger(payload.usage?.input_tokens);
   const outputTokens = asInteger(payload.usage?.output_tokens);
@@ -58,6 +61,10 @@ const buildUsage = (payload: ClaudeResultPayload): CompletionResult["usage"] => 
     : { inputTokens, outputTokens, cacheReadTokens };
 };
 
+/**
+ * Turns the CLI's stdout into a completion, throwing a tagged ProviderError
+ * for anything that is not a usable result.
+ */
 export const parseClaudeOutput = (providerName: string, stdout: string, fallbackModel: string): CompletionResult => {
   const trimmed = stdout.trim();
 

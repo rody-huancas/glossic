@@ -7,12 +7,18 @@ import { run } from "./run.js";
 import { parseClaudeOutput } from "./output.js";
 
 export const claudeCodeProviderName    = "claude-code";
+/** The CLI picks its own model, so "claude-code" stands in for whatever it used. */
 export const CLAUDE_CODE_DEFAULT_MODEL = "claude-code";
 
 const DEFAULT_TIMEOUT_MS      = 300_000;
+/** Probing must not hang the menu, so the availability check gets its own short budget. */
 const AVAILABILITY_TIMEOUT_MS = 15_000;
 
 
+/**
+ * Strips the agent down to a single completion: no tools, no user settings, no
+ * MCP servers. What glossic wants is prose, not an agent acting on the repo.
+ */
 export const ISOLATION_ARGS: readonly string[] = [
   "--allowed-tools",
   "",
@@ -29,6 +35,7 @@ export interface ClaudeCodeProviderOptions {
   extraArgs?: readonly string[];
 }
 
+/** Reads a non-zero exit's stderr for the reason, so a retryable failure is retried. */
 const classifyExit = (stderr: string): ProviderErrorCode => {
   const text = stderr.toLowerCase();
 
@@ -43,6 +50,7 @@ const classifyExit = (stderr: string): ProviderErrorCode => {
   return "exit-code";
 };
 
+/** The full argument list for one completion, isolation flags included. */
 export const buildArgs = (options: ClaudeCodeProviderOptions, request: CompletionRequest): string[] => {
   const args = ["-p", "--output-format", "json", ...ISOLATION_ARGS];
 
@@ -64,6 +72,10 @@ export const buildArgs = (options: ClaudeCodeProviderOptions, request: Completio
 };
 
 
+/**
+ * Provider backed by the local Claude Code CLI. It costs nothing extra when
+ * the user already has a session, which is why it is probed first.
+ */
 export const createClaudeCodeProvider = (options: ClaudeCodeProviderOptions = {}): Provider => {
   const binary    = options.binary ?? "claude";
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -130,6 +142,7 @@ export const createClaudeCodeProvider = (options: ClaudeCodeProviderOptions = {}
   };
 };
 
+/** The default-configured instance, for callers with nothing to override. */
 export const claudeCodeProvider: Provider = createClaudeCodeProvider();
 
 export { parseClaudeOutput } from "./output.js";
