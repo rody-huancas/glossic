@@ -57,7 +57,7 @@ const detectMonorepo = async (root: string, pkg: PackageJson | undefined): Promi
 
   if (pnpmWorkspace !== undefined) {
     const parsed: unknown = parseYaml(pnpmWorkspace);
-    const globs = asStringArray((parsed as { packages?: unknown } | null)?.packages);
+    const globs           = asStringArray((parsed as { packages?: unknown } | null)?.packages);
 
     if (globs.length > 0) {
       return { tool: "pnpm", globs };
@@ -90,7 +90,7 @@ const detectMonorepo = async (root: string, pkg: PackageJson | undefined): Promi
 
 const expandProjectDirs = async (root: string, globs: string[]): Promise<string[]> => {
   const patterns: string[] = [];
-  const ignore = [...GLOB_IGNORES];
+  const ignore             = [...GLOB_IGNORES];
 
   for (const entry of globs) {
     if (entry.startsWith("!")) {

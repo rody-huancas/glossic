@@ -59,12 +59,12 @@ export type SymbolKind = z.infer<typeof SymbolKindSchema>;
 
 
 export const SymbolFactSchema = z.object({
-  name: z.string().min(1),
-  kind: SymbolKindSchema,
-  file: z.string().min(1),
+  name     : z.string().min(1),
+  kind     : SymbolKindSchema,
+  file     : z.string().min(1),
   signature: z.string().optional(),
-  exported: z.boolean(),
-  line: z.number().int().positive().optional(),
+  exported : z.boolean(),
+  line     : z.number().int().positive().optional(),
 });
 export type SymbolFact = z.infer<typeof SymbolFactSchema>;
 
@@ -76,8 +76,8 @@ export type SymbolFacts = z.infer<typeof SymbolFactsSchema>;
 
 
 export const RouteFactSchema = z.object({
-  method: z.string().min(1),
-  path: z.string().min(1),
+  method : z.string().min(1),
+  path   : z.string().min(1),
   handler: z.string().optional(),
 });
 export type RouteFact = z.infer<typeof RouteFactSchema>;

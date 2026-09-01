@@ -34,11 +34,11 @@ const stringField = (cause: unknown, field: string): string | undefined => {
 
 
 export const generate = async (ctx: GenerateContext): Promise<GenerateResult> => {
-  const config       = ctx.config ?? GlossicConfigSchema.parse({});
-  const scanned      = await scan(ctx);
+  const config  = ctx.config ?? GlossicConfigSchema.parse({});
+  const scanned = await scan(ctx);
   const { manifest } = scanned;
-  const generatedAt  = manifest.generatedAt;
-  const root         = manifest.workspace.root;
+  const generatedAt = manifest.generatedAt;
+  const root        = manifest.workspace.root;
 
   const cachePath       = ctx.cachePath ?? path.resolve(root, DEFAULT_CACHE_PATH);
   const model           = modelCacheKey(config);
@@ -110,13 +110,13 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     };
   }
 
-  const provider = ctx.provider;
+  const provider                    = ctx.provider;
   const failures: GenerateFailure[] = [];
   const warnings: GenerateWarning[] = [];
-  const summaries = new Map<string, string>();
-  const pending = decisions.filter(({ reason }) => reason !== "cached");
+  const summaries                   = new Map<string, string>();
+  const pending                     = decisions.filter(({ reason }) => reason !== "cached");
 
-  const total = decisions.length;
+  const total   = decisions.length;
   let completed = 0;
 
   const report = (event: GenerateEvent): void => ctx.onEvent?.(event);
@@ -162,7 +162,7 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     }
   });
 
-  const written: string[] = [];
+  const written: string[]   = [];
   const fresh: CacheEntry[] = [];
 
   for (const outcome of outcomes) {

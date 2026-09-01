@@ -45,12 +45,12 @@ export const scan = async (ctx: PipelineContext): Promise<ScanResult> => {
   const adapters                       = orderAdapters(ctx.adapters, config.adapters);
   const adapterContext: AdapterContext = { root: workspace.root, workspace, config };
 
-  const results: ExtractResult[] = [];
+  const results: ExtractResult[]                 = [];
   const adapterByProject: Record<string, string> = {};
 
   for (const project of workspace.projects) {
     const discoverContext: DiscoverContext = { ...adapterContext, project };
-    const adapter = await selectAdapter(adapters, discoverContext);
+    const adapter                          = await selectAdapter(adapters, discoverContext);
 
     if (adapter === undefined) continue;
 

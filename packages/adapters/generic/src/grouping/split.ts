@@ -30,7 +30,7 @@ const groupByFilenameRoot = (draft: UnitDraft): FileGroup[] => {
 
   const add = (file: string, bucket: "files" | "testFiles" | "ignoredFiles"): void => {
     const root = filenameRoot(file);
-    let group = groups.get(root);
+    let group  = groups.get(root);
 
     if (group === undefined) {
       group = { root, files: [], testFiles: [], ignoredFiles: [] };
@@ -63,10 +63,10 @@ export const splitLargeUnit = (draft: UnitDraft, maxUnitFiles: number): UnitDraf
     return [draft];
   }
 
-  const groups = groupByFilenameRoot(draft);
+  const groups              = groupByFilenameRoot(draft);
   const bins: FileGroup[][] = [];
-  let bin: FileGroup[] = [];
-  let binSize = 0;
+  let bin: FileGroup[]      = [];
+  let binSize               = 0;
 
   for (const group of groups) {
     if (bin.length > 0 && binSize + group.files.length > maxUnitFiles) {

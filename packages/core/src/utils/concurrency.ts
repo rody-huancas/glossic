@@ -1,6 +1,6 @@
 export const mapWithConcurrency = async <T, R>(items: readonly T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> => {
   const results = new Array<R>(items.length);
-  let cursor = 0;
+  let cursor    = 0;
 
   const worker = async (): Promise<void> => {
     while (cursor < items.length) {

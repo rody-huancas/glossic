@@ -4,7 +4,7 @@ import ignore, { type Ignore } from "ignore";
 import { glob } from "tinyglobby";
 
 interface GitignoreScope {
-  base: string;
+  base   : string;
   matcher: Ignore;
 }
 

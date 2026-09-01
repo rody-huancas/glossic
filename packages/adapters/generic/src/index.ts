@@ -82,7 +82,7 @@ export const genericAdapter: Adapter = {
       dot                : true,
     });
 
-    const scopes = await collectGitignores(ctx.root, projectDir, HARD_IGNORES);
+    const scopes       = await collectGitignores(ctx.root, projectDir, HARD_IGNORES);
     const isGitignored = createGitignoreFilter(scopes);
 
     const files = entries
@@ -141,7 +141,7 @@ export const genericAdapter: Adapter = {
     }
 
     return {
-      units: units.sort((a, b) => compareStrings(a.id, b.id)),
+      units    : units.sort((a, b) => compareStrings(a.id, b.id)),
       relations: [],
     };
   },

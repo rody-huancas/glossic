@@ -13,7 +13,7 @@ export interface ResolveProviderOptions {
 }
 
 export interface ProviderStatus {
-  name: string;
+  name     : string;
   available: boolean;
 }
 

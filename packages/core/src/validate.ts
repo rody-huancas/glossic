@@ -4,35 +4,35 @@ export const MIN_DOCUMENT_LENGTH = 200;
 export const MAX_PREAMBLE_LENGTH = 500;
 
 interface ContentRule {
-  reason: string;
+  reason : string;
   pattern: RegExp;
 }
 
 const CONVERSATIONAL_RULES: readonly ContentRule[] = [
   {
-    reason: "the model asked for permission instead of writing the document",
+    reason : "the model asked for permission instead of writing the document",
     pattern:
       /\b(permission to (write|save|create)|(write|read) permission|need (write )?access)\b/i,
   },
   {
-    reason: "the model reported on saving a file instead of writing the document",
+    reason : "the model reported on saving a file instead of writing the document",
     pattern:
       /\bI( have|['’]ve)? ?(drafted|prepared|written|created|saved|generated) (the|this|a) /i,
   },
   {
-    reason: "the model asked the reader a question",
+    reason : "the model asked the reader a question",
     pattern: /\b(let me know|say the word|shall I|would you (like|prefer|want))\b/i,
   },
   {
-    reason: "the model opened with a preamble instead of the document",
+    reason : "the model opened with a preamble instead of the document",
     pattern: /^\s*(here(['’]s| is)|below is|sure[,!]|certainly[,!]|I['’]ll)\b/i,
   },
   {
-    reason: "the model addressed the reader in the first person",
+    reason : "the model addressed the reader in the first person",
     pattern: /\bI['’](ve|m|ll|d)\b/,
   },
   {
-    reason: "the model addressed the reader in the first person",
+    reason : "the model addressed the reader in the first person",
     pattern: /\bI (need|cannot|can't|could not|couldn't|have|am|was|tried|noticed|assume)\b/,
   },
 ];
@@ -136,7 +136,7 @@ export const findContentProblem = (text: string): ContentProblem | undefined => 
 
   if (trimmed.length < MIN_DOCUMENT_LENGTH) {
     return {
-      reason: `the response is ${trimmed.length} characters, below the ${MIN_DOCUMENT_LENGTH} minimum`,
+      reason : `the response is ${trimmed.length} characters, below the ${MIN_DOCUMENT_LENGTH} minimum`,
       excerpt: excerpt(trimmed, 120),
     };
   }

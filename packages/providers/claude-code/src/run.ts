@@ -2,7 +2,7 @@ import { ProviderError } from "@glossic/schema";
 import { type ChildProcess, spawn } from "node:child_process";
 
 export interface RunOptions {
-  binary: string;
+  binary    : string;
   args      : readonly string[];
   input    ?: string;
   timeoutMs : number;

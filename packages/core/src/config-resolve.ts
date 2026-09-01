@@ -29,7 +29,7 @@ const isSet = (value: unknown): boolean => {
 
 export const resolveConfig = (sources: ConfigSources = {}): ResolvedConfig => {
   const merged : Record<string, unknown> = {};
-  const origins: ConfigOrigins = {};
+  const origins: ConfigOrigins           = {};
 
   for (const [origin, key] of [...ORDER].reverse()) {
     const source = sources[key];

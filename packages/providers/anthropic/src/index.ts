@@ -94,7 +94,7 @@ const extractText = (message: Anthropic.Message): string => {
 
 
 export const createAnthropicProvider = (options: AnthropicProviderOptions = {}): Provider => {
-  const model = options.model ?? ANTHROPIC_DEFAULT_MODEL;
+  const model     = options.model ?? ANTHROPIC_DEFAULT_MODEL;
   const maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
   const createClient = options.createClient ?? ((apiKey: string) => new Anthropic({
     apiKey,
