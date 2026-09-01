@@ -20,6 +20,7 @@ export const UI_LANGUAGES = Object.keys(CATALOGUES);
 
 export const hasCatalogue = (lang: string): boolean => lang in CATALOGUES;
 
+/** Looks up one key and fills its {placeholders}. */
 export type Translator = (key: MessageKey, params?: Record<string, string | number>) => string;
 
 /**

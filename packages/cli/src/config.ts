@@ -16,6 +16,7 @@ export interface ConfigRequest {
   location?: PreferencesLocation | undefined;
 }
 
+/** A resolved config plus its provenance: the file that contributed and the origin of each key. */
 export interface EffectiveConfig extends ResolvedConfig {
   file   : string | undefined;
   origins: ConfigOrigins;

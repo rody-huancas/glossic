@@ -25,6 +25,7 @@ export interface GenerateCliOptions {
   quiet      ?: boolean;
 }
 
+/** Reads --concurrency, rejecting anything that is not a positive integer. */
 const parseConcurrency = (value: string | undefined): number | undefined => {
   if (value === undefined) return undefined;
 

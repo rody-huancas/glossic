@@ -89,6 +89,7 @@ export default defineConfig({
 });
 `;
 
+/** Writes glossic.config.ts and returns its path, refusing to overwrite one unless forced. */
 export const runInit = async (root: string, force: boolean): Promise<string> => {
   const existing = await findConfigFile(root);
   if (existing !== undefined && !force) {

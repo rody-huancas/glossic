@@ -5,6 +5,7 @@ import { builtinProviders } from "../registries.js";
 import { accent, dim } from "../ui/theme.js";
 import type { Translator } from "../i18n/index.js";
 
+/** The line drawn above the menu: project, provider and documentation language. */
 export interface StatusLine {
   project : string;
   provider: string | undefined;

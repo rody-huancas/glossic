@@ -30,5 +30,6 @@ export const createProviders = (
 /** The default-config instances, for callers with nothing resolved yet. */
 export const builtinProviders: Provider[] = createProviders();
 
+/** Name-keyed lookups over the builtin lists, for resolving an id the config named. */
 export const adapters: AdapterRegistry   = createAdapterRegistry(builtinAdapters);
 export const providers: ProviderRegistry = createProviderRegistry(builtinProviders);

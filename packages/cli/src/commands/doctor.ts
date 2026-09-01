@@ -41,6 +41,7 @@ const display = (value: unknown): string => {
   return String(value);
 };
 
+/** Every resolved option paired with the source that decided its value. */
 const configEntries = (
   config: Record<string, unknown>,
   origins: ConfigOrigins,
@@ -60,6 +61,7 @@ export interface DoctorOptions {
   adapters  : readonly Adapter[];
 }
 
+/** What glossic can see on this machine: providers, adapters and the effective config. */
 export const collectDoctorReport = async (options: DoctorOptions): Promise<DoctorReport> => {
   const providers = await probeProviders(options.providers);
   const { config, origins, file } = await resolveEffectiveConfig({

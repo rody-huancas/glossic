@@ -39,6 +39,7 @@ export interface PromptPort {
  */
 type ClackOptions = Parameters<typeof clack.select>[0];
 
+/** The real implementation, backed by @clack/prompts and a terminal. */
 export const clackPrompts: PromptPort = {
   intro: (message) => {
     clack.intro(message);

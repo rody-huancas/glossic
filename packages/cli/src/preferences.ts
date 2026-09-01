@@ -9,6 +9,7 @@ export interface Preferences {
   uiLang?: "en" | "es";
 }
 
+/** Overrides for where the preferences file lives, so a test never touches the real one. */
 export interface PreferencesLocation {
   env     ?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;

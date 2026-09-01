@@ -16,6 +16,10 @@ export interface CheckCliOptions {
   out   ?: string;
 }
 
+/**
+ * Prints how stale the documentation is and exits non-zero when it is, which
+ * is the whole point of running this in CI.
+ */
 export const runCheck = async (target: string, options: CheckCliOptions): Promise<CheckResult> => {
   const cwd  = process.cwd();
   const root = path.resolve(cwd, target);

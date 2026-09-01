@@ -74,6 +74,7 @@ export interface ResolvedLanguage {
   origin  : LanguageOrigin;
 }
 
+/** A non-empty string, which is what a language source has to yield to count as set. */
 const usable = (value: string | undefined): value is string =>
   value !== undefined && value.trim() !== "";
 
