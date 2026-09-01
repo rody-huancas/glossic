@@ -6,8 +6,8 @@ import { absorbUndocumentedUnits, groupByDirectory, mergeSmallParents, mergeSubt
 import type { GroupingOptions, UnitDraft } from "./draft.js";
 
 export { SPLIT_SEPARATOR, createClassifier, unitName } from "./draft.js";
-export { absorbUndocumentedUnits, groupByDirectory, mergeSmallParents, mergeSubtrees } from "./merge.js";
 export { filenameRoot, isReadableLabel, splitLargeUnit } from "./split.js";
+export { absorbUndocumentedUnits, groupByDirectory, mergeSmallParents, mergeSubtrees } from "./merge.js";
 export type { FileClassifier, GroupingOptions, UnitDraft } from "./draft.js";
 
 

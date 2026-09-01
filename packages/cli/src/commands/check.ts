@@ -1,14 +1,14 @@
 import path from "node:path";
 import process from "node:process";
 
-import type { CheckResult } from "@glossic/core";
 import { check } from "@glossic/core";
 import { Command } from "commander";
+import type { CheckResult } from "@glossic/core";
 
-import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
-import { createTranslator } from "../i18n/index.js";
 import { builtinAdapters } from "../registries.js";
+import { createTranslator } from "../i18n/index.js";
 import { renderCheckReport } from "../render/index.js";
+import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
 
 export interface CheckCliOptions {
   json  ?: boolean;

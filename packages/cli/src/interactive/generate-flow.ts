@@ -1,9 +1,9 @@
-import { pickLanguage } from "./language.js";
 import { LANGUAGES } from "../language.js";
-import type { GenerateCliOptions } from "../commands/generate.js";
-import type { runGenerate } from "../commands/generate.js";
+import { pickLanguage } from "./language.js";
 import type { Translator } from "../i18n/index.js";
 import type { PromptPort } from "../ui/prompts.js";
+import type { runGenerate } from "../commands/generate.js";
+import type { GenerateCliOptions } from "../commands/generate.js";
 
 /** `units` is whatever the action happened to learn, for the next menu's hint. */
 export interface ActionOutcome {
