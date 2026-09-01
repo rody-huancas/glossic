@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+/** Where generate and scan write, relative to the workspace root. */
 export const OutputConfigSchema = z.object({
   dir     : z.string().default("docs"),
   manifest: z.string().default(".glossic/manifest.json"),
@@ -7,6 +8,7 @@ export const OutputConfigSchema = z.object({
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 
 
+/** Every option glossic accepts, with the default that applies when nothing sets it. */
 export const GlossicConfigSchema = z.object({
   include    : z.array(z.string()).default(["**/*"]),
   exclude    : z.array(z.string()).default(["**/node_modules/**", "**/dist/**", "**/vendor/**"]),
@@ -51,7 +53,12 @@ export const GlossicConfigSchema = z.object({
 });
 
 
+/**
+ * `GlossicConfig` is the config once the defaults are applied, so every key is
+ * present; `GlossicUserConfig` is the same shape as a person writes it.
+ */
 export type GlossicConfig     = z.infer<typeof GlossicConfigSchema>;
 export type GlossicUserConfig = z.input<typeof GlossicConfigSchema>;
 
+/** Types a glossic.config.ts without making the project import zod. */
 export const defineConfig = (config: GlossicUserConfig): GlossicUserConfig => config;

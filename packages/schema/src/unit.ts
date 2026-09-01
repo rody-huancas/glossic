@@ -3,6 +3,7 @@ import { z } from "zod";
 export const UnitKindSchema = z.enum(["directory", "module", "file"]);
 export type UnitKind = z.infer<typeof UnitKindSchema>;
 
+/** What a directory appears to hold, inferred from its name. */
 export const RoleHintSchema = z.enum([
   "components",
   "config",
@@ -20,6 +21,7 @@ export const RoleHintSchema = z.enum([
 export type RoleHint = z.infer<typeof RoleHintSchema>;
 
 
+/** One documentable file: where it lives, its language and its size. */
 export const FileFactSchema = z.object({
   path    : z.string().min(1),
   language: z.string().min(1),
@@ -35,6 +37,7 @@ export const LanguageCountSchema = z.object({
 export type LanguageCount = z.infer<typeof LanguageCountSchema>;
 
 
+/** What any adapter can state about a unit, whatever the language. */
 export const BaseFactsSchema = z.object({
   files       : z.array(FileFactSchema),
   testFiles   : z.array(FileFactSchema),
@@ -58,6 +61,7 @@ export const SymbolKindSchema = z.enum([
 export type SymbolKind = z.infer<typeof SymbolKindSchema>;
 
 
+/** One declaration a language-aware adapter recognised. */
 export const SymbolFactSchema = z.object({
   name     : z.string().min(1),
   kind     : SymbolKindSchema,
@@ -75,6 +79,7 @@ export const SymbolFactsSchema = z.object({
 export type SymbolFacts = z.infer<typeof SymbolFactsSchema>;
 
 
+/** One HTTP route a framework-aware adapter recognised. */
 export const RouteFactSchema = z.object({
   method : z.string().min(1),
   path   : z.string().min(1),
@@ -83,6 +88,7 @@ export const RouteFactSchema = z.object({
 export type RouteFact = z.infer<typeof RouteFactSchema>;
 
 
+/** What a framework-aware adapter adds on top of the base facts. */
 export const FrameworkFactsSchema = z.object({
   name        : z.string().min(1),
   role        : z.string().optional(),
@@ -92,6 +98,7 @@ export const FrameworkFactsSchema = z.object({
 export type FrameworkFacts = z.infer<typeof FrameworkFactsSchema>;
 
 
+/** Everything known about a unit; `producedBy` names the adapters that contributed. */
 export const FactsSchema = z.object({
   base      : BaseFactsSchema,
   symbols   : SymbolFactsSchema.optional(),
@@ -101,6 +108,7 @@ export const FactsSchema = z.object({
 export type Facts = z.infer<typeof FactsSchema>;
 
 
+/** A documentable chunk of a project: the thing one page of documentation describes. */
 export const UnitSchema = z.object({
   id       : z.string().min(1),
   projectId: z.string().min(1),
@@ -127,6 +135,7 @@ export const RelationKindSchema = z.enum([
 export type RelationKind = z.infer<typeof RelationKindSchema>;
 
 
+/** A directed edge between two units, by unit id. */
 export const RelationSchema = z.object({
   from  : z.string().min(1),
   to    : z.string().min(1),

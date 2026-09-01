@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+/** One prompt on its way to a provider, in terms no provider owns. */
 export const CompletionRequestSchema = z.object({
   system     : z.string().optional(),
   prompt     : z.string().min(1),
@@ -11,6 +12,7 @@ export const CompletionRequestSchema = z.object({
 export type CompletionRequest = z.infer<typeof CompletionRequestSchema>;
 
 
+/** Token counts a provider reports back, when it reports them at all. */
 export const CompletionUsageSchema = z.object({
   inputTokens    : z.number().int().nonnegative(),
   outputTokens   : z.number().int().nonnegative(),
@@ -19,6 +21,7 @@ export const CompletionUsageSchema = z.object({
 export type CompletionUsage = z.infer<typeof CompletionUsageSchema>;
 
 
+/** The prose a provider wrote, plus whatever it can say about what it cost. */
 export const CompletionResultSchema = z.object({
   text   : z.string(),
   model  : z.string(),
@@ -29,6 +32,7 @@ export const CompletionResultSchema = z.object({
 export type CompletionResult = z.infer<typeof CompletionResultSchema>;
 
 
+/** Writes prose from a prompt. `available` is what provider auto-detection probes. */
 export interface Provider {
   readonly name                       : string;
   available()                         : Promise<boolean>;
