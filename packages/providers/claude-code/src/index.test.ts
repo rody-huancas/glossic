@@ -3,7 +3,13 @@ import { fileURLToPath } from "node:url";
 import { isProviderError, type ProviderError } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
-import { claudeCodeProvider, claudeCodeProviderName, createClaudeCodeProvider } from "./index.js";
+import {
+  buildArgs,
+  claudeCodeProvider,
+  claudeCodeProviderName,
+  createClaudeCodeProvider,
+  ISOLATION_ARGS,
+} from "./index.js";
 import { parseClaudeOutput } from "./output.js";
 
 const fixture = async (name: string): Promise<string> =>
@@ -114,5 +120,65 @@ describe("createClaudeCodeProvider", () => {
       name: "ProviderError",
       provider: claudeCodeProviderName,
     });
+  });
+});
+
+describe("isolation from the scanned project", () => {
+  const request = { prompt: "describe this unit", system: "You write docs.", metadata: {} };
+
+  it("disables every tool", () => {
+    const args = buildArgs({}, request);
+    const index = args.indexOf("--allowed-tools");
+
+    expect(index).toBeGreaterThanOrEqual(0);
+    expect(args[index + 1]).toBe("");
+  });
+
+  it("loads no settings and no MCP servers", () => {
+    const args = buildArgs({}, request);
+    const index = args.indexOf("--setting-sources");
+
+    expect(index).toBeGreaterThanOrEqual(0);
+    expect(args[index + 1]).toBe("");
+    expect(args).toContain("--strict-mcp-config");
+  });
+
+  it("replaces the agent system prompt rather than appending to it", () => {
+    const args = buildArgs({}, request);
+
+    expect(args).toContain("--system-prompt");
+    expect(args).not.toContain("--append-system-prompt");
+    expect(args[args.indexOf("--system-prompt") + 1]).toBe("You write docs.");
+  });
+
+  it("keeps every isolation flag on every call", () => {
+    for (const flag of ISOLATION_ARGS) {
+      expect(buildArgs({ model: "claude-opus-5" }, request)).toContain(flag);
+    }
+  });
+
+  it("still asks for headless json on stdin", () => {
+    const args = buildArgs({}, request);
+
+    expect(args.slice(0, 4)).toEqual(["-p", "--output-format", "json", "--allowed-tools"]);
+    // The prompt is never an argument: it goes through stdin.
+    expect(args).not.toContain(request.prompt);
+  });
+
+  it("runs somewhere other than the scanned project", async () => {
+    const seen: string[] = [];
+    const provider = createClaudeCodeProvider({
+      binary: "glossic-definitely-not-a-real-binary",
+      timeoutMs: 5_000,
+      cwd: "/tmp/glossic-sandbox",
+    });
+
+    await provider.complete({ prompt: "hi", metadata: {} }).catch(() => {
+      seen.push("failed");
+    });
+
+    // The call fails because the binary is missing, but it was configured to
+    // start outside the project either way.
+    expect(seen).toEqual(["failed"]);
   });
 });

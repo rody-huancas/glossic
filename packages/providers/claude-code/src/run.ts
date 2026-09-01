@@ -8,6 +8,8 @@ export interface RunOptions {
   /** Written to the child's stdin and closed. Prompts never go through argv. */
   input?: string;
   timeoutMs: number;
+  /** Working directory of the child. Keeps the CLI out of the scanned project. */
+  cwd?: string;
 }
 
 export interface RunOutcome {
@@ -42,6 +44,7 @@ export const run = (providerName: string, options: RunOptions): Promise<RunOutco
         // On Windows `claude` is a shim (.cmd/.ps1) that spawn cannot exec directly.
         shell: process.platform === "win32",
         stdio: ["pipe", "pipe", "pipe"],
+        ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
       });
     } catch (cause) {
       reject(

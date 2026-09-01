@@ -10,6 +10,18 @@ import { generate } from "./generate.js";
 import { exampleDir } from "./test-utils.js";
 import { createFakeProvider } from "./testing.js";
 
+/** Long enough to pass the document validation the pipeline applies. */
+const OK_DOCUMENT = [
+  "## What it does",
+  "",
+  "Wires the unit together and exposes its public surface.",
+  "",
+  "## Responsibilities",
+  "",
+  "It owns its own behaviour and delegates the rest to its neighbours, so the",
+  "dependency direction stays one way and the boundary stays legible.",
+].join("\n");
+
 const tempDirs: string[] = [];
 
 const outDir = async (): Promise<string> => {
@@ -36,6 +48,8 @@ const fakeAdapter: Adapter = {
       name: "src/config",
       path: "src/config",
       files: ["src/config/app.config.ts"],
+      testFiles: [],
+      ignoredFiles: [],
     },
     {
       id: `${ctx.project.id}:src/users/dto`,
@@ -43,6 +57,8 @@ const fakeAdapter: Adapter = {
       name: "src/users/dto",
       path: "src/users/dto",
       files: ["src/users/dto/create-user.dto.ts"],
+      testFiles: [],
+      ignoredFiles: [],
     },
   ],
   extract: async (ctx: ExtractContext) => ({
@@ -59,6 +75,8 @@ const fakeAdapter: Adapter = {
             language: "typescript",
             bytes: 1,
           })),
+          testFiles: [],
+          ignoredFiles: [],
           languages: [{ language: "typescript", count: discovered.files.length }],
           roleHint: discovered.name.endsWith("dto") ? ("dtos" as const) : ("config" as const),
         },
@@ -178,7 +196,7 @@ describe("generate", () => {
             message: "rate limited",
           });
         }
-        return "## Summary\n\nok";
+        return OK_DOCUMENT;
       },
     });
 
@@ -186,7 +204,7 @@ describe("generate", () => {
     const result = await run({ provider, outDir: docs });
 
     expect(result.failures).toEqual([
-      { unitId: "root:src/config", reason: "rate limited", code: "api" },
+      { unitId: "root:src/config", reason: "rate limited", code: "api", detail: undefined },
     ]);
     expect(result.written).toEqual(["index.md", "src/users/dto.md"]);
   });
@@ -206,7 +224,7 @@ describe("generate", () => {
         inFlight += 1;
         peak = Math.max(peak, inFlight);
         inFlight -= 1;
-        return "## Summary\n\nok";
+        return OK_DOCUMENT;
       },
     });
 

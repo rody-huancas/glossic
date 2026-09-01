@@ -16,6 +16,30 @@ export interface FakeProviderOptions {
  * Provider stand-in for tests and for anyone building an adapter: it records
  * every request and never touches the network.
  */
+/**
+ * Long enough and plain enough to survive `assertDocumentContent`: a fake that
+ * returned a one-line stub would fail validation instead of the pipeline.
+ */
+const defaultDocument = (request: CompletionRequest, index: number): string =>
+  [
+    "## What it does",
+    "",
+    `Fake documentation number ${index} for ${String(request.metadata.unitId ?? "a unit")}.`,
+    "",
+    "## Responsibilities",
+    "",
+    "The unit owns its own behaviour and delegates everything else to its",
+    "neighbours. Nothing here reaches outside the boundary it declares.",
+    "",
+    "## Public elements",
+    "",
+    "- Everything the unit exports, described in one line each.",
+    "",
+    "## Architectural decisions",
+    "",
+    "Dependencies point one way, errors are typed, and the ordering is total.",
+  ].join("\n");
+
 export const createFakeProvider = (options: FakeProviderOptions = {}): FakeProvider => {
   const calls: CompletionRequest[] = [];
 
@@ -27,7 +51,7 @@ export const createFakeProvider = (options: FakeProviderOptions = {}): FakeProvi
       const index = calls.length;
       calls.push(request);
 
-      const text = options.respond?.(request, index) ?? `## Summary\n\nGenerated for ${index}.`;
+      const text = options.respond?.(request, index) ?? defaultDocument(request, index);
       return { text, model: "fake-model", usage: { inputTokens: 10, outputTokens: 5 } };
     },
   };

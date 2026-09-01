@@ -7,13 +7,14 @@ export type ProviderErrorCode =
   | "server"
   | "exit-code"
   | "invalid-output"
+  | "invalid-content"
   | "refused"
   | "api";
 
 /**
  * Transient failures worth retrying. Everything else — a refusal, a missing
- * binary, a bad key, malformed output — repeats identically, so retrying it
- * only burns time and money.
+ * binary, a bad key, malformed output, a chat reply where a document belongs —
+ * repeats identically, so retrying it only burns time and money.
  */
 const RETRYABLE_CODES: ReadonlySet<ProviderErrorCode> = new Set([
   "timeout",

@@ -15,4 +15,5 @@ export * from "./registry.js";
 export * from "./retry.js";
 export * from "./scan.js";
 export * from "./testing.js";
+export * from "./validate.js";
 export * from "./workspace.js";

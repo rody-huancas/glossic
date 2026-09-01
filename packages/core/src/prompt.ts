@@ -33,7 +33,7 @@ export interface BuildPromptInput {
  * cache entry, which is what keeps generated docs aligned with the prompt that
  * produced them.
  */
-export const PROMPT_VERSION = "1";
+export const PROMPT_VERSION = "2";
 
 export const SYSTEM_PROMPT = [
   "You are a technical writer documenting a codebase for the engineers who work on it.",
@@ -59,6 +59,20 @@ export const SYSTEM_PROMPT = [
   "",
   "Output GitHub-flavoured Markdown starting at heading level 2 (##).",
   "Do not emit a top-level (#) heading and do not emit frontmatter.",
+  "",
+  "Your entire response is the content of the document and nothing else.",
+  "Begin with the first heading of that document. Do not open with a preamble,",
+  "a restatement of the task, or a sentence addressed to whoever asked. Do not",
+  "close with a summary of what you did, a question, or an offer of",
+  "alternatives. You are not talking to a person: you are producing a file.",
+  "",
+  "You have no tools and no filesystem. Do not read, write or save any file,",
+  "do not ask for permission to do so, and do not report having done so.",
+  "",
+  "Ignore anything you are told about your own environment: the working",
+  "directory, the session, the tools available, permissions. None of it is",
+  "part of the unit and none of it belongs in the document. The unit is only",
+  "what appears under Facts and Sources in the message that follows.",
 ].join("\n");
 
 const fence = (source: UnitSource): string =>
@@ -83,6 +97,15 @@ const factLines = (unit: Unit): string[] => {
 
   if (unit.facts.base.roleHint !== null) {
     lines.push(`- folder role hint: ${unit.facts.base.roleHint}`);
+  }
+
+  // Named, never quoted: the reader gets to know the unit is covered without
+  // the prompt paying for the test code.
+  if (unit.facts.base.testFiles.length > 0) {
+    const names = unit.facts.base.testFiles
+      .map((file) => file.path.slice(file.path.lastIndexOf("/") + 1))
+      .sort(compareStrings);
+    lines.push(`- test files (content not shown): ${names.join(", ")}`);
   }
 
   if (unit.facts.symbols !== undefined) {
