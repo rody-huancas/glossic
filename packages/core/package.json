@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@glossic/schema": "workspace:*",
+    "jiti": "^2.6.1",
     "picomatch": "^4.0.3",
     "tinyglobby": "^0.2.15",
     "yaml": "^2.8.1",
