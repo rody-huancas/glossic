@@ -9,7 +9,7 @@ import { Command } from "commander";
 import { builtinAdapters } from "../registries.js";
 import { renderCheckReport } from "../render.js";
 
-interface CheckCliOptions {
+export interface CheckCliOptions {
   json?: boolean;
   out?: string;
 }
@@ -42,6 +42,7 @@ export const checkCommand = (): Command =>
     .argument("[path]", "workspace root", ".")
     .option("--json", "machine-readable output for CI", false)
     .option("--out <dir>", "docs directory; relative to the cwd, default <root>/docs")
+    .option("-q, --quiet", "no banner", false)
     .action(async (target: string, options: CheckCliOptions) => {
       await runCheck(target, options);
     });

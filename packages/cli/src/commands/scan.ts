@@ -5,7 +5,7 @@ import { Command } from "commander";
 import { builtinAdapters } from "../registries.js";
 import { displayPath, renderScanReport } from "../render.js";
 
-interface ScanOptions {
+export interface ScanOptions {
   json: boolean;
   out?: string;
   write: boolean;
@@ -46,6 +46,7 @@ export const scanCommand = (): Command =>
       `manifest destination; relative to the cwd, default <root>/${DEFAULT_MANIFEST_PATH}`,
     )
     .option("--no-write", "print the report only, write no file")
+    .option("-q, --quiet", "no banner", false)
     .action(async (pathArg: string, options: ScanOptions) => {
       await runScan(pathArg, options);
     });

@@ -58,12 +58,42 @@ Set `GLOSSIC_DEBUG=1` to get stack traces instead of one-line CLI errors.
 ## CLI
 
 ```
+glossic                    interactive menu (a terminal only)
 glossic doctor             check node, providers, adapters, config
 glossic scan [path]        analyze structure, no LLM
 glossic generate [path]    generate documentation
 glossic check [path]       validate whether the docs are stale
 glossic init               create glossic.config.ts
 ```
+
+### Interactive mode
+
+`glossic` with no arguments opens a menu, above a status line that names the
+project, the provider that answered and the language:
+
+```
+riqsi · claude-code connected · Spanish
+```
+
+Picking *Generate documentation* asks for the language and the output folder,
+runs a **dry run** to show the plan and the token estimate, and only calls the
+provider once you confirm. Every branch calls the same function the equivalent
+flag would: the menu asks questions, it never reimplements the work.
+
+**Without a terminal** — CI, a pipe, a script — `glossic` prints the help and
+exits, exactly as it did before.
+
+### Decoration
+
+A banner is printed before every command, and `generate` shows live progress:
+a counter, the unit in flight, a spinner, and one line per unit as it lands
+with its outcome and its time.
+
+All of it is suppressed when the output is not a TTY, when `--json` is passed,
+or when `--quiet` is. Machine-readable output stays machine-readable.
+
+The `--lang` default is the system language (`LC_ALL`, `LC_MESSAGES`, `LANG`,
+`LANGUAGE`, then the runtime locale), falling back to English.
 
 ### `glossic doctor`
 
@@ -303,6 +333,36 @@ is a scan artifact and does not need to be committed.
 `temperature` has no default: the recent Claude models (`claude-opus-5`,
 `claude-sonnet-5`, `claude-fable-5`, `claude-opus-4-7/4-8`) reject sampling
 parameters with a 400, so each provider decides whether to forward it.
+
+### `claude-code` is slower than the API, by design
+
+`claude -p` boots the whole coding agent before it answers, so a unit takes
+seconds rather than hundreds of milliseconds. Its default timeout is **300s**,
+against 120s for anything else. If you are documenting a large workspace and
+have an API key, `--provider anthropic` finishes considerably sooner.
+
+glossic also strips the agent back to a completion, because an agent answers
+the operator instead of writing the document — one run produced a document
+whose entire content was *"I've drafted the documentation but need write
+permission to save it"*. Every call therefore runs with:
+
+- `--allowed-tools ""` — no tools at all. The unit's files are already in the
+  prompt; the model has no reason to touch a disk.
+- `--setting-sources ""` and `--strict-mcp-config` — no user, project or local
+  settings, no MCP servers.
+- `--system-prompt` rather than `--append-system-prompt`, so glossic's
+  instructions **replace** the agent persona instead of sitting under it.
+- an empty temporary directory as the working directory, so the CLI never sees
+  the scanned project's `CLAUDE.md` or `.claude/settings.json`.
+
+### Output validation
+
+Whatever the provider, the response is checked before it is written. A reply
+that addresses the reader in the first person, asks a question, requests
+permission, or is too short to be a document is rejected as
+`invalid-content`. That failure is never retried — the same prompt gives the
+same answer — but the unit is left out of the cache, so the next run tries it
+again.
 
 Resolution order: `--provider` → `provider` in the config → `claude-code` if
 available → `anthropic` if a key is set → an error that explains both options.

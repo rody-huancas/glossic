@@ -88,6 +88,7 @@ export const doctorCommand = (): Command =>
   new Command("doctor")
     .description("check node, providers, adapters and config")
     .argument("[path]", "workspace root", ".")
+    .option("-q, --quiet", "no banner", false)
     .action(async (target: string) => {
       const report = await collectDoctorReport({
         root: path.resolve(process.cwd(), target),

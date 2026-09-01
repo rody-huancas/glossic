@@ -21,6 +21,7 @@
     "start": "node ./dist/index.js"
   },
   "dependencies": {
+    "@clack/prompts": "^0.11.0",
     "@glossic/adapter-generic": "workspace:*",
     "@glossic/adapter-nestjs": "workspace:*",
     "@glossic/adapter-treesitter": "workspace:*",
@@ -28,7 +29,8 @@
     "@glossic/provider-anthropic": "workspace:*",
     "@glossic/provider-claude-code": "workspace:*",
     "@glossic/schema": "workspace:*",
-    "commander": "^14.0.0"
+    "commander": "^14.0.0",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
