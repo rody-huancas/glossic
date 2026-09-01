@@ -240,6 +240,7 @@ describe("every visible surface is translated", () => {
     adapters  : ["generic"],
     configFile: undefined,
     config    : [{ key: "lang", value: "es", origin: "default" }],
+    lang      : "es",
     uiLang    : "en",
     exitCode  : 1,
   };
