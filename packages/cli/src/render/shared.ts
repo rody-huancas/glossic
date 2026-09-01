@@ -6,9 +6,9 @@ import type { MessageKey, Translator } from "../i18n/index.js";
 
 /** Counted nouns need both forms, and Spanish does not pluralise with an "s". */
 export const counted = (
-  t: Translator,
+  t    : Translator,
   count: number,
-  noun: "project" | "unit" | "file" | "problem",
+  noun : "project" | "unit" | "file" | "problem",
 ) => t(`count.${noun}${count === 1 ? "" : "s"}` as MessageKey, { count });
 
 /** A path outside the cwd reads better absolute than as a pile of "../". */

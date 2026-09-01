@@ -39,11 +39,11 @@ const stringField = (cause: unknown, field: string): string | undefined => {
  * rest. With no provider, or with dryRun, it stops at the plan and spends nothing.
  */
 export const generate = async (ctx: GenerateContext): Promise<GenerateResult> => {
-  const config  = ctx.config ?? GlossicConfigSchema.parse({});
-  const scanned = await scan(ctx);
+  const config       = ctx.config ?? GlossicConfigSchema.parse({});
+  const scanned      = await scan(ctx);
   const { manifest } = scanned;
-  const generatedAt = manifest.generatedAt;
-  const root        = manifest.workspace.root;
+  const generatedAt  = manifest.generatedAt;
+  const root         = manifest.workspace.root;
 
   const cachePath       = ctx.cachePath ?? path.resolve(root, DEFAULT_CACHE_PATH);
   const model           = modelCacheKey(config);

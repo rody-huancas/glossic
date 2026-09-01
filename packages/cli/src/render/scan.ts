@@ -40,7 +40,7 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
   const { manifest } = result;
   const { units } = manifest;
 
-  const nameWidth = Math.max(0, ...units.map((unit) => unit.name.length));
+  const nameWidth  = Math.max(0, ...units.map((unit) => unit.name.length));
   const filesWidth = Math.max(
     0,
     ...units.map((unit) => counted(t, unit.facts.base.files.length, "file").length),

@@ -11,9 +11,9 @@ const languageLabel = (t: Translator, code: string): string => {
 export /** A picker over language codes, preselected on the one in force. */
 const pickLanguage = async (
   prompts: PromptPort,
-  t: Translator,
+  t      : Translator,
   message: MessageKey,
-  codes: readonly string[],
+  codes  : readonly string[],
   current: string,
 ): Promise<string | undefined> => {
   

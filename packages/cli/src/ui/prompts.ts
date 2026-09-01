@@ -11,9 +11,9 @@ export interface SelectOption<T> {
  * so tests can script an answer instead of driving a terminal.
  */
 export interface PromptPort {
-  intro(message: string): void;
-  outro(message: string): void;
-  note(message: string): void;
+  intro(message: string) : void;
+  outro(message: string) : void;
+  note(message: string)  : void;
   cancel(message: string): void;
   select<T>(options: {
     message      : string;

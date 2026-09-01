@@ -22,10 +22,10 @@ export interface ActionOutcome {
  * not a guess.
  */
 export const generateInteractively = async (
-  prompts: PromptPort,
-  t: Translator,
-  generate: typeof runGenerate,
-  resolved: string,
+  prompts   : PromptPort,
+  t         : Translator,
+  generate  : typeof runGenerate,
+  resolved  : string,
   defaultOut: string,
 ): Promise<ActionOutcome> => {
 

@@ -60,8 +60,7 @@ export const es: Partial<Record<MessageKey, string>> = {
   "generate.written"             : "{count} archivos escritos en {out}",
   "generate.trimmed"             : "recortado: {unit} — {message}",
   "generate.failed"              : "falló: {unit}{code} — {reason}",
-  "generate.droppedPreamble":
-    "se descartaron {count} caracteres antes del primer encabezado: {excerpt}",
+  "generate.droppedPreamble"     : "se descartaron {count} caracteres antes del primer encabezado: {excerpt}",
 
   "progress.generated": "generada",
   "progress.cached"   : "cache",
