@@ -6,9 +6,9 @@ import { check } from "@glossic/core";
 import { Command } from "commander";
 
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
-import { createTranslator } from "../i18n/messages.js";
+import { createTranslator } from "../i18n/index.js";
 import { builtinAdapters } from "../registries.js";
-import { renderCheckReport } from "../render.js";
+import { renderCheckReport } from "../render/index.js";
 
 export interface CheckCliOptions {
   json?: boolean;

@@ -1,12 +1,12 @@
 import process from "node:process";
 
 import { formatCliError } from "./errors.js";
-import { runInteractive } from "./interactive.js";
+import { runInteractive } from "./interactive/index.js";
 import { createProgram } from "./program.js";
 import { printBanner, shouldDecorate } from "./ui/banner.js";
 
 export { formatCliError } from "./errors.js";
-export { runInteractive } from "./interactive.js";
+export { runInteractive } from "./interactive/index.js";
 export { detectLanguage } from "./language.js";
 export { createProgram } from "./program.js";
 export { adapters, builtinAdapters, builtinProviders, providers } from "./registries.js";

@@ -6,7 +6,7 @@ import { CONFIG_FILENAMES, findConfigFile, toPosix } from "@glossic/core";
 import { Command } from "commander";
 
 import { resolveEffectiveConfig } from "../config.js";
-import { createTranslator } from "../i18n/messages.js";
+import { createTranslator } from "../i18n/index.js";
 
 /**
  * Every option, its real default, and one line on what it does. Commented out

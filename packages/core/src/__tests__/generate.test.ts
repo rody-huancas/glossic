@@ -6,7 +6,7 @@ import { GlossicConfigSchema, ProviderError } from "@glossic/schema";
 import { afterAll, describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
-import { generate } from "../generate.js";
+import { generate } from "../generate/index.js";
 import { exampleDir } from "../test-utils.js";
 import { createFakeProvider } from "../testing.js";
 

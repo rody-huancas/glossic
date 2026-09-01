@@ -1,9 +1,9 @@
 import type { GenerateResult } from "@glossic/core";
 import { GlossicConfigSchema } from "@glossic/schema";
 import { describe, expect, it, vi } from "vitest";
-import { createTranslator } from "../i18n/messages.js";
-import type { InteractiveDeps } from "../interactive.js";
-import { renderStatusLine, runInteractive } from "../interactive.js";
+import { createTranslator } from "../i18n/index.js";
+import type { InteractiveDeps } from "../interactive/index.js";
+import { renderStatusLine, runInteractive } from "../interactive/index.js";
 import type { PromptPort } from "../ui/prompts.js";
 
 const CANCEL = Symbol("cancel");

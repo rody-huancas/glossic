@@ -2,8 +2,8 @@ import * as clack from "@clack/prompts";
 
 import type { GenerateEvent, UnitOutcome } from "@glossic/core";
 
-import type { MessageKey, Translator } from "../i18n/messages.js";
-import { defaultTranslator } from "../i18n/messages.js";
+import type { MessageKey, Translator } from "../i18n/index.js";
+import { defaultTranslator } from "../i18n/index.js";
 import { accent, dim, symbols } from "./theme.js";
 
 const LABEL_KEYS: Record<UnitOutcome, MessageKey> = {

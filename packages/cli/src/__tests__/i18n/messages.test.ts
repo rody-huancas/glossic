@@ -7,10 +7,10 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { DoctorReport } from "../../commands/doctor.js";
 import { renderDoctorReport } from "../../commands/doctor.js";
 import { resolveEffectiveConfig } from "../../config.js";
-import type { MessageKey } from "../../i18n/messages.js";
-import { createTranslator, en, es, hasCatalogue, UI_LANGUAGES } from "../../i18n/messages.js";
+import type { MessageKey } from "../../i18n/index.js";
+import { createTranslator, en, es, hasCatalogue, UI_LANGUAGES } from "../../i18n/index.js";
 import { preferencesPath } from "../../preferences.js";
-import { renderCheckReport, renderGenerateReport, renderScanReport } from "../../render.js";
+import { renderCheckReport, renderGenerateReport, renderScanReport } from "../../render/index.js";
 
 const tempDirs: string[] = [];
 

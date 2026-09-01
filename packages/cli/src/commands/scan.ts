@@ -4,9 +4,9 @@ import { scan, serializeManifest, writeManifest } from "@glossic/core";
 import { Command } from "commander";
 
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
-import { createTranslator } from "../i18n/messages.js";
+import { createTranslator } from "../i18n/index.js";
 import { builtinAdapters } from "../registries.js";
-import { displayPath, renderScanReport } from "../render.js";
+import { displayPath, renderScanReport } from "../render/index.js";
 
 export interface ScanOptions {
   json: boolean;

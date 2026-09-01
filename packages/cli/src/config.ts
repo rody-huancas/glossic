@@ -4,7 +4,7 @@ import type { ConfigOrigins, ResolvedConfig } from "@glossic/core";
 import { loadProjectConfig, resolveConfig } from "@glossic/core";
 import type { GlossicUserConfig } from "@glossic/schema";
 
-import { hasCatalogue } from "./i18n/messages.js";
+import { hasCatalogue } from "./i18n/index.js";
 import { detectLanguage } from "./language.js";
 import type { PreferencesLocation } from "./preferences.js";
 import { readPreferences } from "./preferences.js";

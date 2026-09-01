@@ -7,7 +7,7 @@ export * from "./check.js";
 export * from "./config-file.js";
 export * from "./config-resolve.js";
 export * from "./errors.js";
-export * from "./generate.js";
+export * from "./generate/index.js";
 export * from "./manifest.js";
 export * from "./markdown.js";
 export * from "./prompt.js";

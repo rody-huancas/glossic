@@ -6,9 +6,9 @@ import { generate, resolveProvider } from "@glossic/core";
 import { Command } from "commander";
 
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
-import { createTranslator } from "../i18n/messages.js";
+import { createTranslator } from "../i18n/index.js";
 import { builtinAdapters, createProviders } from "../registries.js";
-import { renderGenerateReport } from "../render.js";
+import { renderGenerateReport } from "../render/index.js";
 import { shouldDecorate } from "../ui/banner.js";
 import { createGenerateProgress } from "../ui/progress.js";
 

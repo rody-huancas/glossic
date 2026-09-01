@@ -6,7 +6,7 @@ import { createFakeProvider } from "@glossic/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { runGenerate } from "../commands/generate.js";
-import { runInteractive } from "../interactive.js";
+import { runInteractive } from "../interactive/index.js";
 import type { PromptPort } from "../ui/prompts.js";
 
 const tempDirs: string[] = [];

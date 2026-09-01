@@ -1,201 +1,26 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import picomatch from "picomatch";
 import { GlossicConfigSchema } from "@glossic/schema";
-import type { CompletionRequest, GlossicConfig, Manifest, Project, Provider, Unit } from "@glossic/schema";
+import type { Unit } from "@glossic/schema";
 
-import { scan } from "./scan.js";
-import { withRetry } from "./retry.js";
-import { excerpt, prepareDocument } from "./validate.js";
-import { compareStrings, pathExists, toPosix } from "./utils/index.js";
-import { INDEX_DOC_PATH, renderIndexDoc, renderUnitDoc, unitDocPath } from "./markdown.js";
-import { buildUnitPrompt, estimateTokens, PROMPT_VERSION, readUnitSources } from "./prompt.js";
-import type { RetryOptions } from "./retry.js";
-import type { PipelineContext } from "./scan.js";
-import { type CacheEntry, type CacheFile, DEFAULT_CACHE_PATH, emptyCache, indexCache, readCache, writeCache } from "./cache.js";
+import { scan } from "../scan.js";
+import { withRetry } from "../retry.js";
+import { PROMPT_VERSION } from "../prompt.js";
+import { buildJobs, writeDoc } from "./jobs.js";
+import { decide, modelCacheKey } from "./decide.js";
+import { compareStrings, toPosix } from "../utils/index.js";
+import { excerpt, prepareDocument } from "../validate.js";
+import { mapWithConcurrency } from "../utils/concurrency.js";
+import { INDEX_DOC_PATH, renderIndexDoc, renderUnitDoc } from "../markdown.js";
+import { type CacheEntry, type CacheFile, DEFAULT_CACHE_PATH, emptyCache, indexCache, readCache, writeCache } from "../cache.js";
+import type { Job } from "./jobs.js";
+import type { DecisionContext } from "./decide.js";
+import type { GenerateContext, GenerateEvent, GenerateFailure, GeneratePlanEntry, GenerateResult, GenerateWarning, UnitOutcome } from "./types.js";
 
-export interface GenerateContext extends PipelineContext {
-  outDir    : string;
-  provider ?: Provider;
-  dryRun   ?: boolean;
-  force    ?: boolean;
-  only     ?: string;
-  cachePath?: string;
-  retry    ?: RetryOptions;
-  onEvent  ?: (event: GenerateEvent) => void;
-}
+export * from "./types.js";
+export { modelCacheKey } from "./decide.js";
 
-export type UnitOutcome = "generated" | "cached" | "failed";
-
-export type GenerateEvent = 
-  | { type: "unit-start"; unitId: string; index: number; total: number }
-  | {
-      type      : "unit-done";
-      unitId    : string;
-      index     : number;
-      total     : number;
-      outcome   : UnitOutcome;
-      durationMs: number;
-    };
-
-export type GenerateReason = 
-  | "cached"
-  | "new"
-  | "content-changed"
-  | "prompt-version-changed"
-  | "model-changed"
-  | "lang-changed"
-  | "output-missing"
-  | "forced";
-
-export interface GeneratePlanEntry {
-  unitId         : string;
-  docPath        : string;
-  files          : number;
-  estimatedTokens: number;
-  reason         : GenerateReason;
-  regenerate     : boolean;
-}
-
-export interface GenerateWarning {
-  unitId : string;
-  message: string;
-}
-
-export interface GenerateFailure {
-  unitId: string;
-  reason: string;
-  code  : string | undefined;
-  detail: string | undefined;
-}
-
-export interface GenerateResult {
-  manifest       : Manifest;
-  written        : string[];
-  plan           : GeneratePlanEntry[];
-  failures       : GenerateFailure[];
-  warnings       : GenerateWarning[];
-  filteredOut    : string[];
-  estimatedTokens: number;
-  savedTokens    : number;
-  generated      : number;
-  fromCache      : number;
-  dryRun         : boolean;
-}
-
-
-export const modelCacheKey = (config: GlossicConfig): string => config.model ?? "default";
-
-interface Job {
-  unit           : Unit;
-  project        : Project;
-  request        : CompletionRequest;
-  docPath        : string;
-  estimatedTokens: number;
-}
-
-interface DecisionContext {
-  outDir: string;
-  model : string;
-  lang  : string;
-  force : boolean;
-}
-
-const decide = async (job: Job, entry: CacheEntry | undefined, context: DecisionContext): Promise<GenerateReason> => {
-  if (context.force) {
-    return "forced";
-  }
-
-  if (entry === undefined) {
-    return "new";
-  }
-
-  if (entry.unitHash !== job.unit.hash) {
-    return "content-changed";
-  }
-
-  if (entry.promptVersion !== PROMPT_VERSION) {
-    return "prompt-version-changed";
-  }
-
-  if (entry.model !== context.model) {
-    return "model-changed";
-  }
-
-  if (entry.lang !== context.lang) {
-    return "lang-changed";
-  }
-
-  if (!(await pathExists(path.resolve(context.outDir, job.docPath)))) {
-    return "output-missing";
-  }
-
-  return "cached";
-};
-
-const mapWithConcurrency = async <T, R>(items: readonly T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> => {
-  const results = new Array<R>(items.length);
-  let cursor = 0;
-
-  const worker = async (): Promise<void> => {
-    while (cursor < items.length) {
-      const index = cursor;
-      
-      cursor += 1;
-
-      const item = items[index];
-
-      if (item === undefined) continue;
-
-      results[index] = await task(item);
-    }
-  };
-
-  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, worker));
-  return results;
-};
-
-const writeDoc = async (outDir: string, relative: string, content: string): Promise<void> => {
-  const target = path.resolve(outDir, relative);
-
-  await fs.mkdir(path.dirname(target), { recursive: true });
-  await fs.writeFile(target, content, "utf8");
-};
-
-const buildJobs = async (manifest: Manifest, config: GlossicConfig, root: string): Promise<Job[]> => {
-  const projectById = new Map(manifest.workspace.projects.map((entry) => [entry.id, entry]));
-
-  const jobs = await Promise.all(
-    manifest.units.map(async (unit): Promise<Job | undefined> => {
-      const project = projectById.get(unit.projectId);
-
-      if (project === undefined) {
-        return undefined;
-      }
-
-      const request = buildUnitPrompt({
-        unit,
-        project,
-        workspaceName: manifest.workspace.name,
-        sources      : await readUnitSources(root, unit),
-        lang         : config.lang,
-        model        : config.model,
-        temperature  : config.temperature,
-      });
-
-      return {
-        unit,
-        project,
-        request,
-        docPath        : unitDocPath(unit),
-        estimatedTokens: estimateTokens(request),
-      };
-    }),
-  );
-
-  return jobs.filter((job): job is Job => job !== undefined);
-};
 
 const stringField = (cause: unknown, field: string): string | undefined => {
   if (typeof cause !== "object" || cause === null || !(field in cause)) {

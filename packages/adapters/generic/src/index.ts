@@ -1,15 +1,16 @@
-import { createHash } from "node:crypto";
-import fs from "node:fs/promises";
 import path from "node:path";
 import { glob } from "tinyglobby";
 import { compareStrings, joinPosix, toPosix } from "@glossic/schema";
-import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext, ExtractResult, FileFact, LanguageCount, Unit } from "@glossic/schema";
+import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext, ExtractResult, FileFact, Unit } from "@glossic/schema";
 
+import { hashUnit } from "./hash.js";
 import { inferRoleHint } from "./roles.js";
 import { inferLanguage } from "./languages.js";
-import { SPLIT_SEPARATOR, shapeUnits, unitName } from "./grouping.js";
+import { countLanguages, readFile } from "./files.js";
+import { SPLIT_SEPARATOR, shapeUnits, unitName } from "./grouping/index.js";
 import { collectGitignores, createGitignoreFilter } from "./gitignore.js";
-import type { GroupingOptions, UnitDraft } from "./grouping.js";
+import type { ReadFile } from "./files.js";
+import type { GroupingOptions, UnitDraft } from "./grouping/index.js";
 
 export const genericAdapterName = "generic";
 
@@ -25,10 +26,6 @@ export const HARD_IGNORES: readonly string[] = [
   "**/vendor/**",
 ];
 
-const sha256 = (value: Buffer | string): string => {
-  return createHash("sha256").update(value).digest("hex");
-}
-
 
 const unitId = (projectId: string, draft: UnitDraft): string => {
   return `${projectId}:${unitName(draft)}`;
@@ -40,50 +37,6 @@ const roleSource = (name: string): string => {
   return split === -1 ? name : name.slice(0, split);
 };
 
-const countLanguages = (files: readonly FileFact[]): LanguageCount[] => {
-  const counts = new Map<string, number>();
-
-  for (const file of files) {
-    counts.set(file.language, (counts.get(file.language) ?? 0) + 1);
-  }
-
-  return [...counts.entries()]
-    .map(([language, count]) => ({ language, count }))
-    .sort((a, b) => b.count - a.count || compareStrings(a.language, b.language));
-};
-
-type Bucket = "doc" | "test" | "ignored";
-
-interface ReadFile {
-  fact  : FileFact;
-  digest: string;
-  bucket: Bucket;
-}
-
-const readFile = async (root: string, relativePath: string, bucket: Bucket): Promise<ReadFile | undefined> => {
-  const language = inferLanguage(relativePath);
-
-  if (language === undefined) {
-    return undefined;
-  }
-
-  const content = await fs.readFile(path.resolve(root, relativePath));
-
-  return {
-    fact  : { path: relativePath, language, bytes: content.byteLength },
-    digest: sha256(content),
-    bucket,
-  };
-};
-
-
-const hashUnit = (entries: readonly ReadFile[]): string => {
-  const lines = entries
-    .map((entry) => `${entry.bucket}\n${entry.fact.path}\n${entry.digest}\n`)
-    .sort(compareStrings);
-
-  return sha256(lines.join(""));
-};
 
 const groupingOptions = (ctx: DiscoverContext): GroupingOptions => ({
   ignoreUnits       : ctx.config.ignoreUnits,
@@ -194,7 +147,7 @@ export const genericAdapter: Adapter = {
   },
 };
 
-export * from "./grouping.js";
+export * from "./grouping/index.js";
 export { inferLanguage, isSourceFile } from "./languages.js";
 export { inferRoleHint } from "./roles.js";
 export default genericAdapter;

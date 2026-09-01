@@ -7,8 +7,8 @@ import type { Adapter, Provider } from "@glossic/schema";
 import { Command } from "commander";
 
 import { resolveEffectiveConfig } from "../config.js";
-import type { Translator } from "../i18n/messages.js";
-import { createTranslator, defaultTranslator } from "../i18n/messages.js";
+import type { Translator } from "../i18n/index.js";
+import { createTranslator, defaultTranslator } from "../i18n/index.js";
 import { builtinAdapters, builtinProviders } from "../registries.js";
 
 export interface DoctorConfigEntry {

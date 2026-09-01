@@ -1,25 +1,28 @@
 import path from "node:path";
 import process from "node:process";
 
-import { probeProviders, resolveWorkspace } from "@glossic/core";
+import { runCheck } from "../commands/check.js";
+import { runScan } from "../commands/scan.js";
+import { runGenerate } from "../commands/generate.js";
+import { collectDoctorReport, renderDoctorReport } from "../commands/doctor.js";
+import { resolveEffectiveConfig } from "../config.js";
+import { formatCliError } from "../errors.js";
+import { createTranslator, UI_LANGUAGES } from "../i18n/index.js";
+import { LANGUAGES } from "../language.js";
+import { writePreferences } from "../preferences.js";
+import { builtinAdapters, builtinProviders } from "../registries.js";
+import { counted } from "../render/index.js";
+import { clackPrompts } from "../ui/prompts.js";
+import { languageLabel, pickLanguage } from "./language.js";
+import { readStatus, renderStatusLine } from "./status.js";
+import { generateInteractively } from "./generate-flow.js";
+import type { Translator } from "../i18n/index.js";
+import type { PromptPort } from "../ui/prompts.js";
+import type { ActionOutcome } from "./generate-flow.js";
+import type { Preferences, PreferencesLocation } from "../preferences.js";
 
-import { runCheck } from "./commands/check.js";
-import { collectDoctorReport, renderDoctorReport } from "./commands/doctor.js";
-import type { GenerateCliOptions } from "./commands/generate.js";
-import { runGenerate } from "./commands/generate.js";
-import { runScan } from "./commands/scan.js";
-import { resolveEffectiveConfig } from "./config.js";
-import { formatCliError } from "./errors.js";
-import type { MessageKey, Translator } from "./i18n/messages.js";
-import { createTranslator, UI_LANGUAGES } from "./i18n/messages.js";
-import { LANGUAGES } from "./language.js";
-import type { Preferences, PreferencesLocation } from "./preferences.js";
-import { writePreferences } from "./preferences.js";
-import { builtinAdapters, builtinProviders } from "./registries.js";
-import { counted } from "./render.js";
-import type { PromptPort } from "./ui/prompts.js";
-import { clackPrompts } from "./ui/prompts.js";
-import { accent, dim } from "./ui/theme.js";
+export { renderStatusLine } from "./status.js";
+export type { StatusLine } from "./status.js";
 
 type Action = "scan" | "generate" | "check" | "doctor";
 type Choice = Action | "uiLanguage" | "docLanguage" | "exit";
@@ -35,77 +38,6 @@ export interface InteractiveDeps {
   preferences?: PreferencesLocation;
   resolveConfig?: typeof resolveEffectiveConfig;
   writePreferences?: typeof writePreferences;
-}
-
-export interface StatusLine {
-  project: string;
-  provider: string | undefined;
-  /** The documentation language, not the interface one. */
-  language: string;
-}
-
-/** The language's own name, in the interface language. */
-const languageLabel = (t: Translator, code: string): string => {
-  const key = `language.${code}` as MessageKey;
-  const name = t(key);
-  return name === key ? code : name;
-};
-
-/**
- * `riqsi-frontend · claude-code · docs in Spanish`
- *
- * The language is spelled out as the documentation's, not the interface's:
- * "· Spanish" on its own read as though the menu had been translated.
- */
-export const renderStatusLine = (status: StatusLine, t: Translator): string =>
-  [
-    accent(status.project),
-    status.provider ?? dim(t("status.noProvider")),
-    dim(t("status.docsIn", { language: languageLabel(t, status.language) })),
-  ].join(dim(" · "));
-
-/**
- * Re-read on every turn: a provider can come up, a config can change, and the
- * line is the only thing telling the user what the next action will do.
- */
-const readStatus = async (root: string, language: string): Promise<StatusLine> => {
-  const [workspace, providers] = await Promise.all([
-    resolveWorkspace(root),
-    probeProviders(builtinProviders),
-  ]);
-
-  return {
-    project: workspace.name,
-    provider: providers.find((entry) => entry.available)?.name,
-    language,
-  };
-};
-
-/** A picker over language codes, preselected on the one in force. */
-const pickLanguage = async (
-  prompts: PromptPort,
-  t: Translator,
-  message: MessageKey,
-  codes: readonly string[],
-  current: string,
-): Promise<string | undefined> => {
-  const chosen = await prompts.select<string>({
-    message: t(message),
-    options: codes.map((code) => ({
-      value: code,
-      label: languageLabel(t, code),
-      ...(code === current ? { hint: t("prompt.hint.current") } : {}),
-    })),
-    initialValue: current,
-  });
-
-  return prompts.isCancel(chosen) || typeof chosen !== "string" ? undefined : chosen;
-};
-
-interface ActionOutcome {
-  ok: boolean;
-  /** Units the action happened to learn about, for the next menu's hint. */
-  units?: number | undefined;
 }
 
 /**
@@ -247,57 +179,4 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     if (!outcome.ok) failed = true;
     if (outcome.units !== undefined) knownUnits = outcome.units;
   }
-};
-
-const generateInteractively = async (
-  prompts: PromptPort,
-  t: Translator,
-  generate: typeof runGenerate,
-  resolved: string,
-  defaultOut: string,
-): Promise<ActionOutcome> => {
-  // Already resolved from the chain, so this is an Enter rather than a
-  // decision the user has to make again.
-  const codes = LANGUAGES.map((entry) => entry.code);
-  const language = await pickLanguage(prompts, t, "prompt.docLanguage", codes, resolved);
-  if (language === undefined) return cancelled(prompts, t);
-
-  // The placeholder names the directory the config already points at, and an
-  // empty answer accepts it. Substituting "./docs" here would quietly override
-  // a project that configured somewhere else.
-  const out = await prompts.text({
-    message: t("prompt.outDir"),
-    placeholder: defaultOut,
-  });
-  if (prompts.isCancel(out) || typeof out !== "string") return cancelled(prompts, t);
-
-  const answer = out.trim();
-  const options: GenerateCliOptions = {
-    lang: language,
-    ...(answer === "" ? {} : { out: answer }),
-  };
-
-  // The plan and the estimate come from the real dry run, not a guess.
-  const plan = await generate(".", { ...options, dryRun: true });
-  const units = plan.plan.length;
-
-  const confirmed = await prompts.confirm({
-    message: t("prompt.confirmGenerate", {
-      units: plan.plan.filter((entry) => entry.regenerate).length,
-      tokens: Math.round(plan.estimatedTokens / 1000),
-    }),
-    initialValue: true,
-  });
-  if (prompts.isCancel(confirmed) || confirmed !== true) return { ...cancelled(prompts, t), units };
-
-  const result = await generate(".", options);
-  prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
-
-  return { ok: result.failures.length === 0, units };
-};
-
-/** Backing out of a prompt is a choice, not a failure. */
-const cancelled = (prompts: PromptPort, t: Translator): ActionOutcome => {
-  prompts.cancel(t("menu.cancelled"));
-  return { ok: true };
 };

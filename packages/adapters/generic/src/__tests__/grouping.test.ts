@@ -1,7 +1,7 @@
 import { GlossicConfigSchema } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
-import type { GroupingOptions, UnitDraft } from "../grouping.js";
+import type { GroupingOptions, UnitDraft } from "../grouping/index.js";
 import {
   filenameRoot,
   isReadableLabel,
@@ -9,7 +9,7 @@ import {
   shapeUnits,
   splitLargeUnit,
   unitName,
-} from "../grouping.js";
+} from "../grouping/index.js";
 
 const defaults = (overrides: Partial<GroupingOptions> = {}): GroupingOptions => {
   const config = GlossicConfigSchema.parse({});

@@ -6,7 +6,7 @@ import { check, createFakeProvider, generate, readCache } from "@glossic/core";
 import { GlossicConfigSchema, ProviderError } from "@glossic/schema";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { builtinAdapters } from "../../registries.js";
-import { renderCheckReport } from "../../render.js";
+import { renderCheckReport } from "../../render/index.js";
 
 /**
  * These tests are about the cache and the checker, not the unit grouping, so

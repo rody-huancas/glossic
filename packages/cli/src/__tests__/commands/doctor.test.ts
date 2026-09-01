@@ -7,7 +7,7 @@ import { createFakeProvider } from "@glossic/core";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { collectDoctorReport, renderDoctorReport } from "../../commands/doctor.js";
-import { createTranslator } from "../../i18n/messages.js";
+import { createTranslator } from "../../i18n/index.js";
 import { builtinAdapters } from "../../registries.js";
 
 const exampleRoot = (name: string): string =>

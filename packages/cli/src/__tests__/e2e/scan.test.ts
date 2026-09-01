@@ -5,7 +5,7 @@ import { GlossicConfigSchema } from "@glossic/schema";
 import { describe, expect, it } from "vitest";
 
 import { builtinAdapters } from "../../registries.js";
-import { renderScanReport } from "../../render.js";
+import { renderScanReport } from "../../render/index.js";
 
 const GENERATED_AT = "2026-01-01T00:00:00.000Z";
 
