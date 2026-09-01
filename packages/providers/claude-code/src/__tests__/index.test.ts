@@ -36,8 +36,8 @@ describe("parseClaudeOutput", () => {
     expect(result.text).toBe("## UsersController\n\nHandles the `/users` HTTP surface.");
     expect(result.costUsd).toBe(0.0421);
     expect(result.usage).toEqual({
-      inputTokens: 1834,
-      outputTokens: 412,
+      inputTokens    : 1834,
+      outputTokens   : 412,
       cacheReadTokens: 1200,
     });
   });
@@ -58,7 +58,7 @@ describe("parseClaudeOutput", () => {
   });
 
   it("turns a reported error into a typed ProviderError", async () => {
-    const raw = await fixture("error.json");
+    const raw   = await fixture("error.json");
     const error = expectProviderError(() => parse(raw), "api");
 
     expect(error.detail).toBe("Credit balance is too low to run this request.");
@@ -85,7 +85,7 @@ describe("parseClaudeOutput", () => {
 describe("createClaudeCodeProvider", () => {
   it("reports unavailable when the binary does not exist", async () => {
     const provider = createClaudeCodeProvider({
-      binary: "glossic-definitely-not-a-real-binary",
+      binary   : "glossic-definitely-not-a-real-binary",
       timeoutMs: 5_000,
     });
 
@@ -94,11 +94,11 @@ describe("createClaudeCodeProvider", () => {
 
   it("caches the availability probe for the life of the process", async () => {
     const provider = createClaudeCodeProvider({
-      binary: "glossic-definitely-not-a-real-binary",
+      binary   : "glossic-definitely-not-a-real-binary",
       timeoutMs: 5_000,
     });
 
-    const first = provider.available();
+    const first  = provider.available();
     const second = provider.available();
 
     expect(await first).toBe(await second);
@@ -106,12 +106,12 @@ describe("createClaudeCodeProvider", () => {
 
   it("fails with a typed error when completing through a missing binary", async () => {
     const provider = createClaudeCodeProvider({
-      binary: "glossic-definitely-not-a-real-binary",
+      binary   : "glossic-definitely-not-a-real-binary",
       timeoutMs: 5_000,
     });
 
     await expect(provider.complete({ prompt: "hi", metadata: {} })).rejects.toMatchObject({
-      name: "ProviderError",
+      name    : "ProviderError",
       provider: claudeCodeProviderName,
     });
   });
@@ -121,7 +121,7 @@ describe("isolation from the scanned project", () => {
   const request = { prompt: "describe this unit", system: "You write docs.", metadata: {} };
 
   it("disables every tool", () => {
-    const args = buildArgs({}, request);
+    const args  = buildArgs({}, request);
     const index = args.indexOf("--allowed-tools");
 
     expect(index).toBeGreaterThanOrEqual(0);
@@ -129,7 +129,7 @@ describe("isolation from the scanned project", () => {
   });
 
   it("loads no settings and no MCP servers", () => {
-    const args = buildArgs({}, request);
+    const args  = buildArgs({}, request);
     const index = args.indexOf("--setting-sources");
 
     expect(index).toBeGreaterThanOrEqual(0);
@@ -161,9 +161,9 @@ describe("isolation from the scanned project", () => {
   it("runs somewhere other than the scanned project", async () => {
     const seen: string[] = [];
     const provider = createClaudeCodeProvider({
-      binary: "glossic-definitely-not-a-real-binary",
+      binary   : "glossic-definitely-not-a-real-binary",
       timeoutMs: 5_000,
-      cwd: "/tmp/glossic-sandbox",
+      cwd      : "/tmp/glossic-sandbox",
     });
 
     await provider.complete({ prompt: "hi", metadata: {} }).catch(() => {

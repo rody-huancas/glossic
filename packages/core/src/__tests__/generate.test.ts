@@ -39,46 +39,46 @@ afterAll(async () => {
  * adapter walks a tree.
  */
 const fakeAdapter: Adapter = {
-  name: "fake",
+  name  : "fake",
   detect: async (): Promise<boolean> => true,
   discover: async (ctx: DiscoverContext): Promise<DiscoveredUnit[]> => [
     {
-      id: `${ctx.project.id}:src/config`,
-      projectId: ctx.project.id,
-      name: "src/config",
-      path: "src/config",
-      files: ["src/config/app.config.ts"],
-      testFiles: [],
+      id          : `${ctx.project.id}:src/config`,
+      projectId   : ctx.project.id,
+      name        : "src/config",
+      path        : "src/config",
+      files       : ["src/config/app.config.ts"],
+      testFiles   : [],
       ignoredFiles: [],
     },
     {
-      id: `${ctx.project.id}:src/users/dto`,
-      projectId: ctx.project.id,
-      name: "src/users/dto",
-      path: "src/users/dto",
-      files: ["src/users/dto/create-user.dto.ts"],
-      testFiles: [],
+      id          : `${ctx.project.id}:src/users/dto`,
+      projectId   : ctx.project.id,
+      name        : "src/users/dto",
+      path        : "src/users/dto",
+      files       : ["src/users/dto/create-user.dto.ts"],
+      testFiles   : [],
       ignoredFiles: [],
     },
   ],
   extract: async (ctx: ExtractContext) => ({
     units: ctx.units.map((discovered) => ({
-      id: discovered.id,
+      id       : discovered.id,
       projectId: discovered.projectId,
-      kind: "directory" as const,
-      name: discovered.name,
-      path: discovered.path,
+      kind     : "directory" as const,
+      name     : discovered.name,
+      path     : discovered.path,
       facts: {
         base: {
           files: discovered.files.map((file) => ({
-            path: file,
+            path    : file,
             language: "typescript",
-            bytes: 1,
+            bytes   : 1,
           })),
-          testFiles: [],
+          testFiles   : [],
           ignoredFiles: [],
-          languages: [{ language: "typescript", count: discovered.files.length }],
-          roleHint: discovered.name.endsWith("dto") ? ("dtos" as const) : ("config" as const),
+          languages   : [{ language: "typescript", count: discovered.files.length }],
+          roleHint    : discovered.name.endsWith("dto") ? ("dtos" as const) : ("config" as const),
         },
         producedBy: ["fake"],
       },
@@ -93,12 +93,12 @@ const FAKE_CONFIG = GlossicConfigSchema.parse({ adapters: ["fake"] });
 
 const run = async (overrides: Partial<Parameters<typeof generate>[0]> = {}) =>
   generate({
-    root: exampleDir("nestjs-api"),
+    root    : exampleDir("nestjs-api"),
     adapters: [fakeAdapter],
-    config: FAKE_CONFIG,
-    outDir: await outDir(),
+    config  : FAKE_CONFIG,
+    outDir  : await outDir(),
     // Never the fixture's own .glossic: tests must not leave state in the repo.
-    cachePath: path.join(await outDir(), "cache.json"),
+    cachePath  : path.join(await outDir(), "cache.json"),
     generatedAt: "2026-01-01T00:00:00.000Z",
     ...overrides,
   });
@@ -106,7 +106,7 @@ const run = async (overrides: Partial<Parameters<typeof generate>[0]> = {}) =>
 describe("generate --dry-run", () => {
   it("never calls the provider", async () => {
     const provider = createFakeProvider();
-    const result = await run({ provider, dryRun: true });
+    const result   = await run({ provider, dryRun: true });
 
     expect(provider.calls).toEqual([]);
     expect(result.dryRun).toBe(true);
@@ -145,22 +145,22 @@ describe("generate --dry-run", () => {
 
 describe("generate", () => {
   it("writes one document per unit plus an index", async () => {
-    const docs = await outDir();
+    const docs   = await outDir();
     const result = await run({ provider: createFakeProvider(), outDir: docs });
 
     expect(result.written).toEqual(["index.md", "src/config.md", "src/users/dto.md"]);
 
-    const doc = await fs.readFile(path.join(docs, "src/users/dto.md"), "utf8");
+    const doc   = await fs.readFile(path.join(docs, "src/users/dto.md"), "utf8");
     const match = /^---\n([\s\S]*?)\n---\n/.exec(doc);
     expect(match).not.toBeNull();
     expect(parseYaml(match?.[1] ?? "")).toEqual({
-      title: "src/users/dto",
-      unit: "root:src/users/dto",
-      project: "root",
-      path: "src/users/dto",
-      role: "dtos",
-      hash: "hash-src/users/dto",
-      files: 1,
+      title      : "src/users/dto",
+      unit       : "root:src/users/dto",
+      project    : "root",
+      path       : "src/users/dto",
+      role       : "dtos",
+      hash       : "hash-src/users/dto",
+      files      : 1,
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
   });
@@ -196,15 +196,15 @@ describe("generate", () => {
         if (request.metadata.unitId === "root:src/config") {
           throw new ProviderError({
             provider: "fake",
-            code: "api",
-            message: "rate limited",
+            code    : "api",
+            message : "rate limited",
           });
         }
         return OK_DOCUMENT;
       },
     });
 
-    const docs = await outDir();
+    const docs   = await outDir();
     const result = await run({ provider, outDir: docs });
 
     expect(result.failures).toEqual([
@@ -221,7 +221,7 @@ describe("generate", () => {
 
   it("respects the concurrency limit", async () => {
     let inFlight = 0;
-    let peak = 0;
+    let peak     = 0;
 
     const provider = createFakeProvider({
       respond: () => {

@@ -185,10 +185,10 @@ describe("detectLanguage", () => {
 
 describe("resolveLanguage", () => {
   const all = {
-    flag: "fr",
-    project: "de",
+    flag      : "fr",
+    project   : "de",
     preference: "it",
-    system: "pt",
+    system    : "pt",
   };
 
   it("prefers the flag over everything", () => {
@@ -198,14 +198,14 @@ describe("resolveLanguage", () => {
   it("falls to the project config when there is no flag", () => {
     expect(resolveLanguage({ ...all, flag: undefined })).toEqual({
       language: "de",
-      origin: "project",
+      origin  : "project",
     });
   });
 
   it("falls to the saved preference when the project says nothing", () => {
     expect(resolveLanguage({ ...all, flag: undefined, project: undefined })).toEqual({
       language: "it",
-      origin: "preference",
+      origin  : "preference",
     });
   });
 
@@ -218,7 +218,7 @@ describe("resolveLanguage", () => {
   });
 
   it("walks the whole chain in order", () => {
-    const order = ["flag", "project", "preference", "system", "default"] as const;
+    const order                                      = ["flag", "project", "preference", "system", "default"] as const;
     const values: Record<string, string | undefined> = { ...all };
 
     for (const origin of order) {
@@ -231,7 +231,7 @@ describe("resolveLanguage", () => {
   it("treats a blank value as absent", () => {
     expect(resolveLanguage({ flag: "   ", project: "es" })).toEqual({
       language: "es",
-      origin: "project",
+      origin  : "project",
     });
   });
 });

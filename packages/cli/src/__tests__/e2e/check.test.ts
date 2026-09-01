@@ -21,14 +21,14 @@ const tempDirs: string[] = [];
  * exercise the cache and the checker rather than the unit grouping.
  */
 const SOURCES: Record<string, string> = {
-  "package.json": '{ "name": "check-fixture", "type": "module" }\n',
-  "src/index.ts": 'export const start = (): string => "up";\n',
-  "src/server.ts": "export const server = { port: 3000 };\n",
-  "src/app.ts": "export const app = { started: false };\n",
-  "src/routes/users.routes.ts": "export const usersRoutes = [];\n",
+  "package.json"               : '{ "name": "check-fixture", "type": "module" }\n',
+  "src/index.ts"               : 'export const start = (): string => "up";\n',
+  "src/server.ts"              : "export const server = { port: 3000 };\n",
+  "src/app.ts"                 : "export const app = { started: false };\n",
+  "src/routes/users.routes.ts" : "export const usersRoutes = [];\n",
   "src/routes/health.routes.ts": "export const healthRoutes = [];\n",
-  "src/utils/logger.ts": "export const logger = console;\n",
-  "src/utils/format.ts": "export const format = (v: string): string => v.trim();\n",
+  "src/utils/logger.ts"        : "export const logger = console;\n",
+  "src/utils/format.ts"        : "export const format = (v: string): string => v.trim();\n",
 };
 
 let root: string;
@@ -55,11 +55,11 @@ afterAll(async () => {
 const generateAll = async () =>
   generate({
     root,
-    adapters: builtinAdapters,
-    config: TREE_CONFIG,
-    provider: createFakeProvider(),
-    outDir: docs,
-    cachePath: path.join(root, ".glossic/cache.json"),
+    adapters   : builtinAdapters,
+    config     : TREE_CONFIG,
+    provider   : createFakeProvider(),
+    outDir     : docs,
+    cachePath  : path.join(root, ".glossic/cache.json"),
     generatedAt: "2026-01-01T00:00:00.000Z",
   });
 
@@ -191,8 +191,8 @@ describe("a failing unit does not abort the run", () => {
         if (request.metadata.unitId === "root:src/utils") {
           throw new ProviderError({
             provider: "fake",
-            code: "refused",
-            message: "the model declined to answer",
+            code    : "refused",
+            message : "the model declined to answer",
           });
         }
         return OK_DOCUMENT;
@@ -202,12 +202,12 @@ describe("a failing unit does not abort the run", () => {
     const result = await generate({
       root,
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
+      config  : TREE_CONFIG,
       provider,
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
-      retry: { sleep: async () => {} },
+      retry      : { sleep: async () => {} },
     });
 
     expect(result.generated).toBe(2);
@@ -220,8 +220,8 @@ describe("a failing unit does not abort the run", () => {
     const next = await check({
       root,
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
-      outDir: docs,
+      config  : TREE_CONFIG,
+      outDir  : docs,
     });
     expect(next.missing.map((entry) => entry.unitId)).toEqual(["root:src/utils"]);
   });
@@ -236,8 +236,8 @@ describe("a failing unit does not abort the run", () => {
           if (attempts < 3) {
             throw new ProviderError({
               provider: "fake",
-              code: "rate-limit",
-              message: "slow down",
+              code    : "rate-limit",
+              message : "slow down",
             });
           }
         }
@@ -248,12 +248,12 @@ describe("a failing unit does not abort the run", () => {
     const result = await generate({
       root,
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
+      config  : TREE_CONFIG,
       provider,
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
-      retry: { sleep: async () => {} },
+      retry      : { sleep: async () => {} },
     });
 
     expect(attempts).toBe(3);
@@ -269,8 +269,8 @@ describe("a failing unit does not abort the run", () => {
         attempts += 1;
         throw new ProviderError({
           provider: "fake",
-          code: "refused",
-          message: "the model declined to answer",
+          code    : "refused",
+          message : "the model declined to answer",
         });
       },
     });
@@ -278,12 +278,12 @@ describe("a failing unit does not abort the run", () => {
     const result = await generate({
       root,
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
+      config  : TREE_CONFIG,
       provider,
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
-      retry: { sleep: async () => {} },
+      retry      : { sleep: async () => {} },
     });
 
     // Three units, one attempt each: a refusal is never repeated.
@@ -302,13 +302,13 @@ describe("a conversational answer never reaches disk", () => {
   const generateWith = async (respond: (unitId: unknown) => string) =>
     generate({
       root,
-      adapters: builtinAdapters,
-      config: TREE_CONFIG,
-      provider: createFakeProvider({ respond: (request) => respond(request.metadata.unitId) }),
-      outDir: docs,
-      cachePath: cachePath(),
+      adapters   : builtinAdapters,
+      config     : TREE_CONFIG,
+      provider   : createFakeProvider({ respond: (request) => respond(request.metadata.unitId) }),
+      outDir     : docs,
+      cachePath  : cachePath(),
       generatedAt: "2026-01-01T00:00:00.000Z",
-      retry: { sleep: async () => {} },
+      retry      : { sleep: async () => {} },
     });
 
   const document = (unitId: unknown): string =>
@@ -325,7 +325,7 @@ ${`The ${String(unitId)} unit wires the module together. `.repeat(8)}`;
       {
         unitId: "root:src/utils",
         reason: expect.stringContaining("not a document") as unknown as string,
-        code: "invalid-content",
+        code  : "invalid-content",
         detail: expect.any(String) as unknown as string,
       },
     ]);
@@ -359,12 +359,12 @@ ${`The ${String(unitId)} unit wires the module together. `.repeat(8)}`;
     await generate({
       root,
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
+      config  : TREE_CONFIG,
       provider,
-      outDir: docs,
-      cachePath: cachePath(),
+      outDir     : docs,
+      cachePath  : cachePath(),
       generatedAt: "2026-01-01T00:00:00.000Z",
-      retry: { sleep: async () => {} },
+      retry      : { sleep: async () => {} },
     });
 
     // Three units, one attempt each.
@@ -379,24 +379,24 @@ describe("a preamble is trimmed rather than rejected", () => {
     const result = await generate({
       root,
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
+      config  : TREE_CONFIG,
       provider: createFakeProvider({
         respond: (request) =>
           request.metadata.unitId === "root:src/utils"
             ? `${PREAMBLE}\n\n# Utils\n\n${OK_DOCUMENT}`
             : OK_DOCUMENT,
       }),
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
-      retry: { sleep: async () => {} },
+      retry      : { sleep: async () => {} },
     });
 
     expect(result.failures).toEqual([]);
     expect(result.written).toContain("src/utils.md");
     expect(result.warnings).toEqual([
       {
-        unitId: "root:src/utils",
+        unitId : "root:src/utils",
         message: expect.stringContaining("before the first heading") as unknown as string,
       },
     ]);
@@ -413,11 +413,11 @@ describe("a preamble is trimmed rather than rejected", () => {
   it("reports no warning when nothing needed trimming", async () => {
     const result = await generate({
       root,
-      adapters: builtinAdapters,
-      config: TREE_CONFIG,
-      provider: createFakeProvider(),
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      adapters   : builtinAdapters,
+      config     : TREE_CONFIG,
+      provider   : createFakeProvider(),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 

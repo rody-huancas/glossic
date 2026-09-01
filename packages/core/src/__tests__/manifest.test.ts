@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { buildManifest, serializeManifest } from "../manifest.js";
 
 const workspace: Workspace = {
-  name: "demo",
-  root: "/tmp/demo",
+  name      : "demo",
+  root      : "/tmp/demo",
   isMonorepo: false,
-  tool: "none",
+  tool      : "none",
   projects: [
     { id: "root", name: "demo", rootDir: "." },
     { id: "a", name: "a", rootDir: "a" },
@@ -17,16 +17,16 @@ const workspace: Workspace = {
 const unit = (id: string, files: string[]): Unit => ({
   id,
   projectId: "root",
-  kind: "directory",
-  name: id,
-  path: id,
+  kind     : "directory",
+  name     : id,
+  path     : id,
   facts: {
     base: {
-      files: files.map((file) => ({ path: file, language: "typescript", bytes: file.length })),
-      testFiles: [],
+      files       : files.map((file) => ({ path: file, language: "typescript", bytes: file.length })),
+      testFiles   : [],
       ignoredFiles: [],
-      languages: [{ language: "typescript", count: files.length }],
-      roleHint: null,
+      languages   : [{ language: "typescript", count: files.length }],
+      roleHint    : null,
     },
     producedBy: ["generic"],
   },
@@ -64,8 +64,8 @@ describe("buildManifest", () => {
             ...unit("mixed", ["a.ts"]),
             facts: {
               base: {
-                files: [{ path: "a.ts", language: "typescript", bytes: 1 }],
-                testFiles: [],
+                files       : [{ path: "a.ts", language: "typescript", bytes: 1 }],
+                testFiles   : [],
                 ignoredFiles: [],
                 languages: [
                   { language: "tsx", count: 2 },
@@ -92,7 +92,7 @@ describe("buildManifest", () => {
   });
 
   it("is byte-identical across runs except for generatedAt", () => {
-    const first = buildManifest(workspace, results, { generatedAt: "2026-01-01T00:00:00.000Z" });
+    const first  = buildManifest(workspace, results, { generatedAt: "2026-01-01T00:00:00.000Z" });
     const second = buildManifest(workspace, results, { generatedAt: "2026-06-30T12:00:00.000Z" });
 
     const strip = (value: string): string => value.replace(/"generatedAt": "[^"]+"/, "");

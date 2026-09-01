@@ -20,14 +20,14 @@ describe("@glossic/schema", () => {
 
   it("parses an empty manifest", () => {
     const manifest = ManifestSchema.parse({
-      version: MANIFEST_VERSION,
+      version    : MANIFEST_VERSION,
       generatedAt: "1970-01-01T00:00:00.000Z",
       workspace: {
-        name: "demo",
-        root: "/tmp/demo",
+        name      : "demo",
+        root      : "/tmp/demo",
         isMonorepo: false,
-        tool: "none",
-        projects: [{ id: "root", name: "demo", rootDir: "." }],
+        tool      : "none",
+        projects  : [{ id: "root", name: "demo", rootDir: "." }],
       },
     });
     expect(manifest.units).toEqual([]);

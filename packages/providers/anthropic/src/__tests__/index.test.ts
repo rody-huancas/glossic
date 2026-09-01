@@ -11,18 +11,18 @@ import {
 
 const message = (overrides: Partial<Anthropic.Message> = {}): Anthropic.Message =>
   ({
-    id: "msg_test",
-    type: "message",
-    role: "assistant",
-    model: "claude-opus-5",
-    content: [{ type: "text", text: "## Users\n\nHandles users.", citations: null }],
-    stop_reason: "end_turn",
+    id           : "msg_test",
+    type         : "message",
+    role         : "assistant",
+    model        : "claude-opus-5",
+    content      : [{ type: "text", text: "## Users\n\nHandles users.", citations: null }],
+    stop_reason  : "end_turn",
     stop_sequence: null,
     usage: {
-      input_tokens: 120,
-      output_tokens: 40,
+      input_tokens               : 120,
+      output_tokens              : 40,
       cache_creation_input_tokens: null,
-      cache_read_input_tokens: 12,
+      cache_read_input_tokens    : 12,
     },
     ...overrides,
   }) as Anthropic.Message;
@@ -62,8 +62,8 @@ describe("anthropic provider", () => {
     const provider = createAnthropicProvider();
 
     await expect(provider.complete({ prompt: "hi", metadata: {} })).rejects.toMatchObject({
-      name: "ProviderError",
-      code: "unauthenticated",
+      name    : "ProviderError",
+      code    : "unauthenticated",
       provider: anthropicProviderName,
     });
   });
@@ -71,7 +71,7 @@ describe("anthropic provider", () => {
   it("maps a completion into a CompletionResult", async () => {
     const create = vi.fn().mockResolvedValue(message());
     const provider = createAnthropicProvider({
-      apiKey: "sk-ant-test",
+      apiKey      : "sk-ant-test",
       createClient: () => fakeClient(create),
     });
 
@@ -85,7 +85,7 @@ describe("anthropic provider", () => {
   it("does not send temperature to models that reject sampling", async () => {
     const create = vi.fn().mockResolvedValue(message());
     const provider = createAnthropicProvider({
-      apiKey: "sk-ant-test",
+      apiKey      : "sk-ant-test",
       createClient: () => fakeClient(create),
     });
 
@@ -99,8 +99,8 @@ describe("anthropic provider", () => {
   it("defaults to temperature 0 on models that accept sampling", async () => {
     const create = vi.fn().mockResolvedValue(message({ model: "claude-haiku-4-5" }));
     const provider = createAnthropicProvider({
-      apiKey: "sk-ant-test",
-      model: "claude-haiku-4-5",
+      apiKey      : "sk-ant-test",
+      model       : "claude-haiku-4-5",
       createClient: () => fakeClient(create),
     });
 
@@ -112,7 +112,7 @@ describe("anthropic provider", () => {
   it("surfaces a refusal as a typed error", async () => {
     const create = vi.fn().mockResolvedValue(message({ stop_reason: "refusal", content: [] }));
     const provider = createAnthropicProvider({
-      apiKey: "sk-ant-test",
+      apiKey      : "sk-ant-test",
       createClient: () => fakeClient(create),
     });
 
@@ -124,7 +124,7 @@ describe("anthropic provider", () => {
   it("wraps transport failures in a ProviderError", async () => {
     const create = vi.fn().mockRejectedValue(new Error("socket hang up"));
     const provider = createAnthropicProvider({
-      apiKey: "sk-ant-test",
+      apiKey      : "sk-ant-test",
       createClient: () => fakeClient(create),
     });
 

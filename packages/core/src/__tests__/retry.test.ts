@@ -70,7 +70,7 @@ describe("withRetry", () => {
   it("reports every retry", async () => {
     const { sleep } = instantSleep();
     const onRetry = vi.fn();
-    const task = vi.fn().mockRejectedValueOnce(providerError("timeout")).mockResolvedValue("ok");
+    const task    = vi.fn().mockRejectedValueOnce(providerError("timeout")).mockResolvedValue("ok");
 
     await withRetry(task, { sleep, onRetry });
 

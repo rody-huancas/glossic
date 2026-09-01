@@ -26,14 +26,14 @@ const contextFor = (root: string, rootDir = ".", mergeChildrenInto = 1): Discove
       name: path.basename(root),
       root,
       isMonorepo: false,
-      tool: "none",
-      projects: [project],
+      tool      : "none",
+      projects  : [project],
     },
   };
 };
 
 const runAdapter = async (ctx: DiscoverContext): Promise<Unit[]> => {
-  const units = await genericAdapter.discover(ctx);
+  const units  = await genericAdapter.discover(ctx);
   const result = await genericAdapter.extract({ ...ctx, units });
   return result.units;
 };
@@ -97,7 +97,7 @@ describe("generic adapter", () => {
 
   it("records file facts and language counts", async () => {
     const units = await runAdapter(contextFor(exampleDir("nestjs-api")));
-    const dto = units.find((unit) => unit.name === "src/users/dto");
+    const dto   = units.find((unit) => unit.name === "src/users/dto");
 
     expect(dto?.facts.producedBy).toEqual(["generic"]);
     expect(dto?.facts.base.files).toEqual([
@@ -132,11 +132,11 @@ describe("generic adapter", () => {
 
   it("respects .gitignore", async () => {
     const dir = await makeRepo({
-      ".gitignore": "generated/\n*.gen.ts\n",
-      "package.json": '{ "name": "ignored-repo" }',
-      "src/keep.ts": "export const keep = 1;\n",
-      "src/skip.gen.ts": "export const skip = 1;\n",
-      "generated/client.ts": "export const client = 1;\n",
+      ".gitignore"               : "generated/\n*.gen.ts\n",
+      "package.json"             : '{ "name": "ignored-repo" }',
+      "src/keep.ts"              : "export const keep = 1;\n",
+      "src/skip.gen.ts"          : "export const skip = 1;\n",
+      "generated/client.ts"      : "export const client = 1;\n",
       "node_modules/dep/index.js": "module.exports = {};\n",
     });
 
@@ -148,8 +148,8 @@ describe("generic adapter", () => {
 
   it("respects a nested .gitignore", async () => {
     const dir = await makeRepo({
-      "src/.gitignore": "vendor-copy/\n",
-      "src/app.ts": "export const app = 1;\n",
+      "src/.gitignore"        : "vendor-copy/\n",
+      "src/app.ts"            : "export const app = 1;\n",
       "src/vendor-copy/lib.ts": "export const lib = 1;\n",
     });
 
@@ -159,7 +159,7 @@ describe("generic adapter", () => {
   });
 
   it("scopes units and paths to the project inside a monorepo", async () => {
-    const ctx = contextFor(exampleDir("monorepo"), "packages/api");
+    const ctx   = contextFor(exampleDir("monorepo"), "packages/api");
     const units = await runAdapter({ ...ctx, project: { ...ctx.project, id: "packages/api" } });
 
     expect(units.map((unit) => unit.id)).toEqual(["packages/api:src", "packages/api:src/services"]);
@@ -181,7 +181,7 @@ describe("generic adapter", () => {
   it("produces the same hashes on two consecutive runs", async () => {
     const ctx = contextFor(exampleDir("nestjs-api"));
 
-    const first = await runAdapter(ctx);
+    const first  = await runAdapter(ctx);
     const second = await runAdapter(ctx);
 
     expect(second.map((unit) => [unit.id, unit.hash])).toEqual(
@@ -191,7 +191,7 @@ describe("generic adapter", () => {
   });
 
   it("hashes the content, not the read order", async () => {
-    const dir = await makeRepo({ "src/a.ts": "export const a = 1;\n" });
+    const dir    = await makeRepo({ "src/a.ts": "export const a = 1;\n" });
     const before = await runAdapter(contextFor(dir));
 
     await fs.writeFile(path.join(dir, "src/a.ts"), "export const a = 2;\n", "utf8");

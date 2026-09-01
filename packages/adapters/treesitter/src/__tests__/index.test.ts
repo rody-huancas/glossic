@@ -11,7 +11,7 @@ describe("treesitter adapter", () => {
     await expect(treesitterAdapter.detect({} as never)).resolves.toBe(false);
     await expect(treesitterAdapter.discover({} as never)).resolves.toEqual([]);
     await expect(treesitterAdapter.extract({} as never)).resolves.toEqual({
-      units: [],
+      units    : [],
       relations: [],
     });
   });

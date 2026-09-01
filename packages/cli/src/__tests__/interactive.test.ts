@@ -11,7 +11,7 @@ const CANCEL = Symbol("cancel");
 /** A prompt port that answers from a script instead of a terminal. */
 const scriptedPrompts = (answers: unknown[]) => {
   const asked: string[] = [];
-  let cursor = 0;
+  let cursor            = 0;
 
   const next = async (message: string): Promise<never> => {
     asked.push(message);
@@ -25,9 +25,9 @@ const scriptedPrompts = (answers: unknown[]) => {
   };
 
   const port: PromptPort = {
-    intro: (message) => asked.push(`intro:${message}`),
-    outro: (message) => asked.push(`outro:${message}`),
-    note: (message) => asked.push(`note:${message}`),
+    intro : (message) => asked.push(`intro:${message}`),
+    outro : (message) => asked.push(`outro:${message}`),
+    note  : (message) => asked.push(`note:${message}`),
     cancel: (message) => asked.push(`cancel:${message}`),
     select: (options) => {
       for (const option of options.options) {
@@ -35,8 +35,8 @@ const scriptedPrompts = (answers: unknown[]) => {
       }
       return next(options.message);
     },
-    text: (options) => next(options.message),
-    confirm: (options) => next(options.message),
+    text    : (options) => next(options.message),
+    confirm : (options) => next(options.message),
     isCancel: (value) => value === CANCEL,
   };
 
@@ -46,25 +46,25 @@ const scriptedPrompts = (answers: unknown[]) => {
 const emptyGenerateResult = (overrides: Partial<GenerateResult> = {}): GenerateResult =>
   ({
     manifest: { version: "1", generatedAt: "", workspace: {}, units: [], relations: [] },
-    written: [],
+    written : [],
     plan: [
       {
-        unitId: "root:src",
-        docPath: "src.md",
-        files: 1,
+        unitId         : "root:src",
+        docPath        : "src.md",
+        files          : 1,
         estimatedTokens: 2000,
-        reason: "new",
-        regenerate: true,
+        reason         : "new",
+        regenerate     : true,
       },
     ],
-    failures: [],
-    warnings: [],
-    filteredOut: [],
+    failures       : [],
+    warnings       : [],
+    filteredOut    : [],
     estimatedTokens: 2000,
-    savedTokens: 0,
-    generated: 1,
-    fromCache: 0,
-    dryRun: false,
+    savedTokens    : 0,
+    generated      : 1,
+    fromCache      : 0,
+    dryRun         : false,
     ...overrides,
   }) as GenerateResult;
 
@@ -72,15 +72,15 @@ const emptyGenerateResult = (overrides: Partial<GenerateResult> = {}): GenerateR
 const fakeConfig =
   (values: { lang?: string; uiLang?: "en" | "es" } = {}) =>
   async () => ({
-    config: GlossicConfigSchema.parse({ lang: values.lang ?? "es", uiLang: values.uiLang ?? "en" }),
+    config : GlossicConfigSchema.parse({ lang: values.lang ?? "es", uiLang: values.uiLang ?? "en" }),
     origins: {},
-    file: undefined,
+    file   : undefined,
   });
 
 const deps = (answers: unknown[], overrides: Partial<InteractiveDeps> = {}): InteractiveDeps => ({
-  prompts: scriptedPrompts(answers).port,
-  cwd: process.cwd(),
-  resolveConfig: fakeConfig({ lang: "es" }),
+  prompts         : scriptedPrompts(answers).port,
+  cwd             : process.cwd(),
+  resolveConfig   : fakeConfig({ lang: "es" }),
   writePreferences: async () => "/tmp/glossic/config.json",
   ...overrides,
 });
@@ -110,7 +110,7 @@ describe("renderStatusLine", () => {
 describe("runInteractive", () => {
   it("exits without doing anything when the user picks Salir", async () => {
     const runScan = vi.fn();
-    const code = await runInteractive(deps(["exit"], { runScan }));
+    const code    = await runInteractive(deps(["exit"], { runScan }));
 
     expect(code).toBe(0);
     expect(runScan).not.toHaveBeenCalled();
@@ -118,7 +118,7 @@ describe("runInteractive", () => {
 
   it("exits without doing anything when the user cancels", async () => {
     const runScan = vi.fn();
-    const code = await runInteractive(deps([CANCEL], { runScan }));
+    const code    = await runInteractive(deps([CANCEL], { runScan }));
 
     expect(code).toBe(0);
     expect(runScan).not.toHaveBeenCalled();
@@ -134,7 +134,7 @@ describe("runInteractive", () => {
 
   it("checking calls the very function the check command calls", async () => {
     const runCheck = vi.fn().mockResolvedValue({ ok: false });
-    const code = await runInteractive(deps(["check", "exit"], { runCheck }));
+    const code     = await runInteractive(deps(["check", "exit"], { runCheck }));
 
     expect(runCheck).toHaveBeenCalledTimes(1);
     expect(code).toBe(1);
@@ -148,8 +148,8 @@ describe("runInteractive", () => {
 
     const script = scriptedPrompts(["generate", "es", "./documentacion", true, "exit"]);
     const code = await runInteractive({
-      prompts: script.port,
-      resolveConfig: fakeConfig({ lang: "es" }),
+      prompts         : script.port,
+      resolveConfig   : fakeConfig({ lang: "es" }),
       writePreferences: async () => "/tmp/glossic/config.json",
       runGenerate,
     });
@@ -160,8 +160,8 @@ describe("runInteractive", () => {
     // First the plan, then the real run — the same entry point both times.
     expect(runGenerate.mock.calls[0]?.[1]).toMatchObject({
       dryRun: true,
-      lang: "es",
-      out: "./documentacion",
+      lang  : "es",
+      out   : "./documentacion",
     });
     expect(runGenerate.mock.calls[1]?.[1]).toEqual({ lang: "es", out: "./documentacion" });
     expect(runGenerate.mock.calls[1]?.[1]).not.toHaveProperty("dryRun");
@@ -208,7 +208,7 @@ describe("the documentation language option", () => {
   it("offers the current language as the hint", async () => {
     const script = scriptedPrompts(["exit"]);
     await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig({ lang: "es" }),
     });
 
@@ -216,11 +216,11 @@ describe("the documentation language option", () => {
   });
 
   it("redraws the status line with the new language and stays in the menu", async () => {
-    const script = scriptedPrompts(["docLanguage", "pt", "exit"]);
+    const script           = scriptedPrompts(["docLanguage", "pt", "exit"]);
     const saved: unknown[] = [];
 
     const code = await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async (update) => {
         saved.push(update);
@@ -243,11 +243,11 @@ describe("the documentation language option", () => {
   });
 
   it("saves nothing when the same language is picked again", async () => {
-    const script = scriptedPrompts(["docLanguage", "es", "exit"]);
+    const script           = scriptedPrompts(["docLanguage", "es", "exit"]);
     const saved: unknown[] = [];
 
     await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async (update) => {
         saved.push(update);
@@ -259,11 +259,11 @@ describe("the documentation language option", () => {
   });
 
   it("saves nothing when the picker is cancelled", async () => {
-    const script = scriptedPrompts(["docLanguage", CANCEL, "exit"]);
+    const script           = scriptedPrompts(["docLanguage", CANCEL, "exit"]);
     const saved: unknown[] = [];
 
     await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig({ lang: "es" }),
       writePreferences: async (update) => {
         saved.push(update);
@@ -283,7 +283,7 @@ describe("the documentation language option", () => {
     await runInteractive({
       prompts: scriptedPrompts(["docLanguage", "fr", "generate", "fr", "./docs", true, "exit"])
         .port,
-      resolveConfig: fakeConfig({ lang: "es" }),
+      resolveConfig   : fakeConfig({ lang: "es" }),
       writePreferences: async () => "/tmp/glossic/config.json",
       runGenerate,
     });
@@ -297,11 +297,11 @@ describe("the interface language option", () => {
   const strip = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, "");
 
   it("redraws the menu translated after the interface language changes", async () => {
-    const script = scriptedPrompts(["uiLanguage", "es", "exit"]);
+    const script           = scriptedPrompts(["uiLanguage", "es", "exit"]);
     const saved: unknown[] = [];
 
     const code = await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig({ lang: "es", uiLang: "en" }),
       writePreferences: async (update) => {
         saved.push(update);
@@ -325,10 +325,10 @@ describe("the interface language option", () => {
 
   it("persists the two languages independently", async () => {
     const saved: unknown[] = [];
-    const script = scriptedPrompts(["uiLanguage", "es", "docLanguage", "pt", "exit"]);
+    const script           = scriptedPrompts(["uiLanguage", "es", "docLanguage", "pt", "exit"]);
 
     await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig({ lang: "es", uiLang: "en" }),
       writePreferences: async (update) => {
         saved.push(update);
@@ -344,8 +344,8 @@ describe("the interface language option", () => {
     const script = scriptedPrompts(["uiLanguage", CANCEL, "exit"]);
 
     await runInteractive({
-      prompts: script.port,
-      resolveConfig: fakeConfig({ uiLang: "en" }),
+      prompts         : script.port,
+      resolveConfig   : fakeConfig({ uiLang: "en" }),
       writePreferences: async () => "/tmp/glossic/config.json",
     });
 
@@ -368,12 +368,12 @@ describe("the menu is a loop", () => {
     asked.filter((entry) => entry === "What would you like to do?");
 
   it("comes back after every action, and only Exit ends it", async () => {
-    const runScan = vi.fn().mockResolvedValue(scanResult(3));
+    const runScan  = vi.fn().mockResolvedValue(scanResult(3));
     const runCheck = vi.fn().mockResolvedValue({ ok: true });
 
     const script = scriptedPrompts(["scan", "check", "doctor", "exit"]);
     const code = await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig(),
       runScan,
       runCheck,
@@ -391,7 +391,7 @@ describe("the menu is a loop", () => {
     const runScan = vi.fn().mockResolvedValue(scanResult(1));
 
     await runInteractive({
-      prompts: scriptedPrompts(["scan", "scan", "exit"]).port,
+      prompts      : scriptedPrompts(["scan", "scan", "exit"]).port,
       resolveConfig: fakeConfig(),
       runScan,
     });
@@ -404,7 +404,7 @@ describe("the menu is a loop", () => {
 
     const script = scriptedPrompts(["scan", CANCEL]);
     const code = await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig(),
       runScan,
     });
@@ -415,12 +415,12 @@ describe("the menu is a loop", () => {
   });
 
   it("survives an action that throws and keeps the session going", async () => {
-    const runScan = vi.fn().mockRejectedValue(new Error("provider is down"));
+    const runScan  = vi.fn().mockRejectedValue(new Error("provider is down"));
     const runCheck = vi.fn().mockResolvedValue({ ok: true });
 
     const script = scriptedPrompts(["scan", "check", "exit"]);
     const code = await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig(),
       runScan,
       runCheck,
@@ -437,7 +437,7 @@ describe("the menu is a loop", () => {
     const runCheck = vi.fn().mockResolvedValue({ ok: false });
 
     const code = await runInteractive({
-      prompts: scriptedPrompts(["check", "check", "exit"]).port,
+      prompts      : scriptedPrompts(["check", "check", "exit"]).port,
       resolveConfig: fakeConfig(),
       runCheck,
     });
@@ -448,9 +448,9 @@ describe("the menu is a loop", () => {
 
   it("exits 0 when nothing failed", async () => {
     const code = await runInteractive({
-      prompts: scriptedPrompts(["check", "exit"]).port,
+      prompts      : scriptedPrompts(["check", "exit"]).port,
       resolveConfig: fakeConfig(),
-      runCheck: vi.fn().mockResolvedValue({ ok: true }),
+      runCheck     : vi.fn().mockResolvedValue({ ok: true }),
     });
 
     expect(code).toBe(0);
@@ -459,9 +459,9 @@ describe("the menu is a loop", () => {
   it("redraws the status line on every turn", async () => {
     const script = scriptedPrompts(["scan", "scan", "exit"]);
     await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig({ lang: "es" }),
-      runScan: vi.fn().mockResolvedValue(scanResult(2)),
+      runScan      : vi.fn().mockResolvedValue(scanResult(2)),
     });
 
     const lines = script.asked.filter(
@@ -476,9 +476,9 @@ describe("the menu is a loop", () => {
   it("tells the generate option what the last scan found", async () => {
     const script = scriptedPrompts(["scan", "exit"]);
     await runInteractive({
-      prompts: script.port,
+      prompts      : script.port,
       resolveConfig: fakeConfig(),
-      runScan: vi.fn().mockResolvedValue(scanResult(11)),
+      runScan      : vi.fn().mockResolvedValue(scanResult(11)),
     });
 
     const hints = script.asked.filter((entry) => entry.startsWith("hint:generate:"));
@@ -490,7 +490,7 @@ describe("the menu is a loop", () => {
 
   it("never scans just to fill in that hint", async () => {
     const runScan = vi.fn().mockResolvedValue(scanResult(4));
-    const script = scriptedPrompts(["exit"]);
+    const script  = scriptedPrompts(["exit"]);
 
     await runInteractive({ prompts: script.port, resolveConfig: fakeConfig(), runScan });
 

@@ -59,7 +59,7 @@ describe("readPreferences", () => {
 
   it("ignores a corrupt file instead of failing", async () => {
     const location = await sandbox();
-    const target = preferencesPath(location);
+    const target   = preferencesPath(location);
 
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, "{ not json at all", "utf8");
@@ -69,7 +69,7 @@ describe("readPreferences", () => {
 
   it("ignores a file whose shape is wrong", async () => {
     const location = await sandbox();
-    const target = preferencesPath(location);
+    const target   = preferencesPath(location);
 
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, JSON.stringify({ lang: 42 }), "utf8");
@@ -88,7 +88,7 @@ describe("readPreferences", () => {
 describe("writePreferences", () => {
   it("creates the config directory and returns the path", async () => {
     const location = await sandbox();
-    const written = await writePreferences({ lang: "fr" }, location);
+    const written  = await writePreferences({ lang: "fr" }, location);
 
     expect(written).toBe(preferencesPath(location));
     await expect(fs.readFile(written, "utf8")).resolves.toContain('"lang": "fr"');
@@ -104,7 +104,7 @@ describe("writePreferences", () => {
 
   it("overwrites a corrupt file rather than refusing", async () => {
     const location = await sandbox();
-    const target = preferencesPath(location);
+    const target   = preferencesPath(location);
 
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, "garbage", "utf8");

@@ -12,10 +12,10 @@ import type { PromptPort } from "../ui/prompts.js";
 const tempDirs: string[] = [];
 
 const SOURCES: Record<string, string> = {
-  "package.json": '{ "name": "out-dir-fixture", "type": "module" }',
-  "src/index.ts": "export const start = 1;",
+  "package.json" : '{ "name": "out-dir-fixture", "type": "module" }',
+  "src/index.ts" : "export const start = 1;",
   "src/server.ts": "export const server = 2;",
-  "src/app.ts": "export const app = 3;",
+  "src/app.ts"   : "export const app = 3;",
 };
 
 let root: string;
@@ -49,13 +49,13 @@ const scripted = (answers: unknown[]): PromptPort => {
   };
 
   return {
-    intro: () => {},
-    outro: () => {},
-    note: () => {},
-    cancel: () => {},
-    select: next,
-    text: next,
-    confirm: next,
+    intro   : () => {},
+    outro   : () => {},
+    note    : () => {},
+    cancel  : () => {},
+    select  : next,
+    text    : next,
+    confirm : next,
     isCancel: () => false,
   };
 };
@@ -75,8 +75,8 @@ const generateInteractively = async (answer: string): Promise<number> => {
   const fake = createFakeProvider();
 
   return runInteractive({
-    prompts: scripted(["generate", "es", answer, true, "exit"]),
-    cwd: root,
+    prompts    : scripted(["generate", "es", answer, true, "exit"]),
+    cwd        : root,
     preferences: { env: { APPDATA: home }, platform: "win32", homedir: home },
     runGenerate: (target, options) =>
       runGenerate(target, options, { cwd: root, createProviders: () => [fake] }),

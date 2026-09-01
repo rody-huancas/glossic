@@ -149,7 +149,7 @@ describe("normalizeDocument", () => {
 
   it("drops a short preamble and reports it", () => {
     const preamble = "The working directory is empty, so I worked from the sources given.";
-    const result = normalizeDocument("claude-code", `${preamble}\n\n${BODY}`);
+    const result   = normalizeDocument("claude-code", `${preamble}\n\n${BODY}`);
 
     expect(result.body).toBe(BODY);
     expect(result.preamble).toBe(preamble);
@@ -179,7 +179,7 @@ describe("normalizeDocument", () => {
 
   it("ignores a comment inside a fenced block when looking for the heading", () => {
     const withFence = ["```bash", "# not a heading", "```", "", BODY].join("\n");
-    const result = normalizeDocument("claude-code", withFence);
+    const result    = normalizeDocument("claude-code", withFence);
 
     expect(result.body).toBe(BODY);
     expect(result.preamble).toBe(["```bash", "# not a heading", "```"].join("\n"));
@@ -236,7 +236,7 @@ describe("prepareDocument", () => {
   ].join("\n");
 
   it("trims the preamble and validates in one pass", () => {
-    const raw = `The repo is not checked out here, so this comes from the sources.\n\n${DOCUMENT}`;
+    const raw      = `The repo is not checked out here, so this comes from the sources.\n\n${DOCUMENT}`;
     const prepared = prepareDocument("claude-code", raw);
 
     expect(prepared.droppedPreamble).toContain("not checked out");

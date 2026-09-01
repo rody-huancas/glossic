@@ -12,16 +12,16 @@ import { builtinAdapters } from "../../registries.js";
 const tempDirs: string[] = [];
 
 const SOURCES: Record<string, string> = {
-  "package.json": '{ "name": "effect-fixture", "type": "module" }\n',
-  "tsup.config.ts": "export default {};\n",
-  "src/index.ts": "export const start = 1;\n",
-  "src/server.ts": "export const server = 2;\n",
-  "src/app.ts": "export const app = 3;\n",
-  "src/app.test.ts": "export const appTest = 1;\n",
-  "src/routes/users.ts": "export const users = [];\n",
-  "src/routes/health.ts": "export const health = [];\n",
-  "src/utils/logger.ts": "export const logger = 1;\n",
-  "src/utils/format.ts": "export const format = 2;\n",
+  "package.json"               : '{ "name": "effect-fixture", "type": "module" }\n',
+  "tsup.config.ts"             : "export default {};\n",
+  "src/index.ts"               : "export const start = 1;\n",
+  "src/server.ts"              : "export const server = 2;\n",
+  "src/app.ts"                 : "export const app = 3;\n",
+  "src/app.test.ts"            : "export const appTest = 1;\n",
+  "src/routes/users.ts"        : "export const users = [];\n",
+  "src/routes/health.ts"       : "export const health = [];\n",
+  "src/utils/logger.ts"        : "export const logger = 1;\n",
+  "src/utils/format.ts"        : "export const format = 2;\n",
   "src/migrations/0001-init.ts": "export const up = 1;\n",
 };
 
@@ -76,7 +76,7 @@ describe("every option has an effect on scan", () => {
 
   it("ignoreUnits keeps files out of the documentation", async () => {
     const withDefaults = await units({ mergeChildrenInto: 1 });
-    const src = withDefaults.find((unit) => unit.name === "src");
+    const src          = withDefaults.find((unit) => unit.name === "src");
 
     // The migration is hashed with the unit above it, never documented.
     expect(src?.facts.base.files.map((file) => file.path)).not.toContain(
@@ -88,7 +88,7 @@ describe("every option has an effect on scan", () => {
   });
 
   it("excludeFromContent moves a file out of the content and into the tests", async () => {
-    const asTest = await units({ mergeChildrenInto: 1 });
+    const asTest    = await units({ mergeChildrenInto: 1 });
     const asContent = await units({ mergeChildrenInto: 1, excludeFromContent: [] });
 
     expect(asTest.find((unit) => unit.name === "src")?.facts.base.testFiles).toHaveLength(1);
@@ -128,10 +128,10 @@ describe("every option has an effect on generate", () => {
     const result = await generate({
       root,
       adapters: builtinAdapters,
-      config: config(values),
+      config  : config(values),
       provider,
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
     return { result, provider };
@@ -151,7 +151,7 @@ describe("every option has an effect on generate", () => {
 
   it("concurrency caps the completions in flight", async () => {
     let inFlight = 0;
-    let peak = 0;
+    let peak     = 0;
 
     const provider = createFakeProvider({
       respond: () => {
@@ -165,10 +165,10 @@ describe("every option has an effect on generate", () => {
     await generate({
       root,
       adapters: builtinAdapters,
-      config: config({ mergeChildrenInto: 1, concurrency: 2 }),
+      config  : config({ mergeChildrenInto: 1, concurrency: 2 }),
       provider,
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 
@@ -182,10 +182,10 @@ describe("the grouping options invalidate the cache", () => {
     const result = await generate({
       root,
       adapters: builtinAdapters,
-      config: config(values),
+      config  : config(values),
       provider,
-      outDir: docs,
-      cachePath: path.join(root, ".glossic/cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(root, ".glossic/cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
     return { result, provider };
@@ -210,11 +210,11 @@ describe("the grouping options invalidate the cache", () => {
 
   it("changing excludeFromContent changes the hash without moving a file", async () => {
     const before = await units({ mergeChildrenInto: 1 });
-    const after = await units({ mergeChildrenInto: 1, excludeFromContent: [] });
+    const after  = await units({ mergeChildrenInto: 1, excludeFromContent: [] });
 
-    const name = "src";
+    const name       = "src";
     const hashBefore = before.find((unit) => unit.name === name)?.hash;
-    const hashAfter = after.find((unit) => unit.name === name)?.hash;
+    const hashAfter  = after.find((unit) => unit.name === name)?.hash;
 
     // Same unit, same files, same digests — only the bucket changed.
     expect(hashBefore).toBeDefined();
@@ -223,10 +223,10 @@ describe("the grouping options invalidate the cache", () => {
 
   it("changing ignoreUnits changes the hash of the unit above", async () => {
     const before = await units({ mergeChildrenInto: 1 });
-    const after = await units({ mergeChildrenInto: 1, ignoreUnits: ["tsup.config.ts"] });
+    const after  = await units({ mergeChildrenInto: 1, ignoreUnits: ["tsup.config.ts"] });
 
     const hashBefore = before.find((unit) => unit.name === "src")?.hash;
-    const hashAfter = after.find((unit) => unit.name === "src")?.hash;
+    const hashAfter  = after.find((unit) => unit.name === "src")?.hash;
 
     expect(hashAfter).not.toBe(hashBefore);
   });

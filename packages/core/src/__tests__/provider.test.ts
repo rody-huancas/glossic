@@ -5,7 +5,7 @@ import { probeProviders, resolveProvider } from "../provider.js";
 import { createFakeProvider } from "../testing.js";
 
 const claudeCode = (available: boolean) => createFakeProvider({ name: "claude-code", available });
-const anthropic = (available: boolean) => createFakeProvider({ name: "anthropic", available });
+const anthropic  = (available: boolean) => createFakeProvider({ name: "anthropic", available });
 
 describe("resolveProvider", () => {
   it("prefers claude-code when both are available", async () => {
@@ -36,7 +36,7 @@ describe("resolveProvider", () => {
   it("honours the configured provider", async () => {
     const provider = await resolveProvider({
       providers: [claudeCode(true), anthropic(false)],
-      config: { provider: "anthropic" },
+      config   : { provider: "anthropic" },
     });
 
     expect(provider.name).toBe("anthropic");

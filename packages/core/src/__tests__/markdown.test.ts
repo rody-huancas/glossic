@@ -7,17 +7,17 @@ import { INDEX_DOC_PATH, renderIndexDoc, renderUnitDoc, unitDocPath } from "../m
 const project: Project = { id: "root", name: "nestjs-api", rootDir: "." };
 
 const unit = (name: string, path: string, roleHint: Unit["facts"]["base"]["roleHint"]): Unit => ({
-  id: `root:${name}`,
+  id       : `root:${name}`,
   projectId: "root",
-  kind: "directory",
+  kind     : "directory",
   name,
   path,
   facts: {
     base: {
-      files: [{ path: `${path}/a.ts`, language: "typescript", bytes: 10 }],
-      testFiles: [],
+      files       : [{ path: `${path}/a.ts`, language: "typescript", bytes: 10 }],
+      testFiles   : [],
       ignoredFiles: [],
-      languages: [{ language: "typescript", count: 1 }],
+      languages   : [{ language: "typescript", count: 1 }],
       roleHint,
     },
     producedBy: ["generic"],
@@ -48,20 +48,20 @@ describe("renderUnitDoc", () => {
     const doc = renderUnitDoc({
       unit: unit("src/users/dto", "src/users/dto", "dtos"),
       project,
-      body: "## What it does\n\nCarries request payloads.",
+      body       : "## What it does\n\nCarries request payloads.",
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 
     const { frontmatter, body } = splitFrontmatter(doc);
 
     expect(frontmatter).toEqual({
-      title: "src/users/dto",
-      unit: "root:src/users/dto",
-      project: "root",
-      path: "src/users/dto",
-      role: "dtos",
-      hash: "0f".repeat(32),
-      files: 1,
+      title      : "src/users/dto",
+      unit       : "root:src/users/dto",
+      project    : "root",
+      path       : "src/users/dto",
+      role       : "dtos",
+      hash       : "0f".repeat(32),
+      files      : 1,
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
     expect(body.trim().startsWith("## What it does")).toBe(true);
@@ -72,7 +72,7 @@ describe("renderUnitDoc", () => {
     const doc = renderUnitDoc({
       unit: unit("src", "src", null),
       project,
-      body: "## What it does\n\nBootstraps.",
+      body       : "## What it does\n\nBootstraps.",
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 
@@ -83,7 +83,7 @@ describe("renderUnitDoc", () => {
     const doc = renderUnitDoc({
       unit: unit("root", ".", null),
       project,
-      body: "## What it does\n\nEntry point.",
+      body       : "## What it does\n\nEntry point.",
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 
@@ -94,7 +94,7 @@ describe("renderUnitDoc", () => {
     const doc = renderUnitDoc({
       unit: { ...unit('src/we"ird: name', 'src/we"ird: name', null) },
       project,
-      body: "## What it does\n\nOdd naming.",
+      body       : "## What it does\n\nOdd naming.",
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 
@@ -104,16 +104,16 @@ describe("renderUnitDoc", () => {
 
 describe("renderIndexDoc", () => {
   const manifest: Manifest = {
-    version: "1",
+    version    : "1",
     generatedAt: "2026-01-01T00:00:00.000Z",
     workspace: {
-      name: "nestjs-api",
-      root: "/tmp/nestjs-api",
+      name      : "nestjs-api",
+      root      : "/tmp/nestjs-api",
       isMonorepo: false,
-      tool: "none",
-      projects: [project],
+      tool      : "none",
+      projects  : [project],
     },
-    units: [unit("src", "src", null), unit("src/users/dto", "src/users/dto", "dtos")],
+    units    : [unit("src", "src", null), unit("src/users/dto", "src/users/dto", "dtos")],
     relations: [],
   };
 

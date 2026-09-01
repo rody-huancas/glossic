@@ -21,19 +21,19 @@ const tempDirs: string[] = [];
  * exercise the cache and the checker rather than the unit grouping.
  */
 const SOURCES: Record<string, string> = {
-  "package.json": '{ "name": "cache-fixture", "type": "module" }\n',
-  "src/index.ts": 'export const start = (): string => "up";\n',
-  "src/server.ts": "export const server = { port: 3000 };\n",
-  "src/app.ts": "export const app = { started: false };\n",
-  "src/routes/users.routes.ts": "export const usersRoutes = [];\n",
+  "package.json"               : '{ "name": "cache-fixture", "type": "module" }\n',
+  "src/index.ts"               : 'export const start = (): string => "up";\n',
+  "src/server.ts"              : "export const server = { port: 3000 };\n",
+  "src/app.ts"                 : "export const app = { started: false };\n",
+  "src/routes/users.routes.ts" : "export const usersRoutes = [];\n",
   "src/routes/health.routes.ts": "export const healthRoutes = [];\n",
-  "src/utils/logger.ts": "export const logger = console;\n",
-  "src/utils/format.ts": "export const format = (v: string): string => v.trim();\n",
+  "src/utils/logger.ts"        : "export const logger = console;\n",
+  "src/utils/format.ts"        : "export const format = (v: string): string => v.trim();\n",
 };
 
 interface Fixture {
-  root: string;
-  docs: string;
+  root     : string;
+  docs     : string;
   cachePath: string;
 }
 
@@ -49,7 +49,7 @@ const makeFixture = async (): Promise<Fixture> => {
 
   return {
     root,
-    docs: path.join(root, "docs"),
+    docs     : path.join(root, "docs"),
     cachePath: path.join(root, ".glossic", "cache.json"),
   };
 };
@@ -69,12 +69,12 @@ const run = async (
 ): Promise<{ result: GenerateResult; provider: ReturnType<typeof createFakeProvider> }> => {
   const provider = createFakeProvider();
   const result = await generate({
-    root: fixture.root,
+    root    : fixture.root,
     adapters: builtinAdapters,
-    config: TREE_CONFIG,
+    config  : TREE_CONFIG,
     provider,
-    outDir: fixture.docs,
-    cachePath: fixture.cachePath,
+    outDir     : fixture.docs,
+    cachePath  : fixture.cachePath,
     generatedAt: "2026-01-01T00:00:00.000Z",
     ...overrides,
   });
@@ -100,10 +100,10 @@ describe("incremental cache", () => {
     ]);
     expect(cache.entries[0]).toMatchObject({
       promptVersion: "3",
-      model: "default",
-      lang: "en",
-      outputPath: "src.md",
-      generatedAt: "2026-01-01T00:00:00.000Z",
+      model        : "default",
+      lang         : "en",
+      outputPath   : "src.md",
+      generatedAt  : "2026-01-01T00:00:00.000Z",
     });
   });
 

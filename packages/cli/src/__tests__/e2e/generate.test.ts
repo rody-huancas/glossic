@@ -33,16 +33,16 @@ afterAll(async () => {
 
 describe("generate over the nestjs-api fixture", () => {
   it("mirrors the source tree and links every unit from the index", async () => {
-    const docs = await outDir();
+    const docs     = await outDir();
     const provider = createFakeProvider();
 
     const result = await generate({
-      root: exampleDir("nestjs-api"),
+      root    : exampleDir("nestjs-api"),
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
+      config  : TREE_CONFIG,
       provider,
-      outDir: docs,
-      cachePath: path.join(docs, "cache.json"),
+      outDir     : docs,
+      cachePath  : path.join(docs, "cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 
@@ -68,17 +68,17 @@ describe("generate over the nestjs-api fixture", () => {
     const docs = await outDir();
 
     const result = await generate({
-      root: exampleDir("nestjs-api"),
-      adapters: builtinAdapters,
-      config: TREE_CONFIG,
-      provider: createFakeProvider(),
-      outDir: docs,
-      cachePath: path.join(docs, "cache.json"),
+      root       : exampleDir("nestjs-api"),
+      adapters   : builtinAdapters,
+      config     : TREE_CONFIG,
+      provider   : createFakeProvider(),
+      outDir     : docs,
+      cachePath  : path.join(docs, "cache.json"),
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 
     const unit = result.manifest.units.find((entry) => entry.name === "src/users/dto");
-    const doc = await fs.readFile(path.join(docs, "src/users/dto.md"), "utf8");
+    const doc  = await fs.readFile(path.join(docs, "src/users/dto.md"), "utf8");
     const frontmatter = parseYaml(/^---\n([\s\S]*?)\n---\n/.exec(doc)?.[1] ?? "") as {
       hash: string;
       role: string;
@@ -92,13 +92,13 @@ describe("generate over the nestjs-api fixture", () => {
     const provider = createFakeProvider();
 
     const result = await generate({
-      root: exampleDir("monorepo"),
+      root    : exampleDir("monorepo"),
       adapters: builtinAdapters,
-      config: TREE_CONFIG,
+      config  : TREE_CONFIG,
       provider,
-      outDir: await outDir(),
-      cachePath: path.join(await outDir(), "cache.json"),
-      dryRun: true,
+      outDir     : await outDir(),
+      cachePath  : path.join(await outDir(), "cache.json"),
+      dryRun     : true,
       generatedAt: "2026-01-01T00:00:00.000Z",
     });
 

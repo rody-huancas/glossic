@@ -13,8 +13,8 @@ describe("resolveConfig", () => {
 
   it("walks the chain for every option, not just lang", () => {
     const { config, origins } = resolveConfig({
-      flags: { lang: "fr", concurrency: 9 },
-      project: { lang: "de", maxUnitFiles: 4, adapters: ["generic"] },
+      flags     : { lang: "fr", concurrency: 9 },
+      project   : { lang: "de", maxUnitFiles: 4, adapters: ["generic"] },
       preference: { lang: "it", concurrency: 2, minUnitFiles: 7 },
     });
 
@@ -51,7 +51,7 @@ describe("resolveConfig", () => {
     // A config file that only names adapters must not also be dictating the
     // language: the value it never declared has to come from the preference.
     const { config, origins } = resolveConfig({
-      project: { adapters: ["generic"] },
+      project   : { adapters: ["generic"] },
       preference: { lang: "pt" },
     });
 
@@ -62,7 +62,7 @@ describe("resolveConfig", () => {
 
   it("treats a blank string as nothing said", () => {
     const { config, origins } = resolveConfig({
-      flags: { provider: "   " },
+      flags  : { provider: "   " },
       project: { provider: "anthropic" },
     });
 

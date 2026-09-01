@@ -57,7 +57,7 @@ describe("resolveWorkspace", () => {
 
   it("reads the workspaces field of package.json", async () => {
     const dir = await makeRepo({
-      "package.json": JSON.stringify({ name: "npm-repo", workspaces: ["apps/*"] }),
+      "package.json"          : JSON.stringify({ name: "npm-repo", workspaces: ["apps/*"] }),
       "apps/site/package.json": JSON.stringify({ name: "site" }),
     });
 
@@ -69,11 +69,11 @@ describe("resolveWorkspace", () => {
 
   it("prefers pnpm-workspace.yaml over the other markers", async () => {
     const dir = await makeRepo({
-      "pnpm-workspace.yaml": 'packages:\n  - "libs/*"\n',
-      "package.json": JSON.stringify({ name: "mixed", workspaces: ["apps/*"] }),
-      "turbo.json": "{}",
-      "nx.json": "{}",
-      "lerna.json": JSON.stringify({ packages: ["modules/*"] }),
+      "pnpm-workspace.yaml"  : 'packages:\n  - "libs/*"\n',
+      "package.json"         : JSON.stringify({ name: "mixed", workspaces: ["apps/*"] }),
+      "turbo.json"           : "{}",
+      "nx.json"              : "{}",
+      "lerna.json"           : JSON.stringify({ packages: ["modules/*"] }),
       "libs/one/package.json": JSON.stringify({ name: "one" }),
       "apps/two/package.json": JSON.stringify({ name: "two" }),
     });
@@ -87,7 +87,7 @@ describe("resolveWorkspace", () => {
   it("falls back to turbo, then nx, then lerna", async () => {
     const turbo = await resolveWorkspace(
       await makeRepo({
-        "turbo.json": "{}",
+        "turbo.json"             : "{}",
         "packages/a/package.json": JSON.stringify({ name: "a" }),
       }),
     );
@@ -95,7 +95,7 @@ describe("resolveWorkspace", () => {
 
     const nx = await resolveWorkspace(
       await makeRepo({
-        "nx.json": "{}",
+        "nx.json"            : "{}",
         "libs/b/package.json": JSON.stringify({ name: "b" }),
       }),
     );
@@ -104,7 +104,7 @@ describe("resolveWorkspace", () => {
 
     const lerna = await resolveWorkspace(
       await makeRepo({
-        "lerna.json": JSON.stringify({ packages: ["modules/*"] }),
+        "lerna.json"            : JSON.stringify({ packages: ["modules/*"] }),
         "modules/c/package.json": JSON.stringify({ name: "c" }),
       }),
     );
@@ -115,7 +115,7 @@ describe("resolveWorkspace", () => {
   it("ignores a marker whose globs match nothing", async () => {
     const dir = await makeRepo({
       "pnpm-workspace.yaml": 'packages:\n  - "packages/*"\n',
-      "package.json": JSON.stringify({ name: "empty-repo" }),
+      "package.json"       : JSON.stringify({ name: "empty-repo" }),
     });
 
     const workspace = await resolveWorkspace(dir);

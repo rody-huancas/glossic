@@ -20,9 +20,9 @@ const TREE_CONFIG = GlossicConfigSchema.parse({ mergeChildrenInto: 1 });
 
 const scanExample = (name: string) =>
   scan({
-    root: exampleDir(name),
-    adapters: builtinAdapters,
-    config: TREE_CONFIG,
+    root       : exampleDir(name),
+    adapters   : builtinAdapters,
+    config     : TREE_CONFIG,
     generatedAt: GENERATED_AT,
   });
 
@@ -59,7 +59,7 @@ describe("glossic scan", () => {
   });
 
   it("produces an identical manifest on two consecutive runs", async () => {
-    const first = await scanExample("nestjs-api");
+    const first  = await scanExample("nestjs-api");
     const second = await scanExample("nestjs-api");
 
     expect(JSON.stringify(portable(second.manifest))).toBe(

@@ -51,7 +51,7 @@ describe("loadProjectConfig", () => {
   });
 
   it("keeps only the keys the file actually set", async () => {
-    const root = await project({ "glossic.config.ts": 'export default { lang: "fr" };\n' });
+    const root   = await project({ "glossic.config.ts": 'export default { lang: "fr" };\n' });
     const loaded = await loadProjectConfig(root);
 
     // The schema would happily fill in every default, which would then beat

@@ -14,11 +14,11 @@ import {
 const defaults = (overrides: Partial<GroupingOptions> = {}): GroupingOptions => {
   const config = GlossicConfigSchema.parse({});
   return {
-    ignoreUnits: config.ignoreUnits,
+    ignoreUnits       : config.ignoreUnits,
     excludeFromContent: config.excludeFromContent,
-    mergeChildrenInto: config.mergeChildrenInto,
-    minUnitFiles: config.minUnitFiles,
-    maxUnitFiles: config.maxUnitFiles,
+    mergeChildrenInto : config.mergeChildrenInto,
+    minUnitFiles      : config.minUnitFiles,
+    maxUnitFiles      : config.maxUnitFiles,
     ...overrides,
   };
 };
@@ -187,7 +187,7 @@ describe("splitting large units", () => {
   });
 
   it("keeps a module and its test together in the same slice", () => {
-    const files = [...numbered("src", 11), "src/mod-01.test.ts", "src/mod-01.types.ts"];
+    const files  = [...numbered("src", 11), "src/mod-01.test.ts", "src/mod-01.types.ts"];
     const drafts = shape(files, { excludeFromContent: ["**/*.test.*"] });
 
     const owner = drafts.find((draft) => draft.files.includes("src/mod-01.ts"));
@@ -296,7 +296,7 @@ describe("merging a subtree into its root", () => {
   it("never splits a unit that absorbed a subtree", () => {
     const drafts = shape(nestModule("auth", 7, 1, 3), {
       mergeChildrenInto: 25,
-      maxUnitFiles: 5,
+      maxUnitFiles     : 5,
     });
 
     expect(names(drafts)).toEqual(["src/modules/auth"]);

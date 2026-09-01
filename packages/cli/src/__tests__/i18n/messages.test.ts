@@ -80,7 +80,7 @@ describe("a missing key falls back rather than breaking", () => {
   it("returns the English string when Spanish does not have it", () => {
     // The catalogue is a plain object, so a gap is just an absent key.
     const partial = createTranslator("es");
-    const gap = "menu.question" as MessageKey;
+    const gap     = "menu.question" as MessageKey;
 
     const saved = es[gap];
     try {
@@ -109,8 +109,8 @@ describe("a missing key falls back rather than breaking", () => {
 describe("the uiLang chain matches the lang chain", () => {
   it("takes the flag first", async () => {
     const { config, origins } = await resolveEffectiveConfig({
-      root: await project('export default { uiLang: "en" };\n'),
-      flags: { uiLang: "es" },
+      root    : await project('export default { uiLang: "en" };\n'),
+      flags   : { uiLang: "es" },
       location: await sandbox({ uiLang: "en" }),
     });
 
@@ -120,7 +120,7 @@ describe("the uiLang chain matches the lang chain", () => {
 
   it("then the project config", async () => {
     const { config, origins } = await resolveEffectiveConfig({
-      root: await project('export default { uiLang: "es" };\n'),
+      root    : await project('export default { uiLang: "es" };\n'),
       location: await sandbox({ uiLang: "en" }),
     });
 
@@ -130,7 +130,7 @@ describe("the uiLang chain matches the lang chain", () => {
 
   it("then the saved preference", async () => {
     const { config, origins } = await resolveEffectiveConfig({
-      root: await project(),
+      root    : await project(),
       location: await sandbox({ uiLang: "es" }),
     });
 
@@ -140,7 +140,7 @@ describe("the uiLang chain matches the lang chain", () => {
 
   it("keeps the two languages independent", async () => {
     const { config } = await resolveEffectiveConfig({
-      root: await project(),
+      root    : await project(),
       location: await sandbox({ uiLang: "en", lang: "pt" }),
     });
 
@@ -152,7 +152,7 @@ describe("the uiLang chain matches the lang chain", () => {
 
   it("never picks an interface language it has no catalogue for", async () => {
     const { config } = await resolveEffectiveConfig({
-      root: await project(),
+      root    : await project(),
       location: await sandbox({ lang: "fr" }),
     });
 
@@ -165,29 +165,29 @@ describe("every visible surface is translated", () => {
 
   const scanResult = {
     manifest: {
-      version: "1",
+      version    : "1",
       generatedAt: "",
       workspace: {
-        name: "demo",
-        root: "/tmp/demo",
+        name      : "demo",
+        root      : "/tmp/demo",
         isMonorepo: true,
-        tool: "pnpm",
-        projects: [{ id: "root", name: "demo", rootDir: "." }],
+        tool      : "pnpm",
+        projects  : [{ id: "root", name: "demo", rootDir: "." }],
       },
       units: [
         {
-          id: "root:src",
+          id       : "root:src",
           projectId: "root",
-          kind: "directory",
-          name: "src",
-          path: "src",
+          kind     : "directory",
+          name     : "src",
+          path     : "src",
           facts: {
             base: {
-              files: [{ path: "src/a.ts", language: "typescript", bytes: 1 }],
-              testFiles: [],
+              files       : [{ path: "src/a.ts", language: "typescript", bytes: 1 }],
+              testFiles   : [],
               ignoredFiles: [],
-              languages: [{ language: "typescript", count: 1 }],
-              roleHint: null,
+              languages   : [{ language: "typescript", count: 1 }],
+              roleHint    : null,
             },
             producedBy: ["generic"],
           },
@@ -200,48 +200,48 @@ describe("every visible surface is translated", () => {
 
   const generateResult = {
     manifest: scanResult.manifest,
-    written: ["src.md"],
+    written : ["src.md"],
     plan: [
       {
-        unitId: "root:src",
-        docPath: "src.md",
-        files: 1,
+        unitId         : "root:src",
+        docPath        : "src.md",
+        files          : 1,
         estimatedTokens: 500,
-        reason: "new",
-        regenerate: true,
+        reason         : "new",
+        regenerate     : true,
       },
     ],
-    failures: [],
-    warnings: [],
-    filteredOut: [],
+    failures       : [],
+    warnings       : [],
+    filteredOut    : [],
     estimatedTokens: 500,
-    savedTokens: 100,
-    generated: 1,
-    fromCache: 0,
-    dryRun: false,
+    savedTokens    : 100,
+    generated      : 1,
+    fromCache      : 0,
+    dryRun         : false,
   } as unknown as GenerateResult;
 
   const checkResult = {
-    outDir: "/tmp/demo/docs",
+    outDir  : "/tmp/demo/docs",
     upToDate: [],
     missing: [
       { unitId: "root:src", docPath: "src.md", expectedHash: "h", documentedHash: undefined },
     ],
-    stale: [],
+    stale   : [],
     orphaned: ["old.md"],
-    ok: false,
+    ok      : false,
   } as unknown as CheckResult;
 
   const doctorReport: DoctorReport = {
-    node: "22.0.0",
-    platform: "linux-x64",
-    providers: [{ name: "claude-code", available: false }],
-    selected: undefined,
-    adapters: ["generic"],
+    node      : "22.0.0",
+    platform  : "linux-x64",
+    providers : [{ name: "claude-code", available: false }],
+    selected  : undefined,
+    adapters  : ["generic"],
     configFile: undefined,
-    config: [{ key: "lang", value: "es", origin: "default" }],
-    uiLang: "en",
-    exitCode: 1,
+    config    : [{ key: "lang", value: "es", origin: "default" }],
+    uiLang    : "en",
+    exitCode  : 1,
   };
 
   it("renders the scan report in both languages", () => {
@@ -285,10 +285,10 @@ describe("every visible surface is translated", () => {
     const spanish = [
       renderScanReport(scanResult, t.es),
       renderGenerateReport(generateResult, {
-        outDir: "/tmp/demo/docs",
-        cwd: "/tmp/demo",
+        outDir  : "/tmp/demo/docs",
+        cwd     : "/tmp/demo",
         provider: "claude-code",
-        t: t.es,
+        t       : t.es,
       }),
       renderCheckReport(checkResult, { cwd: "/tmp/demo", target: ".", t: t.es }),
       renderDoctorReport(doctorReport, t.es),
@@ -313,7 +313,7 @@ describe("every visible surface is translated", () => {
 describe("without a terminal none of this applies", () => {
   it("still resolves an interface language, it just never draws a menu", async () => {
     const { config } = await resolveEffectiveConfig({
-      root: await project(),
+      root    : await project(),
       location: await sandbox({ uiLang: "es" }),
     });
 

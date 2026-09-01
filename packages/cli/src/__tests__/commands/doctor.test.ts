@@ -54,9 +54,9 @@ describe("glossic doctor", () => {
 
   it("reports the node version and the missing config file", async () => {
     const report = await collectDoctorReport({
-      root: exampleRoot("nestjs-api"),
+      root     : exampleRoot("nestjs-api"),
       providers: [createFakeProvider({ name: "claude-code", available: true })],
-      adapters: builtinAdapters,
+      adapters : builtinAdapters,
     });
 
     expect(report.node).toBe(process.versions.node);
@@ -89,12 +89,12 @@ describe("the effective configuration", () => {
     collectDoctorReport({
       root,
       providers: [createFakeProvider({ name: "claude-code", available: true })],
-      adapters: builtinAdapters,
+      adapters : builtinAdapters,
     });
 
   it("lists every option with its origin", async () => {
     const entries = (await report(await project())).config;
-    const keys = entries.map((entry) => entry.key);
+    const keys    = entries.map((entry) => entry.key);
 
     for (const key of ["adapters", "lang", "maxUnitFiles", "concurrency", "timeoutMs", "output"]) {
       expect(keys).toContain(key);
@@ -103,7 +103,7 @@ describe("the effective configuration", () => {
   });
 
   it("says which values the project config decided", async () => {
-    const root = await project('export default { maxUnitFiles: 4, lang: "pt" };\n');
+    const root   = await project('export default { maxUnitFiles: 4, lang: "pt" };\n');
     const result = await report(root);
 
     const byKey = Object.fromEntries(result.config.map((entry) => [entry.key, entry]));
