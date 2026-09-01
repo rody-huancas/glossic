@@ -4,27 +4,27 @@ import process from "node:process";
 import { counted } from "../render/index.js";
 import { runScan } from "../commands/scan.js";
 import { runCheck } from "../commands/check.js";
-import { LANGUAGES } from "../language.js";
+import { printBanner } from "../ui/banner.js";
+import { runConnection } from "./connection.js";
 import { runGenerate } from "../commands/generate.js";
 import { clackPrompts } from "../ui/prompts.js";
 import { formatCliError } from "../errors.js";
 import { writePreferences } from "../preferences.js";
+import { pickLanguage } from "./language.js";
+import { LANGUAGES, languageLabel } from "../language.js";
 import { generateInteractively } from "./generate-flow.js";
 import { resolveEffectiveConfig } from "../config.js";
-import { languageLabel, pickLanguage } from "./language.js";
 import { readStatus, renderStatusLine } from "./status.js";
 import { createTranslator, UI_LANGUAGES } from "../i18n/index.js";
-import { builtinAdapters, builtinProviders } from "../registries.js";
-import { collectDoctorReport, renderDoctorReport } from "../commands/doctor.js";
 import type { Translator } from "../i18n/index.js";
+import type { ActionOutcome } from "./nav.js";
 import type { PromptPort } from "../ui/prompts.js";
-import type { ActionOutcome } from "./generate-flow.js";
-import type { Preferences, PreferencesLocation } from "../preferences.js";
+import type { PreferencesLocation, PreferencesUpdate } from "../preferences.js";
 
 export { renderStatusLine } from "./status.js";
 export type { StatusLine } from "./status.js";
 
-type Action = "scan" | "generate" | "check" | "doctor";
+type Action = "scan" | "generate" | "check" | "connection";
 type Choice = Action | "uiLanguage" | "docLanguage" | "exit";
 
 /**
@@ -37,6 +37,7 @@ export interface InteractiveDeps {
   runScan         ?: typeof runScan;
   runGenerate     ?: typeof runGenerate;
   runCheck        ?: typeof runCheck;
+  runConnection   ?: typeof runConnection;
   cwd             ?: string;
   preferences     ?: PreferencesLocation;
   resolveConfig   ?: typeof resolveEffectiveConfig;
@@ -48,27 +49,33 @@ export interface InteractiveDeps {
  * matching flag would have called: this file asks the questions, it never
  * reimplements the work.
  *
- * It is a loop. Opening the menu means staying in it: every action prints its
- * output, leaves it on screen and draws the menu again underneath. Only Exit
- * — or Ctrl+C, which clack surfaces as a cancel — ends the process.
+ * It is a loop, and every turn starts from a clean screen: the banner, the
+ * status line and the menu, with no pile of earlier output above them. An
+ * action that printed something holds it on screen until the reader says they
+ * are done. Where the screen cannot be wiped -- a pipe, a CI log -- the output
+ * accumulates as it always did, and nothing waits for a keypress that will
+ * never come.
  *
  * The failure flag and the last unit count are remembered across the session:
  * the first so the exit code can report it, the second so the menu can say
- * what the last scan found without scanning again. An action that throws — a
- * dead provider, a timeout, a bad path — is worth reading but not worth
+ * what the last scan found without scanning again. An action that throws -- a
+ * dead provider, a timeout, a bad path -- is worth reading but not worth
  * ending the session over, so it is reported and the menu is drawn again.
+ * Backing out of a prompt is not a failure at all and never reaches the exit
+ * code.
  */
 export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number> => {
-  const prompts  = deps.prompts ?? clackPrompts;
-  const cwd      = deps.cwd ?? process.cwd();
-  const scan     = deps.runScan ?? runScan;
-  const generate = deps.runGenerate ?? runGenerate;
-  const check    = deps.runCheck ?? runCheck;
-  const resolve  = deps.resolveConfig ?? resolveEffectiveConfig;
-  const save     = deps.writePreferences ?? writePreferences;
-  const location = deps.preferences ?? {};
+  const prompts    = deps.prompts ?? clackPrompts;
+  const cwd        = deps.cwd ?? process.cwd();
+  const scan       = deps.runScan ?? runScan;
+  const generate   = deps.runGenerate ?? runGenerate;
+  const check      = deps.runCheck ?? runCheck;
+  const connection = deps.runConnection ?? runConnection;
+  const resolve    = deps.resolveConfig ?? resolveEffectiveConfig;
+  const save       = deps.writePreferences ?? writePreferences;
+  const location   = deps.preferences ?? {};
 
-  const root = path.resolve(cwd);
+  const root       = path.resolve(cwd);
   const { config } = await resolve({ root, location });
 
   let language       = config.lang;
@@ -79,7 +86,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   let failed = false;
   let knownUnits: number | undefined;
 
-  const remember = async (update: Preferences): Promise<void> => {
+  const remember = async (update: PreferencesUpdate): Promise<void> => {
     await save(update, location);
   };
 
@@ -87,40 +94,41 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     try {
       if (choice === "scan") {
         const result = await scan(".", { json: false, write: true });
-        return { ok: true, units: result.manifest.units.length };
+
+        return { ok: true, units: result.manifest.units.length, printed: true };
       }
 
       if (choice === "check") {
         const result = await check(".", {});
-        return { ok: result.ok };
+
+        return { ok: result.ok, printed: true };
       }
 
-      if (choice === "doctor") {
-        const report = await collectDoctorReport({
-          root,
-          providers: builtinProviders,
-          adapters : builtinAdapters,
-        });
-
-        process.stdout.write(renderDoctorReport(report, t));
-
-        return { ok: report.exitCode === 0 };
+      if (choice === "connection") {
+        return connection({ prompts, t, root, location });
       }
 
       return generateInteractively(prompts, t, generate, language, defaultOut);
     } catch (error) {
       process.stderr.write(`${formatCliError(error)}\n`);
       prompts.note(t("menu.actionFailed"));
-      return { ok: false };
+
+      return { ok: false, printed: true };
     }
   };
 
   for (;;) {
-    const t      = createTranslator(uiLang);
+    const t       = createTranslator(uiLang);
+    const cleared = prompts.clear();
+
+    if (cleared) {
+      printBanner();
+    }
+
     const status = await readStatus(root, language);
     const line   = renderStatusLine(status, t);
 
-    if (first) {
+    if (first || cleared) {
       prompts.intro(line);
     } else {
       prompts.note(line);
@@ -145,7 +153,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         { value: "scan", label: t("menu.scan"), hint: noAiCalls },
         { value: "generate", label: t("menu.generate"), hint: generateHint },
         { value: "check", label: t("menu.check"), hint: noAiCalls },
-        { value: "doctor", label: t("menu.doctor") },
+        { value: "connection", label: t("menu.connection") },
         {
           value: "uiLanguage",
           label: t("menu.uiLanguage"),
@@ -162,15 +170,18 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
 
     if (prompts.isCancel(choice) || typeof choice !== "string" || choice === "exit") {
       prompts.cancel(t("menu.bye"));
+
       return failed ? 1 : 0;
     }
 
     if (choice === "uiLanguage") {
       const chosen = await pickLanguage(prompts, t, "prompt.uiLanguage", UI_LANGUAGES, uiLang);
+
       if (chosen !== undefined && chosen !== uiLang) {
         uiLang = chosen;
         await remember({ uiLang: chosen as "en" | "es" });
       }
+
       continue;
     }
 
@@ -182,16 +193,22 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         language = chosen;
         await remember({ lang: chosen });
       }
+
       continue;
     }
 
     const outcome = await perform(choice, t);
+
     if (!outcome.ok) {
       failed = true;
     }
 
     if (outcome.units !== undefined) {
       knownUnits = outcome.units;
+    }
+
+    if (cleared && outcome.printed === true) {
+      await prompts.pause(t("menu.continue"));
     }
   }
 };
