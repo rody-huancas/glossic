@@ -43,6 +43,7 @@
     "glossic": "./dist/index.js"
   },
   "scripts": {
+    "preinstall": "node -e \"if(+process.versions.node.split('.')[0]<20){console.error('\\n  glossic requires Node >= 20. You are running '+process.version+'.\\n  Upgrade Node and install again: https://nodejs.org\\n');process.exit(1)}\"",
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
@@ -61,12 +62,5 @@
     "@glossic/schema": "workspace:*",
     "commander": "^14.0.0",
     "picocolors": "^1.1.1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.15.3",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4",
-    "yaml": "^2.8.1"
   }
 }

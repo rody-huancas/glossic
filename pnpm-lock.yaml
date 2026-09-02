@@ -17,6 +17,9 @@ importers:
       '@types/node':
         specifier: ^22.15.3
         version: 22.20.1
+      '@types/picomatch':
+        specifier: ^4.0.2
+        version: 4.0.3
       tsup:
         specifier: ^8.5.0
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
@@ -26,6 +29,9 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
+      yaml:
+        specifier: ^2.8.1
+        version: 2.9.0
 
   packages/adapters/generic:
     dependencies:
@@ -41,60 +47,18 @@ importers:
       tinyglobby:
         specifier: ^0.2.15
         version: 0.2.17
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      '@types/picomatch':
-        specifier: ^4.0.2
-        version: 4.0.3
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/adapters/nestjs:
     dependencies:
       '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/adapters/treesitter:
     dependencies:
       '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/cli:
     dependencies:
@@ -128,22 +92,6 @@ importers:
       picocolors:
         specifier: ^1.1.1
         version: 1.1.1
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
-      yaml:
-        specifier: ^2.8.1
-        version: 2.9.0
 
   packages/core:
     dependencies:
@@ -165,22 +113,6 @@ importers:
       zod:
         specifier: ^4.1.5
         version: 4.5.4
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      '@types/picomatch':
-        specifier: ^4.0.2
-        version: 4.0.3
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/providers/anthropic:
     dependencies:
@@ -190,57 +122,18 @@ importers:
       '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/providers/claude-code:
     dependencies:
       '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/schema:
     dependencies:
       zod:
         specifier: ^4.1.5
         version: 4.5.4
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.3
-        version: 22.20.1
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.26)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
 packages:
 
