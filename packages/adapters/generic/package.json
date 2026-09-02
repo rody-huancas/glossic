@@ -13,14 +13,14 @@
   ],
   "license": "MIT",
   "author": "Rody Huancas",
-  "homepage": "https://github.com/rody-huancas/glosik#readme",
+  "homepage": "https://github.com/rody-huancas/glossic#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rody-huancas/glosik.git",
+    "url": "git+https://github.com/rody-huancas/glossic.git",
     "directory": "packages/adapters/generic"
   },
   "bugs": {
-    "url": "https://github.com/rody-huancas/glosik/issues"
+    "url": "https://github.com/rody-huancas/glossic/issues"
   },
   "type": "module",
   "engines": {

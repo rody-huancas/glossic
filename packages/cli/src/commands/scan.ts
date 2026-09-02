@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { ScanResult } from "@glossic/core";
-import { scan, serializeManifest, writeManifest } from "@glossic/core";
+import { readManifest, scan, serializeManifest, writeManifest } from "@glossic/core";
 import { Command } from "commander";
 
 import { builtinAdapters } from "../registries.js";
@@ -46,7 +46,12 @@ export const runScan = async (target: string, options: ScanOptions): Promise<Sca
     ? path.resolve(root, config.output.manifest)
     : path.resolve(cwd, options.out);
 
-  const out = await writeManifest(result.manifest, manifestPath);
+  const previous = await readManifest(manifestPath);
+  const manifest = previous?.docsDir === undefined
+    ? result.manifest
+    : { ...result.manifest, docsDir: previous.docsDir };
+
+  const out = await writeManifest(manifest, manifestPath);
   process.stdout.write(`\n${t("scan.manifest", { path: displayPath(cwd, out) })}\n`);
 
   return result;

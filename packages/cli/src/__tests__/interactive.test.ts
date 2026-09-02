@@ -82,7 +82,7 @@ const fakeConfig =
   async () => ({
     config : GlossicConfigSchema.parse({ lang: values.lang ?? "es", uiLang: values.uiLang ?? "en" }),
     origins: {},
-    file   : undefined,
+    project: { status: "missing" } as const,
   });
 
 const deps = (answers: unknown[], overrides: Partial<InteractiveDeps> = {}): InteractiveDeps => ({

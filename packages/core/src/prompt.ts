@@ -28,7 +28,7 @@ export interface BuildPromptInput {
 
 
 /** Bumped by hand when the prompt changes, which invalidates every cached unit. */
-export const PROMPT_VERSION = "3";
+export const PROMPT_VERSION = "4";
 
 /** The rules the model is held to; assertDocumentContent checks the answer against them. */
 export const SYSTEM_PROMPT = [
@@ -53,9 +53,16 @@ export const SYSTEM_PROMPT = [
   "  - Do not restate the file listing; the reader already has it.",
   "  - No preamble, no closing summary, no offer to help.",
   "",
-  "Output GitHub-flavoured Markdown. Open with a single top-level (#) heading",
-  "that titles the unit for a reader, then use ## for the sections above.",
+  "Output GitHub-flavoured Markdown. Open with a single top-level (#) heading,",
+  "then use ## for the sections above.",
   "Do not emit frontmatter: it is added around your response.",
+  "",
+  "That first heading is a title, not a label. Write what the unit is or does,",
+  "in the words a person would use for it. Never use the directory path as the",
+  "heading, and never repeat the unit name given to you under Facts: the path is",
+  "context you were handed, not the name of the document. `src/modules/auth` is",
+  "a path; `Authentication` or `Session issuing and refresh` are titles. Do the",
+  "same for a unit at a project root: `Application entry point`, not `src`.",
   "",
   "Your entire response is the content of the document and nothing else.",
   "Begin with the first heading of that document. Do not open with a preamble,",

@@ -5,6 +5,15 @@
   "type": "module",
   "description": "Glossic monorepo root",
   "license": "MIT",
+  "author": "Rody Huancas",
+  "homepage": "https://github.com/rody-huancas/glossic#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rody-huancas/glossic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rody-huancas/glossic/issues"
+  },
   "packageManager": "pnpm@10.17.1",
   "engines": {
     "node": ">=20"

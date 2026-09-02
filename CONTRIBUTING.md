@@ -5,8 +5,8 @@
 Node >= 20 and pnpm >= 10.
 
 ```bash
-git clone https://github.com/rody-huancas/glosik.git
-cd glosik
+git clone https://github.com/rody-huancas/glossic.git
+cd glossic
 pnpm install
 ```
 

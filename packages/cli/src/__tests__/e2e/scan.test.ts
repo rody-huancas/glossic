@@ -46,16 +46,17 @@ describe("glossic scan", () => {
     const { manifest } = await scanExample("monorepo");
 
     expect(manifest.workspace.isMonorepo).toBe(true);
-    // Both thin "src" directories absorbed their first child.
     expect(manifest.units.map((unit) => unit.id)).toEqual([
       "packages/api:src",
+      "packages/api:src/routes",
       "packages/api:src/services",
       "packages/web:src",
+      "packages/web:src/components",
       "packages/web:src/hooks",
     ]);
     expect(
       manifest.units.find((unit) => unit.id === "packages/web:src")?.facts.base.languages,
-    ).toEqual([{ language: "tsx", count: 3 }]);
+    ).toEqual([{ language: "tsx", count: 1 }]);
   });
 
   it("produces an identical manifest on two consecutive runs", async () => {

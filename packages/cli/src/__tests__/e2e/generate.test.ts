@@ -49,6 +49,7 @@ describe("generate over the nestjs-api fixture", () => {
     expect(result.written).toEqual([
       "index.md",
       "src.md",
+      "src/common/middleware.md",
       "src/config.md",
       "src/users.md",
       "src/users/dto.md",
@@ -61,7 +62,7 @@ describe("generate over the nestjs-api fixture", () => {
       expect(index).toContain(`(./${doc})`);
     }
 
-    expect(provider.calls).toHaveLength(6);
+    expect(provider.calls).toHaveLength(7);
   });
 
   it("stamps the unit hash from the manifest into the frontmatter", async () => {
@@ -103,11 +104,13 @@ describe("generate over the nestjs-api fixture", () => {
     });
 
     expect(provider.calls).toEqual([]);
-    // Thin "src" directories absorbed their first child, so six units became four.
+    // Every "src" here has units under it, so no thin leaf folds anywhere.
     expect(result.plan.map((entry) => entry.docPath)).toEqual([
       "packages/api/src.md",
+      "packages/api/src/routes.md",
       "packages/api/src/services.md",
       "packages/web/src.md",
+      "packages/web/src/components.md",
       "packages/web/src/hooks.md",
     ]);
   });

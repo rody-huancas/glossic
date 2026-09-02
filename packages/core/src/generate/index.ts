@@ -22,6 +22,14 @@ export * from "./types.js";
 export { modelCacheKey } from "./decide.js";
 
 
+/** Relative to the root and posix, because the manifest travels between machines. */
+const docsDirOf = (root: string, outDir: string): string => {
+  const relative = toPosix(path.relative(root, outDir));
+
+  return relative === "" ? "." : relative;
+};
+
+
 /** One string field off an unknown error cause, for the failure report. */
 const stringField = (cause: unknown, field: string): string | undefined => {
   if (typeof cause !== "object" || cause === null || !(field in cause)) {
@@ -34,16 +42,12 @@ const stringField = (cause: unknown, field: string): string | undefined => {
 };
 
 
-/**
- * Scans, works out what the cache still covers, and writes a page for the
- * rest. With no provider, or with dryRun, it stops at the plan and spends nothing.
- */
 export const generate = async (ctx: GenerateContext): Promise<GenerateResult> => {
-  const config       = ctx.config ?? GlossicConfigSchema.parse({});
-  const scanned      = await scan(ctx);
-  const { manifest } = scanned;
-  const generatedAt  = manifest.generatedAt;
-  const root         = manifest.workspace.root;
+  const config      = ctx.config ?? GlossicConfigSchema.parse({});
+  const scanned     = await scan(ctx);
+  const generatedAt = scanned.manifest.generatedAt;
+  const root        = scanned.manifest.workspace.root;
+  const manifest    = { ...scanned.manifest, docsDir: docsDirOf(root, ctx.outDir) };
 
   const cachePath       = ctx.cachePath ?? path.resolve(root, DEFAULT_CACHE_PATH);
   const model           = modelCacheKey(config);

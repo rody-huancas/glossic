@@ -73,7 +73,7 @@ const scripted = (answers: unknown[], canClear = true) => {
 const fakeConfig = () => async () => ({
   config : GlossicConfigSchema.parse({ lang: "en", uiLang: "en" }),
   origins: {},
-  file   : undefined,
+  project: { status: "missing" } as const,
 });
 
 const scanResult = (units: number) => ({
@@ -364,16 +364,16 @@ describe("the connection submenu", () => {
 
 describe("the status the menu shows", () => {
   const report: DoctorReport = {
-    node      : "22.20.0",
-    platform  : "linux-x64",
-    providers : [{ name: "claude-code", available: true }],
-    selected  : "claude-code",
-    adapters  : ["nestjs", "treesitter", "generic"],
-    configFile: undefined,
-    config    : [{ key: "concurrency", value: "3", origin: "default" }],
-    lang      : "es",
-    uiLang    : "en",
-    exitCode  : 0,
+    node         : "22.20.0",
+    platform     : "linux-x64",
+    providers    : [{ name: "claude-code", available: true }],
+    selected     : "claude-code",
+    adapters     : ["nestjs", "treesitter", "generic"],
+    projectConfig: { status: "missing" },
+    config       : [{ key: "concurrency", value: "3", origin: "default" }],
+    lang         : "es",
+    uiLang       : "en",
+    exitCode     : 0,
   };
 
   it("names the runtime, the provider, the adapters and both languages", () => {

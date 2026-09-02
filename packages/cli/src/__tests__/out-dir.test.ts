@@ -2,12 +2,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { createFakeProvider } from "@glossic/core";
+import { createFakeProvider, toPosix } from "@glossic/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { runEject } from "../commands/eject/index.js";
 import { runGenerate } from "../commands/generate.js";
+import { runScan } from "../commands/scan.js";
 import { runInteractive } from "../interactive/index.js";
-import type { PromptPort } from "../ui/prompts.js";
+import type { PromptPort, SelectOption } from "../ui/prompts.js";
 
 const tempDirs: string[] = [];
 
@@ -113,5 +115,133 @@ describe("the output directory chosen in the menu", () => {
     expect(await generateInteractively("")).toBe(0);
 
     expect(await exists(path.join(root, "docs-handbook", "index.md"))).toBe(true);
+  });
+});
+
+/**
+ * `runEject` resolves its target against the real process cwd, so a test drives
+ * it the way the menu drives `runGenerate`: injected, with the temp root.
+ */
+describe("eject follows the documentation wherever generate put it", () => {
+  const generateInto = async (out: string): Promise<void> => {
+    const fake = createFakeProvider();
+
+    await runGenerate(".", { out, quiet: true }, { cwd: root, createProviders: () => [fake] });
+  };
+
+  it("finds a non-default directory with no flags at all", async () => {
+    const chosen = path.join(home, "docs-riqsi");
+    await generateInto(chosen);
+
+    expect(await exists(path.join(chosen, "index.md"))).toBe(true);
+
+    const result = await runEject(root, { uiLang: "en" });
+
+    expect(result.docsDir).toBe(toPosix(chosen));
+    expect(result.pages.length).toBeGreaterThan(1);
+  });
+
+  it("still reads the default when generate used it", async () => {
+    await generateInto(path.join(root, "docs"));
+
+    const result = await runEject(root, { uiLang: "en" });
+
+    expect(result.docsDir).toBe(toPosix(path.join(root, "docs")));
+  });
+
+  it("chains generate and eject in one menu session, with a custom directory", async () => {
+    const chosen = path.join(home, "docs-session");
+    const fake   = createFakeProvider();
+    const seen: string[] = [];
+
+    const code = await runInteractive({
+      prompts    : scripted(["generate", "es", chosen, true, "eject", "exit"]),
+      cwd        : root,
+      preferences: { env: { APPDATA: home }, platform: "win32", homedir: home },
+      runGenerate: (target, options) =>
+        runGenerate(target, options, { cwd: root, createProviders: () => [fake] }),
+      runEject: async (_target, options) => {
+        seen.push(options?.docs ?? "<none>");
+        return runEject(root, { ...options, uiLang: "en" });
+      },
+    });
+
+    expect(code).toBe(0);
+
+    // The menu remembered the answer instead of asking again or assuming docs.
+    expect(seen).toEqual([chosen]);
+    expect(await exists(path.join(root, "docs"))).toBe(false);
+  });
+});
+
+describe("a later scan does not forget where the pages are", () => {
+  it("keeps the directory generate recorded, so eject still finds them", async () => {
+    const chosen = path.join(home, "docs-kept");
+    const fake   = createFakeProvider();
+
+    await runGenerate(".", { out: chosen, quiet: true }, { cwd: root, createProviders: () => [fake] });
+    await runScan(root, { json: false, write: true });
+
+    const result = await runEject(root, { uiLang: "en" });
+
+    expect(result.docsDir).toBe(toPosix(chosen));
+  });
+});
+
+describe("the menu hint about building a site", () => {
+  /** Same script runner, but it keeps the menu entries it was shown. */
+  const recording = (answers: unknown[]) => {
+    const port  = scripted(answers);
+    const menus: SelectOption<string>[][] = [];
+
+    return {
+      menus,
+      port: {
+        ...port,
+        select: async (options: { options: SelectOption<string>[] }) => {
+          menus.push(options.options);
+          return port.select(options as never);
+        },
+      } as PromptPort,
+    };
+  };
+
+  const ejectHint = (menus: SelectOption<string>[][]): string | undefined =>
+    menus[0]?.find((option) => option.value === "eject")?.hint;
+
+  const openMenu = async (answers: unknown[]) => {
+    // Pin the interface language: the hints are compared literally, and the
+    // menu would otherwise follow whatever locale the machine reports.
+    await write("glossic.config.ts", 'export default { uiLang: "en" };');
+
+    const script = recording(answers);
+
+    const code = await runInteractive({
+      prompts    : script.port,
+      cwd        : root,
+      preferences: { env: { APPDATA: home }, platform: "win32", homedir: home },
+    });
+
+    return { code, hint: ejectHint(script.menus) };
+  };
+
+  it("offers to build from a directory a previous session recorded", async () => {
+    const chosen = path.join(home, "docs-riqsi");
+    const fake   = createFakeProvider();
+
+    await runGenerate(".", { out: chosen, quiet: true }, { cwd: root, createProviders: () => [fake] });
+
+    // A brand new session: nothing in memory, only what the manifest says.
+    const { code, hint } = await openMenu(["exit"]);
+
+    expect(code).toBe(0);
+    expect(hint).toBe("structure only, no AI calls");
+    expect(hint).not.toBe("generate the documentation first");
+  });
+
+  it("still says to generate first when nothing has been written anywhere", async () => {
+    const { hint } = await openMenu(["exit"]);
+
+    expect(hint).toBe("generate the documentation first");
   });
 });
