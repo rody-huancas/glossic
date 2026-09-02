@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { GenerateContext, GenerateResult } from "@glossic/core";
-import { createFakeProvider, generate, readCache } from "@glossic/core";
+import { createFakeProvider, generate, PROMPT_VERSION, readCache } from "@glossic/core";
 import { GlossicConfigSchema } from "@glossic/schema";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -99,7 +99,7 @@ describe("incremental cache", () => {
       "root:src/utils",
     ]);
     expect(cache.entries[0]).toMatchObject({
-      promptVersion: "3",
+      promptVersion: PROMPT_VERSION,
       model        : "default",
       lang         : "en",
       outputPath   : "src.md",
