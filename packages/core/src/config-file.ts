@@ -46,14 +46,17 @@ export interface LoadedConfig {
   values: GlossicUserConfig;
 }
 
+/** The three things a config file can be, so a missing file never reads as a broken one. */
 export type ProjectConfig = MissingConfig | FailedConfig | LoadedConfig;
 
+/** The reason ends up on one terminal line, so the stack and the rest of the message go. */
 const describeError = (cause: unknown): string => {
   const message = cause instanceof Error ? cause.message : String(cause);
 
   return message.split("\n")[0]?.trim() || "unknown error";
 };
 
+/** The module's default export as a config, or why it is not one. */
 const readDefaultExport = (file: string, value: unknown): FailedConfig | LoadedConfig => {
   const parsed = GlossicConfigSchema.partial().safeParse(value);
 
@@ -77,6 +80,7 @@ const readDefaultExport = (file: string, value: unknown): FailedConfig | LoadedC
 };
 
 
+/** Never throws: a config that cannot be loaded is reported as such, not hidden. */
 export const loadProjectConfig = async (root: string): Promise<ProjectConfig> => {
   const file = await findConfigFile(root);
 
