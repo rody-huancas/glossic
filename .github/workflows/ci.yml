@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [develop, master]
   pull_request:
 
 concurrency:
@@ -26,8 +26,6 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Linter only: the formatter is off and formatting is the author's.
-      # Never add --write here, and never a format step.
       - name: Lint
         run: pnpm lint
 

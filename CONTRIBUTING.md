@@ -103,4 +103,32 @@ one.
 Conventional commits, one concern per commit: `feat(cli):`, `fix(core):`,
 `docs:`, `refactor:`, `test:`, `chore:`, `style:`.
 
-Open the pull request against `master` with the four checks green.
+Open the pull request against `develop` with the four checks green.
+
+## Branches and releases
+
+Day-to-day work goes to `develop`. `master` only ever holds what has been
+released.
+
+```
+your branch  ──▶  develop  ──▶  master  ──▶  npm
+                   (CI)        (release)
+```
+
+1. Branch off `develop`, and open the pull request back into `develop`. CI runs
+   the four checks on every pull request and on every push to either branch.
+2. **Add a changeset with the change**, in the same pull request. Without one
+   the change ships silently: no version bump, no changelog line.
+3. Merging `develop` into `master` starts the release. The workflow runs the
+   same four checks first, then does one of two things:
+   - **changesets pending** — it opens or updates a *Version Packages* pull
+     request carrying the bumps and the changelog. Nothing is published yet.
+   - **none pending**, which is what merging that pull request leaves behind —
+     it publishes to npm at the versions the merge just wrote.
+
+The eight packages are versioned together, so they never drift apart: a bump to
+one is a bump to all.
+
+Releasing needs two repository secrets, `NPM_TOKEN` and the `GITHUB_TOKEN` that
+Actions provides. Neither is used anywhere outside `release.yml`, and nothing on
+`develop` or in a pull request can publish.
