@@ -117,7 +117,7 @@ describe("tests count for the hash but not for the content", () => {
   });
 });
 
-describe("merging thin parents", () => {
+describe("folding thin leaves upward", () => {
   it("collapses a package root and its src into one unit", () => {
     const drafts = shapeWithoutSubtreeMerge(["index.ts", "src/server.ts", "src/routes.ts"]);
 
@@ -125,39 +125,62 @@ describe("merging thin parents", () => {
     expect(drafts[0]?.files).toEqual(["index.ts", "src/routes.ts", "src/server.ts"]);
   });
 
-  it("collapses a thin src into its children until it reaches the floor", () => {
-    const drafts = shapeWithoutSubtreeMerge([
-      "src/index.ts",
-      "src/routes/orders.ts",
-      "src/routes/users.ts",
-      "src/services/orders.ts",
-    ]);
+  it("folds a thin leaf into the unit above it", () => {
+    const drafts = shapeWithoutSubtreeMerge(["src/a.ts", "src/b.ts", "src/c.ts", "src/deep/d.ts"]);
 
-    expect(names(drafts)).toEqual(["src", "src/services"]);
-    expect(drafts[0]?.files).toHaveLength(3);
+    expect(names(drafts)).toEqual(["src"]);
+    expect(drafts[0]?.files).toEqual(["src/a.ts", "src/b.ts", "src/c.ts", "src/deep/d.ts"]);
   });
 
-  it("stops absorbing once the parent reaches the floor", () => {
+  it("leaves a thin leaf alone when its name gives away its role", () => {
     const drafts = shapeWithoutSubtreeMerge([
       "src/a.ts",
       "src/b.ts",
-      "src/small/one.ts",
-      "src/big/x.ts",
-      "src/big/y.ts",
-      "src/big/z.ts",
-      "src/big/w.ts",
+      "src/c.ts",
+      "src/entities/user.ts",
     ]);
 
-    // "src/big" sorts before "src/small", so it is absorbed first and lifts
-    // the parent to the floor; "src/small" survives on its own.
-    expect(names(drafts)).toEqual(["src", "src/small"]);
-    expect(drafts[0]?.files).toHaveLength(6);
+    // Folding it would drop the roleHint the generated page reads.
+    expect(names(drafts)).toEqual(["src", "src/entities"]);
   });
 
-  it("leaves a parent alone once it has enough of its own files", () => {
-    const drafts = shapeWithoutSubtreeMerge(["src/a.ts", "src/b.ts", "src/c.ts", "src/deep/d.ts"]);
+  it("never folds a directory that still has a unit under it, however thin", () => {
+    const drafts = shapeWithoutSubtreeMerge([
+      "src/a.ts",
+      "src/b.ts",
+      "src/c.ts",
+      "src/thin/one.ts",
+      "src/thin/deeper/w.ts",
+      "src/thin/deeper/x.ts",
+      "src/thin/deeper/y.ts",
+      "src/thin/deeper/z.ts",
+    ]);
 
+    expect(names(drafts)).toEqual(["src", "src/thin", "src/thin/deeper"]);
+    expect(drafts[1]?.files).toEqual(["src/thin/one.ts"]);
+  });
+
+  it("does not fold when the host would cross the ceiling", () => {
+    const drafts = shapeWithoutSubtreeMerge([...numbered("src", 10), "src/deep/d.ts"]);
+
+    // 10 + 1 is over maxUnitFiles, and the split that follows would only undo it.
     expect(names(drafts)).toEqual(["src", "src/deep"]);
+  });
+
+  it("leaves a thin leaf with no unit above it where it is", () => {
+    expect(names(shapeWithoutSubtreeMerge(["src/only.ts"]))).toEqual(["src"]);
+  });
+
+  it("folds a chain of thin leaves one level at a time", () => {
+    const drafts = shapeWithoutSubtreeMerge([
+      "src/a.ts",
+      "src/b.ts",
+      "src/one/x.ts",
+      "src/one/two/y.ts",
+    ]);
+
+    expect(names(drafts)).toEqual(["src"]);
+    expect(drafts[0]?.files).toHaveLength(4);
   });
 
   it("honours a custom minUnitFiles", () => {
@@ -168,6 +191,25 @@ describe("merging thin parents", () => {
       "src/deep",
     ]);
     expect(names(shapeWithoutSubtreeMerge(files, { minUnitFiles: 5 }))).toEqual(["src"]);
+  });
+
+  it("folds to the same tree twice, whatever order the files arrive in", () => {
+    const files = [
+      "src/a.ts",
+      "src/b.ts",
+      "src/one/x.ts",
+      "src/one/two/y.ts",
+      "src/entities/user.ts",
+    ];
+
+    const first    = shapeWithoutSubtreeMerge(files);
+    const again    = shapeWithoutSubtreeMerge(files);
+    const reversed = shapeWithoutSubtreeMerge([...files].reverse());
+
+    for (const drafts of [again, reversed]) {
+      expect(names(drafts)).toEqual(names(first));
+      expect(drafts.map((draft) => draft.files)).toEqual(first.map((draft) => draft.files));
+    }
   });
 });
 

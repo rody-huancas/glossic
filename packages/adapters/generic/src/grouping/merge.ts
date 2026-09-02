@@ -1,8 +1,9 @@
 import { compareStrings } from "@glossic/schema";
 
+import { inferRoleHint } from "../roles.js";
 import { absorb, emptyDraft, nearestAncestor, sortDraft } from "./draft.js";
 import { depthOf, dirname, isDescendantDir, ROOT_UNIT, unitDir } from "./paths.js";
-import type { FileClassifier, UnitDraft } from "./draft.js";
+import type { FileClassifier, GroupingOptions, UnitDraft } from "./draft.js";
 
 /** One draft per directory, with each file sorted into documented, test or ignored. */
 export const groupByDirectory = (files: readonly string[], classifier: FileClassifier): UnitDraft[] => {
@@ -102,32 +103,39 @@ export const mergeSubtrees = (drafts: readonly UnitDraft[], threshold: number): 
 };
 
 
-/** Makes a thin parent swallow its children until it holds enough files to be worth a page. */
-export const mergeSmallParents = (drafts: readonly UnitDraft[], minUnitFiles: number): UnitDraft[] => {
+const hasDescendantUnit = (draft: UnitDraft, drafts: readonly UnitDraft[]): boolean =>
+  drafts.some(
+    (other) => other !== draft && isDescendantDir(unitDir(other.dir), unitDir(draft.dir)),
+  );
+
+
+  export type ThinLeafOptions = Pick<GroupingOptions, "minUnitFiles" | "maxUnitFiles">;
+
+export const absorbThinLeaves = (drafts: readonly UnitDraft[], options: ThinLeafOptions): UnitDraft[] => {
   let current = drafts.map((draft) => ({ ...draft }));
   let merged  = true;
 
   while (merged) {
     merged = false;
 
-    const parents = [...current].sort(
-      (a, b) => depthOf(a.dir) - depthOf(b.dir) || compareStrings(a.dir, b.dir),
+    const leaves = [...current].sort(
+      (a, b) => depthOf(b.dir) - depthOf(a.dir) || compareStrings(a.dir, b.dir),
     );
 
-    for (const parent of parents) {
-      if (!current.includes(parent)) continue;
+    for (const leaf of leaves) {
+      if (!current.includes(leaf)) continue;
+      if (leaf.files.length >= options.minUnitFiles) continue;
+      if (inferRoleHint(leaf.dir) !== null) continue;
+      if (hasDescendantUnit(leaf, current)) continue;
 
-      while (parent.files.length < minUnitFiles) {
-        const child = current
-          .filter((candidate) => nearestAncestor(candidate.dir, current) === parent)
-          .sort((a, b) => compareStrings(a.dir, b.dir))[0];
+      const host = nearestAncestor(leaf.dir, current);
 
-        if (child === undefined) break;
+      if (host === undefined) continue;
+      if (host.files.length + leaf.files.length > options.maxUnitFiles) continue;
 
-        absorb(parent, child);
-        current = current.filter((candidate) => candidate !== child);
-        merged = true;
-      }
+      absorb(host, leaf);
+      current = current.filter((candidate) => candidate !== leaf);
+      merged  = true;
     }
   }
 

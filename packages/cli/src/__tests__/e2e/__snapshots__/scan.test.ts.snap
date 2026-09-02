@@ -15,11 +15,6 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
               "path": "src/app.module.ts",
             },
             {
-              "bytes": 338,
-              "language": "typescript",
-              "path": "src/common/middleware/logger.middleware.ts",
-            },
-            {
               "bytes": 295,
               "language": "typescript",
               "path": "src/main.ts",
@@ -28,7 +23,7 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
           "ignoredFiles": [],
           "languages": [
             {
-              "count": 3,
+              "count": 2,
               "language": "typescript",
             },
           ],
@@ -39,11 +34,42 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
           "generic",
         ],
       },
-      "hash": "2d4e98cdc7ad84253119688d4936a1e94ae6d047c79c9d05c1ef6317bb241069",
+      "hash": "90da7349b0dd153ff359d8f6aefda439b96397d5cf8831b5a2c8e0dc0a895771",
       "id": "root:src",
       "kind": "directory",
       "name": "src",
       "path": "src",
+      "projectId": "root",
+    },
+    {
+      "facts": {
+        "base": {
+          "files": [
+            {
+              "bytes": 338,
+              "language": "typescript",
+              "path": "src/common/middleware/logger.middleware.ts",
+            },
+          ],
+          "ignoredFiles": [],
+          "languages": [
+            {
+              "count": 1,
+              "language": "typescript",
+            },
+          ],
+          "roleHint": "middleware",
+          "testFiles": [],
+        },
+        "producedBy": [
+          "generic",
+        ],
+      },
+      "hash": "a6dc6c84f4e106da03134f325db17484c59a1758ffa04d337af19ea2899b80d8",
+      "id": "root:src/common/middleware",
+      "kind": "directory",
+      "name": "src/common/middleware",
+      "path": "src/common/middleware",
       "projectId": "root",
     },
     {
@@ -238,14 +264,16 @@ exports[`glossic scan > renders a deterministic report 1`] = `
 "example-monorepo — pnpm monorepo
 
 @example/api (packages/api)
-├─ src           3 files  typescript
-└─ src/services   1 file  typescript  services
+├─ src              1 file  typescript
+├─ src/routes      2 files  typescript  routes
+└─ src/services     1 file  typescript  services
 
 @example/web (packages/web)
-├─ src           3 files  tsx
-└─ src/hooks      1 file  typescript  hooks
+├─ src              1 file  tsx
+├─ src/components  2 files  tsx         components
+└─ src/hooks        1 file  typescript  hooks
 
-2 projects, 4 units, 8 files
+2 projects, 6 units, 8 files
 languages: typescript 5, tsx 3
 "
 `;

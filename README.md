@@ -211,7 +211,7 @@ its default.
 | `ignoreUnits` | config files, `tsconfig*.json`, `package.json`, dotfiles, migrations, seeds, generated | Files with no documentable content. A unit whose files all match is dropped. |
 | `excludeFromContent` | `["**/*.test.*", "**/*.spec.*", "**/__tests__/**"]` | Counted in the unit hash, never sent as prompt content. |
 | `mergeChildrenInto` | `25` | A directory absorbs every descendant when together they stay at or below this many files. |
-| `minUnitFiles` | `3` | A unit below this absorbs its children. |
+| `minUnitFiles` | `3` | A leaf unit below this is folded into the unit above it, unless it has subdirectories or a role of its own. |
 | `maxUnitFiles` | `10` | A unit above this is split by filename root. |
 | `provider` | auto | `claude-code` or `anthropic`. Unset means auto-detect. |
 | `model` | provider's own | Pin it if you want the cache to notice the model changing. |

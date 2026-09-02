@@ -52,7 +52,9 @@ const TEMPLATE = `export default {
   // entities and strategies folders into one unit.
   // mergeChildrenInto: 25,
 
-  // A unit below this many documentable files absorbs its child units.
+  // A leaf unit below this many documentable files is folded into the unit
+  // above it. A directory that has subdirectories of its own, or whose name
+  // gives away its role, stays where it is.
   // minUnitFiles: 3,
 
   // A unit above this many documentable files is split by filename root.
