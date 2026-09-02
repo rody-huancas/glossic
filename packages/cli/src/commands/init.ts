@@ -12,10 +12,13 @@ import { createTranslator } from "../i18n/index.js";
  * Every option, its real default, and one line on what it does. Commented out
  * so the file starts as a no-op: what is written here overrides the defaults
  * and the saved preference, but never a flag.
+ *
+ * The type arrives through `satisfies` and an inline `import(...)` type, never
+ * a real import: an import that the project running glossic cannot resolve —
+ * and it has no reason to have `@glossic/schema` installed — makes the whole
+ * file unloadable, while a type that does not resolve costs nothing at all.
  */
-const TEMPLATE = `import { defineConfig } from "@glossic/schema";
-
-export default defineConfig({
+const TEMPLATE = `export default {
   // ── What gets walked ──────────────────────────────────────────────────────
 
   // Globs an adapter walks, relative to each project root.
@@ -86,7 +89,7 @@ export default defineConfig({
   //   // Where \`scan\` writes, relative to the workspace root.
   //   manifest: ".glossic/manifest.json",
   // },
-});
+} satisfies import("@glossic/schema").GlossicUserConfig;
 `;
 
 /** Writes glossic.config.ts and returns its path, refusing to overwrite one unless forced. */

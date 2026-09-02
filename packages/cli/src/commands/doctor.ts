@@ -1,7 +1,7 @@
 import path from "node:path";
 import process from "node:process";
 
-import type { ConfigOrigins } from "@glossic/core";
+import type { ConfigOrigins, ProjectConfig } from "@glossic/core";
 import { probeProviders, resolveProvider } from "@glossic/core";
 import type { Adapter, Provider } from "@glossic/schema";
 import { Command } from "commander";
@@ -19,16 +19,16 @@ export interface DoctorConfigEntry {
 }
 
 export interface DoctorReport {
-  node      : string;
-  platform  : string;
-  providers : Array<{ name: string; available: boolean }>;
-  selected  : string | undefined;
-  adapters  : string[];
-  configFile: string | undefined;
-  config    : DoctorConfigEntry[];
-  lang      : string;
-  uiLang    : string;
-  exitCode  : number;
+  node         : string;
+  platform     : string;
+  providers    : Array<{ name: string; available: boolean }>;
+  selected     : string | undefined;
+  adapters     : string[];
+  projectConfig: ProjectConfig;
+  config       : DoctorConfigEntry[];
+  lang         : string;
+  uiLang       : string;
+  exitCode     : number;
 }
 
 /** Values are printed, so they have to survive being printed. */
@@ -60,6 +60,24 @@ const configEntries = (config: Record<string, unknown>, origins: ConfigOrigins):
       origin: origins[key] ?? "default",
     }));
 
+/**
+ * The four states worth telling apart: no file, a file that would not load, a
+ * file that loaded but sets nothing, and a file that is doing its job.
+ */
+const configLine = (project: ProjectConfig, t: Translator): string => {
+  if (project.status === "missing") {
+    return t("doctor.noConfigFile");
+  }
+
+  if (project.status === "failed") {
+    return t("doctor.configFailed", { path: project.file, error: project.error });
+  }
+
+  return Object.keys(project.values).length === 0
+    ? t("doctor.configEmpty", { path: project.file })
+    : project.file;
+};
+
 export interface DoctorOptions {
   root      : string;
   uiLang   ?: string | undefined;
@@ -70,7 +88,7 @@ export interface DoctorOptions {
 /** What glossic can see on this machine: providers, adapters and the effective config. */
 export const collectDoctorReport = async (options: DoctorOptions): Promise<DoctorReport> => {
   const providers = await probeProviders(options.providers);
-  const { config, origins, file } = await resolveEffectiveConfig({
+  const { config, origins, project } = await resolveEffectiveConfig({
     root: options.root,
     ...(options.uiLang === undefined ? {} : { flags: { uiLang: options.uiLang as "en" | "es" } }),
   });
@@ -84,12 +102,12 @@ export const collectDoctorReport = async (options: DoctorOptions): Promise<Docto
     platform: `${process.platform}-${process.arch}`,
     providers,
     selected,
-    adapters  : options.adapters.map((adapter) => adapter.name),
-    configFile: file,
-    config    : configEntries(config as unknown as Record<string, unknown>, origins),
-    lang      : config.lang,
-    uiLang    : config.uiLang,
-    exitCode  : providers.some((entry) => entry.available) ? 0 : 1,
+    adapters     : options.adapters.map((adapter) => adapter.name),
+    projectConfig: project,
+    config       : configEntries(config as unknown as Record<string, unknown>, origins),
+    lang         : config.lang,
+    uiLang       : config.uiLang,
+    exitCode     : providers.some((entry) => entry.available) ? 0 : 1,
   };
 };
 
@@ -125,6 +143,12 @@ export const renderDoctorSummary = (report: DoctorReport, translator?: Translato
     `${label("doctor.languages")}  ${langs}`,
     "",
   ];
+
+  const project = report.projectConfig;
+
+  if (project.status === "failed") {
+    lines.push(t("doctor.configIgnored", { path: project.file, error: project.error }), "");
+  }
 
   if (report.selected === undefined) {
     lines.push(t("doctor.noProvider"), "");
@@ -172,7 +196,7 @@ export const renderDoctorReport = (report: DoctorReport, translator?: Translator
   }
 
   lines.push("", `${label("doctor.adapters")}  ${report.adapters.join(", ")}`);
-  lines.push(`${label("doctor.config")}  ${report.configFile ?? t("doctor.noConfigFile")}`);
+  lines.push(`${label("doctor.config")}  ${configLine(report.projectConfig, t)}`);
 
   lines.push("", t("doctor.effectiveConfig"));
 
