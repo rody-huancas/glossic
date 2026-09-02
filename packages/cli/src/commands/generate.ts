@@ -2,7 +2,7 @@ import path from "node:path";
 import process from "node:process";
 
 import type { GenerateResult } from "@glossic/core";
-import { generate, resolveProvider } from "@glossic/core";
+import { generate, resolveProvider, writeManifest } from "@glossic/core";
 import { Command } from "commander";
 
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
@@ -103,6 +103,11 @@ export const runGenerate = async (target: string, options: GenerateCliOptions, d
   });
 
   progress?.finish("");
+
+  if (!dryRun) {
+    await writeManifest(result.manifest, path.resolve(root, config.output.manifest));
+  }
+
   process.stdout.write(
     renderGenerateReport(result, {
       outDir,

@@ -1,10 +1,10 @@
 import { LANGUAGES } from "../language.js";
 import { cancelled } from "./nav.js";
 import { pickLanguage } from "./language.js";
-import type { ActionOutcome } from "./nav.js";
 import type { Translator } from "../i18n/index.js";
 import type { PromptPort } from "../ui/prompts.js";
 import type { runGenerate } from "../commands/generate.js";
+import type { ActionOutcome } from "./nav.js";
 import type { GenerateCliOptions } from "../commands/generate.js";
 
 /**
@@ -65,5 +65,10 @@ export const generateInteractively = async (
   const result = await generate(".", options);
   prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
 
-  return { ok: result.failures.length === 0, units, printed: true };
+  return {
+    ok     : result.failures.length === 0,
+    units,
+    printed: true,
+    ...(answer === "" ? {} : { outDir: answer }),
+  };
 };

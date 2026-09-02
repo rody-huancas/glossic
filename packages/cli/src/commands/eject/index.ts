@@ -33,6 +33,7 @@ const CONTENT_DIR = "src/content/docs";
 
 export interface EjectOptions {
   template   ?: string;
+  docs       ?: string;
   out        ?: string;
   title      ?: string;
   description?: string;
@@ -43,6 +44,7 @@ export interface EjectOptions {
 }
 
 export interface EjectResult {
+  docsDir : string;
   outDir  : string;
   title   : string;
   accent  : string;
@@ -50,6 +52,20 @@ export interface EjectResult {
   skipped : string[];
   template: string;
 }
+
+export const resolveDocsDir = (
+  paths     : { cwd: string; root: string },
+  explicit  : string | undefined,
+  recorded  : string | undefined,
+  fromConfig: string,
+): string => {
+  if (explicit !== undefined) {
+    return path.resolve(paths.cwd, explicit);
+  }
+
+  return path.resolve(paths.root, recorded ?? fromConfig);
+};
+
 
 /** True when the path exists at all, whatever it is. */
 const exists = async (target: string): Promise<boolean> =>
@@ -63,14 +79,7 @@ const write = async (target: string, content: string): Promise<void> => {
   await fs.writeFile(target, content, "utf8");
 };
 
-/**
- * Copies each unit's page across, rewriting its frontmatter and noting what the
- * sidebar should call it. A unit the manifest knows about but nobody generated
- * is reported rather than invented.
- *
- * The label comes back from here rather than from the manifest because it
- * depends on the heading the model wrote, which only the page knows.
- */
+
 const copyUnitPages = async (
   manifest  : Manifest,
   docsDir   : string,
@@ -100,15 +109,7 @@ const copyUnitPages = async (
   return { labels, pages, skipped };
 };
 
-/**
- * Scaffolds an Astro + Starlight project from the pages `generate` already
- * wrote. It calls no provider and reads no source: the manifest decides the
- * navigation and `docs/` supplies the prose.
- *
- * The manifest is what makes the sidebar deterministic. Walking `docs/` would
- * sort by whatever the filesystem returned and would not know which project a
- * page belongs to.
- */
+
 export const runEject = async (target: string, options: EjectOptions = {}): Promise<EjectResult> => {
   const cwd  = process.cwd();
   const root = path.resolve(cwd, target);
@@ -138,14 +139,12 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
     throw new Error(t("eject.noManifest", { path: displayPath(cwd, manifestPath) }));
   }
 
-  const docsDir = path.resolve(root, config.output.dir);
+  const docsDir = resolveDocsDir({ cwd, root }, options.docs, manifest.docsDir, config.output.dir);
 
   if (!(await exists(docsDir))) {
     throw new Error(t("eject.noDocs", { path: displayPath(cwd, docsDir) }));
   }
 
-  // An explicit --out is the user's path, so it follows the cwd; the default
-  // belongs to the project being documented, so it follows the scanned root.
   const outDir = options.out === undefined ? path.resolve(root, "docs-site") : path.resolve(cwd, options.out);
 
   if ((await exists(outDir)) && options.force !== true) {
@@ -161,8 +160,6 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
     throw new Error(t("eject.noPages", { path: displayPath(cwd, docsDir) }));
   }
 
-  // The structure page goes first: it is the map, and a reader who does not
-  // know the project yet needs it before any single unit.
   const sidebar = [
     { label: siteStrings(config.lang).structure, slug: STRUCTURE_SLUG },
     ...buildSidebar(manifest, labels),
@@ -189,7 +186,15 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
 
   pages.push("index.mdx", `${STRUCTURE_SLUG}.md`);
 
-  return { outDir: toPosix(outDir), title, accent, pages: pages.sort(), skipped, template };
+  return {
+    docsDir: toPosix(docsDir),
+    outDir : toPosix(outDir),
+    title,
+    accent,
+    pages  : pages.sort(),
+    skipped,
+    template,
+  };
 };
 
 /** What the command prints once the scaffold is on disk. */
@@ -213,6 +218,7 @@ export const ejectCommand = (): Command =>
     .description("scaffold a documentation site from the generated markdown")
     .argument("[path]", "workspace root", ".")
     .option("--template <name>", `site template: ${TEMPLATES.join(", ")}`, TEMPLATES[0])
+    .option("--docs <dir>", "where the generated markdown is; default the directory generate recorded")
     .option("--out <dir>", "destination; relative to the cwd, default <root>/docs-site")
     .option("--title <text>", "site title, default the detected project name")
     .option("--description <text>", "site tagline, shown on the landing page")

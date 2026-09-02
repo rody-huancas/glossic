@@ -1,10 +1,11 @@
 import path from "node:path";
 import process from "node:process";
 
+import { readManifest } from "@glossic/core";
+
 import { counted } from "../render/index.js";
 import { runScan } from "../commands/scan.js";
 import { runCheck } from "../commands/check.js";
-import { runEject } from "../commands/eject/index.js";
 import { printBanner } from "../ui/banner.js";
 import { runGenerate } from "../commands/generate.js";
 import { pickLanguage } from "./language.js";
@@ -16,6 +17,7 @@ import { writePreferences } from "../preferences.js";
 import { generateInteractively } from "./generate-flow.js";
 import { resolveEffectiveConfig } from "../config.js";
 import { LANGUAGES, languageLabel } from "../language.js";
+import { resolveDocsDir, runEject } from "../commands/eject/index.js";
 import { readStatus, renderStatusLine } from "./status.js";
 import { createTranslator, UI_LANGUAGES } from "../i18n/index.js";
 import type { Translator } from "../i18n/index.js";
@@ -92,6 +94,8 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   let failed = false;
   let knownUnits: number | undefined;
 
+  let sessionDocs: string | undefined;
+
   const remember = async (update: PreferencesUpdate): Promise<void> => {
     await save(update, location);
   };
@@ -111,7 +115,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       }
 
       if (choice === "eject") {
-        const result = await eject(".", {});
+        const result = await eject(".", sessionDocs === undefined ? {} : { docs: sessionDocs });
 
         prompts.note(t("eject.done", { count: result.pages.length, path: result.outDir }));
 
@@ -150,7 +154,9 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
 
     first = false;
 
-    const documented = await hasDocs(root, defaultOut);
+    const recorded   = await readManifest(path.resolve(root, config.output.manifest));
+    const docsDir    = resolveDocsDir({ cwd, root }, sessionDocs, recorded?.docsDir, defaultOut);
+    const documented = await hasDocs(root, docsDir);
     const noAiCalls  = t("menu.hint.noAiCalls");
     const provider   = status.provider ?? "claude-code";
 
@@ -225,6 +231,10 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
 
     if (outcome.units !== undefined) {
       knownUnits = outcome.units;
+    }
+
+    if (outcome.outDir !== undefined) {
+      sessionDocs = outcome.outDir;
     }
 
     if (cleared && outcome.printed === true) {

@@ -73,12 +73,21 @@ const manifest = (): Manifest =>
     { generatedAt: "2026-01-01T00:00:00.000Z" },
   );
 
-/** A workspace with a manifest and generated pages, ready to eject from. */
-const fixture = async (options: { pages?: boolean; manifest?: boolean } = {}) => {
+/**
+ * A workspace with a manifest and generated pages, ready to eject from.
+ *
+ * `docsDir` is where the pages land and `record` whether the manifest admits
+ * it, so a test can build both a manifest `generate` wrote and one from before
+ * the field existed.
+ */
+const fixture = async (
+  options: { pages?: boolean; manifest?: boolean; docsDir?: string; record?: boolean } = {},
+) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-eject-"));
   tempDirs.push(root);
 
-  const m = manifest();
+  const docsDir = options.docsDir ?? "docs";
+  const m       = options.record === true ? { ...manifest(), docsDir } : manifest();
 
   if (options.manifest !== false) {
     await fs.mkdir(path.join(root, ".glossic"), { recursive: true });
@@ -87,7 +96,7 @@ const fixture = async (options: { pages?: boolean; manifest?: boolean } = {}) =>
 
   if (options.pages !== false) {
     for (const entry of m.units) {
-      const file = path.join(root, "docs", `${entry.path}.md`);
+      const file = path.join(root, docsDir, `${entry.path}.md`);
 
       await fs.mkdir(path.dirname(file), { recursive: true });
       await fs.writeFile(
@@ -113,10 +122,10 @@ const fixture = async (options: { pages?: boolean; manifest?: boolean } = {}) =>
       );
     }
   } else {
-    await fs.mkdir(path.join(root, "docs"), { recursive: true });
+    await fs.mkdir(path.join(root, docsDir), { recursive: true });
   }
 
-  return { root, manifest: m };
+  return { root, docsDir, manifest: m };
 };
 
 /** Every unit documented, labelled by its last path segment. */
@@ -298,10 +307,14 @@ describe("when there is nothing to eject", () => {
     await expect(runEject(root, { uiLang: "en" })).rejects.toThrow(/no manifest/);
   });
 
-  it("says to generate first when no page has been written", async () => {
+  it("names the directory it looked in when no page has been written", async () => {
     const { root } = await fixture({ pages: false });
 
-    await expect(runEject(root, { uiLang: "en" })).rejects.toThrow(/no generated pages/);
+    // The path is the whole point: "no pages" without it sends the reader
+    // looking in the directory they generated to, which is not the one glossic read.
+    await expect(runEject(root, { uiLang: "en" })).rejects.toThrow(/looked for generated pages in/);
+    await expect(runEject(root, { uiLang: "en" })).rejects.toThrow(/docs/);
+    await expect(runEject(root, { uiLang: "en" })).rejects.toThrow(/--docs/);
   });
 
   it("names the templates it knows when given one it does not", async () => {
@@ -310,5 +323,63 @@ describe("when there is nothing to eject", () => {
     await expect(runEject(root, { uiLang: "en", template: "docusaurus" })).rejects.toThrow(
       /unknown template/,
     );
+  });
+});
+
+describe("finding the pages generate wrote", () => {
+  it("follows the directory the manifest recorded, with no flag", async () => {
+    const { root } = await fixture({ docsDir: "docs-riqsi", record: true });
+
+    const result = await runEject(root, { uiLang: "en" });
+
+    expect(result.docsDir.endsWith("docs-riqsi")).toBe(true);
+    expect(result.pages.length).toBeGreaterThan(2);
+    expect(result.skipped).toEqual([]);
+  });
+
+  it("lets an explicit --docs beat what the manifest recorded", async () => {
+    const { root } = await fixture({ docsDir: "docs-riqsi", record: true });
+
+    const elsewhere = path.join(root, "docs-elsewhere");
+    await fs.cp(path.join(root, "docs-riqsi"), elsewhere, { recursive: true });
+
+    const result = await runEject(root, { uiLang: "en", docs: elsewhere });
+
+    expect(result.docsDir.endsWith("docs-elsewhere")).toBe(true);
+    expect(result.skipped).toEqual([]);
+  });
+
+  it("reports the directory it read from, so an empty --docs is not a mystery", async () => {
+    const { root } = await fixture({ docsDir: "docs-riqsi", record: true });
+
+    const empty = path.join(root, "docs-empty");
+    await fs.mkdir(empty, { recursive: true });
+
+    await expect(runEject(root, { uiLang: "en", docs: empty })).rejects.toThrow(/docs-empty/);
+  });
+
+  it("falls back to the default for a manifest written before the field existed", async () => {
+    const { root, manifest: m } = await fixture();
+
+    expect(m).not.toHaveProperty("docsDir");
+
+    const result = await runEject(root, { uiLang: "en" });
+
+    expect(result.docsDir.endsWith("docs")).toBe(true);
+    expect(result.pages.length).toBeGreaterThan(2);
+  });
+
+  it("prefers the config's output.dir over the default when the manifest is silent", async () => {
+    const { root } = await fixture({ docsDir: "documentation" });
+
+    await fs.writeFile(
+      path.join(root, "glossic.config.ts"),
+      'export default { output: { dir: "documentation" } };\n',
+      "utf8",
+    );
+
+    const result = await runEject(root, { uiLang: "en" });
+
+    expect(result.docsDir.endsWith("documentation")).toBe(true);
   });
 });
