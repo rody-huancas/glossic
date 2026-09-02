@@ -132,7 +132,17 @@ export const en = {
   "provider.option1Detail": "glossic picks it up as soon as `claude --version` works.",
   "provider.option2"      : "2. Anthropic API — export an API key:",
   "provider.runDoctor"    : "Run `glossic doctor` to see what glossic can find on this machine.",
-  "init.created"          : "created {path}",
+  // eject
+  "eject.done"           : "{count} pages written to {path}",
+  "eject.skipped"        : "{count} units have no page yet and were left out",
+  "eject.next"           : "Run it with:",
+  "eject.exists"         : "{path} already exists. Pass --force to overwrite it.",
+  "eject.noManifest"     : "no manifest at {path}. Run `glossic scan` first.",
+  "eject.noDocs"         : "no documentation at {path}. Run `glossic generate` first.",
+  "eject.noPages"        : "there are no generated pages in {path}. Run `glossic generate` first.",
+  "eject.unknownTemplate": "unknown template \"{template}\". Available: {known}",
+  "eject.badAccent"      : "\"{accent}\" is not a hex colour. Use something like #0d9488.",
+  "init.created"         : "created {path}",
 } as const;
 
 export type MessageKey = keyof typeof en;

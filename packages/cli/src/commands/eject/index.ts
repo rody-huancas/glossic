@@ -1,0 +1,231 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
+
+import type { Manifest } from "@glossic/schema";
+import { Command } from "commander";
+import { readManifest, toPosix, unitDocPath } from "@glossic/core";
+
+import { displayPath } from "../../render/index.js";
+import { templateFiles } from "./template.js";
+import { createTranslator } from "../../i18n/index.js";
+import { buildSidebar, slugFor } from "./sidebar.js";
+import { pathTitle, sidebarLabel } from "./titles.js";
+import { siteStrings } from "./site-strings.js";
+import { siteStats, startSlug, structurePage, STRUCTURE_SLUG } from "./structure.js";
+import { DEFAULT_ACCENT, normaliseHex } from "./theme.js";
+import { renderStarlightPage, toStarlightPage } from "./frontmatter.js";
+import { flagsToConfig, resolveEffectiveConfig } from "../../config.js";
+import type { Translator } from "../../i18n/index.js";
+
+export { buildSidebar, isGroup, renderSidebar, sidebarEntries, slugFor } from "./sidebar.js";
+export { renderStarlightPage, summarise, toStarlightPage } from "./frontmatter.js";
+export { extractHeading, looksLikePath, MAX_SIDEBAR_TITLE, pathTitle, sidebarLabel, titleCase } from "./titles.js";
+export { accentPalette, customCss, DEFAULT_ACCENT, normaliseHex } from "./theme.js";
+export { packageName, templateFiles } from "./template.js";
+export { SITE_LANGUAGES, siteStrings } from "./site-strings.js";
+export { siteStats, startSlug, startUnit, structurePage, STRUCTURE_SLUG } from "./structure.js";
+
+/** The only template there is so far. */
+export const TEMPLATES = ["starlight"] as const;
+
+const CONTENT_DIR = "src/content/docs";
+
+export interface EjectOptions {
+  template   ?: string;
+  out        ?: string;
+  title      ?: string;
+  description?: string;
+  accent     ?: string;
+  force      ?: boolean;
+  uiLang     ?: string;
+  quiet      ?: boolean;
+}
+
+export interface EjectResult {
+  outDir  : string;
+  title   : string;
+  accent  : string;
+  pages   : string[];
+  skipped : string[];
+  template: string;
+}
+
+/** True when the path exists at all, whatever it is. */
+const exists = async (target: string): Promise<boolean> =>
+  fs
+    .access(target)
+    .then(() => true)
+    .catch(() => false);
+
+const write = async (target: string, content: string): Promise<void> => {
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, content, "utf8");
+};
+
+/**
+ * Copies each unit's page across, rewriting its frontmatter and noting what the
+ * sidebar should call it. A unit the manifest knows about but nobody generated
+ * is reported rather than invented.
+ *
+ * The label comes back from here rather than from the manifest because it
+ * depends on the heading the model wrote, which only the page knows.
+ */
+const copyUnitPages = async (
+  manifest  : Manifest,
+  docsDir   : string,
+  contentDir: string,
+): Promise<{ labels: Map<string, string>; pages: string[]; skipped: string[] }> => {
+  const labels = new Map<string, string>();
+  const pages: string[] = [];
+  const skipped: string[] = [];
+
+  for (const unit of manifest.units) {
+    const source = path.resolve(docsDir, unitDocPath(unit));
+
+    if (!(await exists(source))) {
+      skipped.push(unit.id);
+      continue;
+    }
+
+    const raw  = await fs.readFile(source, "utf8");
+    const page = toStarlightPage(raw, pathTitle(unit.path), unit.path);
+
+    await write(path.resolve(contentDir, `${slugFor(unit)}.md`), renderStarlightPage(page));
+
+    labels.set(unit.id, sidebarLabel(page.title, unit.path));
+    pages.push(`${slugFor(unit)}.md`);
+  }
+
+  return { labels, pages, skipped };
+};
+
+/**
+ * Scaffolds an Astro + Starlight project from the pages `generate` already
+ * wrote. It calls no provider and reads no source: the manifest decides the
+ * navigation and `docs/` supplies the prose.
+ *
+ * The manifest is what makes the sidebar deterministic. Walking `docs/` would
+ * sort by whatever the filesystem returned and would not know which project a
+ * page belongs to.
+ */
+export const runEject = async (target: string, options: EjectOptions = {}): Promise<EjectResult> => {
+  const cwd  = process.cwd();
+  const root = path.resolve(cwd, target);
+
+  const { config } = await resolveEffectiveConfig({
+    root,
+    flags: flagsToConfig({ uiLang: options.uiLang }),
+  });
+
+  const t        = createTranslator(config.uiLang);
+  const template = options.template ?? TEMPLATES[0];
+
+  if (!TEMPLATES.includes(template as (typeof TEMPLATES)[number])) {
+    throw new Error(t("eject.unknownTemplate", { template, known: TEMPLATES.join(", ") }));
+  }
+
+  const accent = options.accent === undefined ? DEFAULT_ACCENT : normaliseHex(options.accent);
+
+  if (accent === undefined) {
+    throw new Error(t("eject.badAccent", { accent: options.accent ?? "" }));
+  }
+
+  const manifestPath = path.resolve(root, config.output.manifest);
+  const manifest     = await readManifest(manifestPath);
+
+  if (manifest === undefined) {
+    throw new Error(t("eject.noManifest", { path: displayPath(cwd, manifestPath) }));
+  }
+
+  const docsDir = path.resolve(root, config.output.dir);
+
+  if (!(await exists(docsDir))) {
+    throw new Error(t("eject.noDocs", { path: displayPath(cwd, docsDir) }));
+  }
+
+  // An explicit --out is the user's path, so it follows the cwd; the default
+  // belongs to the project being documented, so it follows the scanned root.
+  const outDir = options.out === undefined ? path.resolve(root, "docs-site") : path.resolve(cwd, options.out);
+
+  if ((await exists(outDir)) && options.force !== true) {
+    throw new Error(t("eject.exists", { path: displayPath(cwd, outDir) }));
+  }
+
+  const title      = options.title ?? manifest.workspace.name;
+  const contentDir = path.resolve(outDir, CONTENT_DIR);
+
+  const { labels, pages, skipped } = await copyUnitPages(manifest, docsDir, contentDir);
+
+  if (pages.length === 0) {
+    throw new Error(t("eject.noPages", { path: displayPath(cwd, docsDir) }));
+  }
+
+  // The structure page goes first: it is the map, and a reader who does not
+  // know the project yet needs it before any single unit.
+  const sidebar = [
+    { label: siteStrings(config.lang).structure, slug: STRUCTURE_SLUG },
+    ...buildSidebar(manifest, labels),
+  ];
+
+  const files = templateFiles({
+    title,
+    ...(options.description === undefined ? {} : { description: options.description }),
+    accent,
+    lang     : config.lang,
+    stats    : siteStats(manifest),
+    startSlug: startSlug(manifest, new Set(labels.keys())),
+    sidebar,
+  });
+
+  for (const [name, content] of Object.entries(files)) {
+    await write(path.resolve(outDir, name), content);
+  }
+
+  await write(
+    path.resolve(contentDir, `${STRUCTURE_SLUG}.md`),
+    structurePage(manifest, config.lang),
+  );
+
+  pages.push("index.mdx", `${STRUCTURE_SLUG}.md`);
+
+  return { outDir: toPosix(outDir), title, accent, pages: pages.sort(), skipped, template };
+};
+
+/** What the command prints once the scaffold is on disk. */
+export const renderEjectReport = (result: EjectResult, cwd: string, t: Translator): string => {
+  const lines = [
+    "",
+    t("eject.done", { count: result.pages.length, path: displayPath(cwd, result.outDir) }),
+  ];
+
+  if (result.skipped.length > 0) {
+    lines.push(t("eject.skipped", { count: result.skipped.length }));
+  }
+
+  lines.push("", t("eject.next"), "", `  cd ${displayPath(cwd, result.outDir)}`, "  npm install", "  npm run dev", "");
+
+  return lines.join("\n");
+};
+
+export const ejectCommand = (): Command =>
+  new Command("eject")
+    .description("scaffold a documentation site from the generated markdown")
+    .argument("[path]", "workspace root", ".")
+    .option("--template <name>", `site template: ${TEMPLATES.join(", ")}`, TEMPLATES[0])
+    .option("--out <dir>", "destination; relative to the cwd, default <root>/docs-site")
+    .option("--title <text>", "site title, default the detected project name")
+    .option("--description <text>", "site tagline, shown on the landing page")
+    .option("--accent <hex>", `accent colour, default ${DEFAULT_ACCENT}`)
+    .option("--force", "overwrite the destination if it already exists", false)
+    .option("--ui-lang <code>", "language of the CLI itself: en or es")
+    .option("-q, --quiet", "no banner", false)
+    .action(async (pathArg: string, options: EjectOptions) => {
+      const result = await runEject(pathArg, options);
+      const { config } = await resolveEffectiveConfig({
+        root : path.resolve(process.cwd(), pathArg),
+        flags: flagsToConfig({ uiLang: options.uiLang }),
+      });
+
+      process.stdout.write(renderEjectReport(result, process.cwd(), createTranslator(config.uiLang)));
+    });
