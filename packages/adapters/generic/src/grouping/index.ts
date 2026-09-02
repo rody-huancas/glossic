@@ -2,12 +2,13 @@ import { compareStrings } from "@glossic/schema";
 
 import { splitLargeUnit } from "./split.js";
 import { createClassifier, unitName } from "./draft.js";
-import { absorbUndocumentedUnits, groupByDirectory, mergeSmallParents, mergeSubtrees } from "./merge.js";
+import { absorbThinLeaves, absorbUndocumentedUnits, groupByDirectory, mergeSubtrees } from "./merge.js";
 import type { GroupingOptions, UnitDraft } from "./draft.js";
 
 export { SPLIT_SEPARATOR, createClassifier, unitName } from "./draft.js";
 export { filenameRoot, isReadableLabel, splitLargeUnit } from "./split.js";
-export { absorbUndocumentedUnits, groupByDirectory, mergeSmallParents, mergeSubtrees } from "./merge.js";
+export { absorbThinLeaves, absorbUndocumentedUnits, groupByDirectory, mergeSubtrees } from "./merge.js";
+export type { ThinLeafOptions } from "./merge.js";
 export type { FileClassifier, GroupingOptions, UnitDraft } from "./draft.js";
 
 
@@ -16,7 +17,7 @@ export const shapeUnits = (files: readonly string[], options: GroupingOptions): 
   const classifier = createClassifier(options);
   const grouped    = absorbUndocumentedUnits(groupByDirectory(files, classifier));
   const subtrees   = mergeSubtrees(grouped, options.mergeChildrenInto);
-  const merged     = mergeSmallParents(subtrees, options.minUnitFiles);
+  const merged     = absorbThinLeaves(subtrees, options);
 
   return merged
     .flatMap((draft) => splitLargeUnit(draft, options.maxUnitFiles))

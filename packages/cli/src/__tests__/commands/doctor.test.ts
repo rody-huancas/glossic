@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createFakeProvider } from "@glossic/core";
 import { afterAll, describe, expect, it } from "vitest";
 
-import { collectDoctorReport, renderDoctorReport } from "../../commands/doctor.js";
+import { collectDoctorReport, renderDoctorReport, renderDoctorSummary } from "../../commands/doctor.js";
 import { createTranslator } from "../../i18n/index.js";
 import { builtinAdapters } from "../../registries.js";
 
@@ -60,7 +60,7 @@ describe("glossic doctor", () => {
     });
 
     expect(report.node).toBe(process.versions.node);
-    expect(report.configFile).toBeUndefined();
+    expect(report.projectConfig).toEqual({ status: "missing" });
     expect(renderDoctorReport(report, createTranslator("en"))).toContain(
       "glossic.config.ts not found",
     );
@@ -111,7 +111,10 @@ describe("the effective configuration", () => {
     expect(byKey.maxUnitFiles).toMatchObject({ value: "4", origin: "project" });
     expect(byKey.lang).toMatchObject({ value: "pt", origin: "project" });
     expect(byKey.minUnitFiles).toMatchObject({ origin: "default" });
-    expect(result.configFile).toContain("glossic.config.ts");
+    expect(result.projectConfig).toMatchObject({
+      status: "loaded",
+      file  : expect.stringContaining("glossic.config.ts"),
+    });
   });
 
   it("does not let a partial config claim the keys it never set", async () => {
@@ -130,5 +133,66 @@ describe("the effective configuration", () => {
 
     expect(rendered).toContain("effective configuration");
     expect(rendered).toMatch(/maxUnitFiles\s+default\s+10/);
+  });
+
+  describe("the config line tells the four states apart", () => {
+    const configLine = (rendered: string): string =>
+      rendered.split("\n").find((line) => line.trimStart().startsWith("config")) ?? "";
+
+    it("says none when the project has no config file", async () => {
+      const rendered = renderDoctorReport(await report(await project()), createTranslator("en"));
+
+      expect(configLine(rendered)).toContain("none (glossic.config.ts not found)");
+    });
+
+    it("names the file and the reason when the config will not load", async () => {
+      const root = await project(
+        'import { defineConfig } from "@glossic/not-a-real-package";\n' +
+          'export default defineConfig({ lang: "pt" });\n',
+      );
+
+      const result   = await report(root);
+      const rendered = renderDoctorReport(result, createTranslator("en"));
+
+      expect(result.projectConfig).toMatchObject({ status: "failed" });
+      expect(configLine(rendered)).toContain("failed to load");
+      expect(configLine(rendered)).toContain("@glossic/not-a-real-package");
+      expect(configLine(rendered)).toContain("glossic.config.ts");
+    });
+
+    it("says a config that sets nothing sets nothing", async () => {
+      const root     = await project("export default {\n  // lang: 'pt',\n};\n");
+      const rendered = renderDoctorReport(await report(root), createTranslator("en"));
+
+      expect(configLine(rendered)).toContain("no options set");
+      expect(configLine(rendered)).toContain("glossic.config.ts");
+    });
+
+    it("prints the path alone when the config decides something", async () => {
+      const root     = await project('export default { lang: "pt" };\n');
+      const rendered = renderDoctorReport(await report(root), createTranslator("en"));
+
+      expect(configLine(rendered)).toContain("glossic.config.ts");
+      expect(configLine(rendered)).not.toContain("(");
+    });
+
+    it("falls back to the defaults instead of breaking when the config will not load", async () => {
+      const root   = await project('import "@glossic/not-a-real-package";\nexport default {};\n');
+      const result = await report(root);
+
+      const byKey = Object.fromEntries(result.config.map((entry) => [entry.key, entry]));
+
+      expect(result.exitCode).toBe(0);
+      expect(byKey.maxUnitFiles).toMatchObject({ value: "10", origin: "default" });
+    });
+
+    it("warns in the menu summary, where there is no config line to read", async () => {
+      const root = await project('import "@glossic/not-a-real-package";\nexport default {};\n');
+
+      const summary = renderDoctorSummary(await report(root), createTranslator("en"));
+
+      expect(summary).toContain("running on the defaults");
+      expect(summary).toContain("@glossic/not-a-real-package");
+    });
   });
 });

@@ -23,6 +23,8 @@ const SOURCES: Record<string, string> = {
   "src/utils/logger.ts"        : "export const logger = 1;\n",
   "src/utils/format.ts"        : "export const format = 2;\n",
   "src/migrations/0001-init.ts": "export const up = 1;\n",
+  // No role in its name, so it is the one directory minUnitFiles can fold.
+  "src/legacy/old-client.ts"   : "export const legacy = 1;\n",
 };
 
 let root: string;
@@ -100,9 +102,15 @@ describe("every option has an effect on scan", () => {
     expect((await names({ mergeChildrenInto: 1 })).length).toBeGreaterThan(1);
   });
 
-  it("minUnitFiles decides whether a thin parent absorbs its children", async () => {
-    expect(await names({ mergeChildrenInto: 1, minUnitFiles: 1 })).toContain("src/utils");
-    expect(await names({ mergeChildrenInto: 1, minUnitFiles: 99 })).toEqual(["src"]);
+  it("minUnitFiles decides whether a thin leaf is folded into the unit above it", async () => {
+    expect(await names({ mergeChildrenInto: 1, minUnitFiles: 1 })).toContain("src/legacy");
+
+    // Raising the floor folds the role-less leaf and nothing else: "src/routes"
+    // and "src/utils" are named for what they hold and keep their own page.
+    const raised = await names({ mergeChildrenInto: 1, minUnitFiles: 99 });
+
+    expect(raised).not.toContain("src/legacy");
+    expect(raised).toEqual(["src", "src/routes", "src/utils"]);
   });
 
   it("maxUnitFiles decides whether a unit is split", async () => {
@@ -238,5 +246,20 @@ describe("the grouping options invalidate the cache", () => {
     // Nothing was grouped differently, so nothing needed rewriting.
     expect(provider.calls).toEqual([]);
     expect(result.fromCache).toBe(result.plan.length);
+  });
+});
+
+describe("a tree that folded a thin leaf", () => {
+  const folded = { mergeChildrenInto: 1, minUnitFiles: 99 } as const;
+
+  it("keeps the same ids and hashes on two consecutive runs", async () => {
+    const first  = await units(folded);
+    const second = await units(folded);
+
+    // The fold is what is under test, so it has to have happened.
+    expect(first.map((unit) => unit.name)).not.toContain("src/legacy");
+    expect(second.map((unit) => [unit.id, unit.hash])).toEqual(
+      first.map((unit) => [unit.id, unit.hash]),
+    );
   });
 });

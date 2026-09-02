@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import type { ConfigOrigins, ResolvedConfig } from "@glossic/core";
+import type { ConfigOrigins, ProjectConfig, ResolvedConfig } from "@glossic/core";
 import { loadProjectConfig, resolveConfig } from "@glossic/core";
 import type { GlossicUserConfig } from "@glossic/schema";
 
@@ -16,9 +16,9 @@ export interface ConfigRequest {
   location?: PreferencesLocation | undefined;
 }
 
-/** A resolved config plus its provenance: the file that contributed and the origin of each key. */
+/** A resolved config plus its provenance: the project's config file and the origin of each key. */
 export interface EffectiveConfig extends ResolvedConfig {
-  file   : string | undefined;
+  project: ProjectConfig;
   origins: ConfigOrigins;
 }
 
@@ -31,6 +31,9 @@ export interface EffectiveConfig extends ResolvedConfig {
  * own: it is a default for `lang` that the project's config still outranks. It
  * only reaches `uiLang` when there is a catalogue for it, so a French machine
  * gets an English menu rather than a pile of keys.
+ *
+ * A config file that fails to load contributes nothing and stops nothing: it
+ * travels back in `project` so the caller can say so.
  */
 export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<EffectiveConfig> => {
   const root = path.resolve(request.root);
@@ -52,11 +55,11 @@ export const resolveEffectiveConfig = async (request: ConfigRequest): Promise<Ef
 
   const resolved = resolveConfig({
     ...(request.flags === undefined ? {} : { flags: request.flags }),
-    ...(project === undefined ? {} : { project: project.values }),
+    ...(project.status === "loaded" ? { project: project.values } : {}),
     preference,
   });
 
-  return { ...resolved, file: project?.file };
+  return { ...resolved, project };
 };
 
 /** Turns `--flag` values into the config keys they stand for. */

@@ -69,10 +69,11 @@ describe("generic adapter", () => {
   it("groups directories holding source files into units", async () => {
     const units = await runAdapter(contextFor(exampleDir("nestjs-api")));
 
-    // "src/common/middleware" is gone: "src" held two files, below the floor,
-    // so it absorbed its first child.
+    // "src" holds two files, below the floor, but it has units under it, so
+    // nothing folds and every role-bearing directory keeps its page.
     expect(units.map((unit) => unit.name)).toEqual([
       "src",
+      "src/common/middleware",
       "src/config",
       "src/users",
       "src/users/dto",
@@ -84,15 +85,17 @@ describe("generic adapter", () => {
   it("puts loose project-root files in a unit named root", async () => {
     const units = await runAdapter(contextFor(exampleDir("express-api")));
 
-    expect(units.map((unit) => unit.name)).toEqual(["root", "src/routes", "src/utils"]);
-
-    // The root unit held a single file, so it absorbed children until it hit
-    // the floor of three.
-    expect(units[0]?.facts.base.files.map((file) => file.path)).toEqual([
-      "index.js",
-      "src/controllers/users.controller.js",
-      "src/middleware/error-handler.js",
+    expect(units.map((unit) => unit.name)).toEqual([
+      "root",
+      "src/controllers",
+      "src/middleware",
+      "src/routes",
+      "src/utils",
     ]);
+
+    // The root unit holds a single file and keeps it: units live under it, so
+    // it is not a leaf, and every directory below it is named for its role.
+    expect(units[0]?.facts.base.files.map((file) => file.path)).toEqual(["index.js"]);
   });
 
   it("records file facts and language counts", async () => {
@@ -162,12 +165,14 @@ describe("generic adapter", () => {
     const ctx   = contextFor(exampleDir("monorepo"), "packages/api");
     const units = await runAdapter({ ...ctx, project: { ...ctx.project, id: "packages/api" } });
 
-    expect(units.map((unit) => unit.id)).toEqual(["packages/api:src", "packages/api:src/services"]);
+    expect(units.map((unit) => unit.id)).toEqual([
+      "packages/api:src",
+      "packages/api:src/routes",
+      "packages/api:src/services",
+    ]);
     expect(units[0]?.path).toBe("packages/api/src");
     expect(units[0]?.facts.base.files.map((file) => file.path)).toEqual([
       "packages/api/src/index.ts",
-      "packages/api/src/routes/index.ts",
-      "packages/api/src/routes/orders.routes.ts",
     ]);
   });
 

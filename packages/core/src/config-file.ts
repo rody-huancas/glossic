@@ -23,50 +23,77 @@ export const findConfigFile = async (root: string): Promise<string | undefined> 
       return toPosix(candidate);
     }
   }
-  
+
   return undefined;
 };
 
+/** The project has no config file at all. */
+export interface MissingConfig {
+  status: "missing";
+}
+
+/** The file is there but unusable, and `error` is the reason to put in front of the user. */
+export interface FailedConfig {
+  status: "failed";
+  file  : string;
+  error : string;
+}
+
+/** `values` carries only the keys the file actually set, so a no-op config leaves it empty. */
 export interface LoadedConfig {
+  status: "loaded";
   file  : string;
   values: GlossicUserConfig;
 }
 
-/** The module's default export, when it looks like a config object. */
-const asUserConfig = (value: unknown): GlossicUserConfig | undefined => {
-  if (typeof value !== "object" || value === null) {
-    return undefined;
-  }
+/** The three things a config file can be, so a missing file never reads as a broken one. */
+export type ProjectConfig = MissingConfig | FailedConfig | LoadedConfig;
 
+/** The reason ends up on one terminal line, so the stack and the rest of the message go. */
+const describeError = (cause: unknown): string => {
+  const message = cause instanceof Error ? cause.message : String(cause);
+
+  return message.split("\n")[0]?.trim() || "unknown error";
+};
+
+/** The module's default export as a config, or why it is not one. */
+const readDefaultExport = (file: string, value: unknown): FailedConfig | LoadedConfig => {
   const parsed = GlossicConfigSchema.partial().safeParse(value);
 
   if (!parsed.success) {
-    return undefined;
+    const error = parsed.error.issues
+      .map((issue) =>
+        issue.path.length === 0 ? issue.message : `${issue.path.join(".")}: ${issue.message}`,
+      )
+      .join("; ");
+
+    return { status: "failed", file, error };
   }
 
   const declared = Object.keys(value as Record<string, unknown>);
 
-  return Object.fromEntries(
+  const values = Object.fromEntries(
     Object.entries(parsed.data).filter(([key]) => declared.includes(key)),
   ) as GlossicUserConfig;
+
+  return { status: "loaded", file, values };
 };
 
 
-/** Loads and validates glossic.config.ts, ignoring a file that exports nothing usable. */
-export const loadProjectConfig = async (root: string): Promise<LoadedConfig | undefined> => {
+/** Never throws: a config that cannot be loaded is reported as such, not hidden. */
+export const loadProjectConfig = async (root: string): Promise<ProjectConfig> => {
   const file = await findConfigFile(root);
 
   if (file === undefined) {
-    return undefined;
+    return { status: "missing" };
   }
 
   try {
     const jiti   = createJiti(import.meta.url, { moduleCache: false });
     const loaded = await jiti.import(file, { default: true });
 
-    const values = asUserConfig(loaded);
-    return values === undefined ? undefined : { file, values };
-  } catch {
-    return undefined;
+    return readDefaultExport(file, loaded);
+  } catch (cause) {
+    return { status: "failed", file, error: describeError(cause) };
   }
 };

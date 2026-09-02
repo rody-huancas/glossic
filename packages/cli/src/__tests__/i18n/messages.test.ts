@@ -233,16 +233,16 @@ describe("every visible surface is translated", () => {
   } as unknown as CheckResult;
 
   const doctorReport: DoctorReport = {
-    node      : "22.0.0",
-    platform  : "linux-x64",
-    providers : [{ name: "claude-code", available: false }],
-    selected  : undefined,
-    adapters  : ["generic"],
-    configFile: undefined,
-    config    : [{ key: "lang", value: "es", origin: "default" }],
-    lang      : "es",
-    uiLang    : "en",
-    exitCode  : 1,
+    node         : "22.0.0",
+    platform     : "linux-x64",
+    providers    : [{ name: "claude-code", available: false }],
+    selected     : undefined,
+    adapters     : ["generic"],
+    projectConfig: { status: "missing" },
+    config       : [{ key: "lang", value: "es", origin: "default" }],
+    lang         : "es",
+    uiLang       : "en",
+    exitCode     : 1,
   };
 
   it("renders the scan report in both languages", () => {

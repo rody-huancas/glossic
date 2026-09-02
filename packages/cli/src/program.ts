@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { checkCommand, doctorCommand, generateCommand, initCommand, scanCommand } from "./commands/index.js";
 import { printBanner } from "./ui/banner.js";
 import { CLI_NAME, CLI_VERSION } from "./version.js";
+import { checkCommand, doctorCommand, ejectCommand, generateCommand, initCommand, scanCommand } from "./commands/index.js";
 
 /** Builds the commander program. Exported so tests can inspect it. */
 export const createProgram = (): Command => {
@@ -21,6 +21,7 @@ export const createProgram = (): Command => {
   program.addCommand(scanCommand());
   program.addCommand(generateCommand());
   program.addCommand(checkCommand());
+  program.addCommand(ejectCommand());
   program.addCommand(doctorCommand());
   program.addCommand(initCommand());
 

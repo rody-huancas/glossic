@@ -8,7 +8,7 @@ describe("glossic cli", () => {
     const names = createProgram()
       .commands.map((command) => command.name())
       .sort();
-    expect(names).toEqual(["check", "doctor", "generate", "init", "scan"]);
+    expect(names).toEqual(["check", "doctor", "eject", "generate", "init", "scan"]);
   });
 
   it("keeps the generic adapter last so it stays the fallback", () => {
