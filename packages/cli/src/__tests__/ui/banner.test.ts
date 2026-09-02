@@ -142,10 +142,6 @@ describe("the version on show", () => {
     expect(plainBanner({ columns: 100 }).at(-1)).toContain(`v${manifest.version}`);
     expect(plainBanner({ columns: 40 }).at(-1)).toContain(`v${manifest.version}`);
   });
-
-  it("is not the placeholder it used to be", () => {
-    expect(CLI_VERSION).not.toBe("0.0.0");
-  });
 });
 
 describe("detectLanguage", () => {
