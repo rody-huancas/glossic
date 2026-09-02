@@ -4,27 +4,29 @@ import process from "node:process";
 import { counted } from "../render/index.js";
 import { runScan } from "../commands/scan.js";
 import { runCheck } from "../commands/check.js";
+import { runEject } from "../commands/eject/index.js";
 import { printBanner } from "../ui/banner.js";
-import { runConnection } from "./connection.js";
 import { runGenerate } from "../commands/generate.js";
-import { clackPrompts } from "../ui/prompts.js";
-import { formatCliError } from "../errors.js";
-import { writePreferences } from "../preferences.js";
 import { pickLanguage } from "./language.js";
-import { LANGUAGES, languageLabel } from "../language.js";
+import { clackPrompts } from "../ui/prompts.js";
+import { runConnection } from "./connection.js";
+import { formatCliError } from "../errors.js";
+import { hasGeneratedDocs } from "./docs.js";
+import { writePreferences } from "../preferences.js";
 import { generateInteractively } from "./generate-flow.js";
 import { resolveEffectiveConfig } from "../config.js";
+import { LANGUAGES, languageLabel } from "../language.js";
 import { readStatus, renderStatusLine } from "./status.js";
 import { createTranslator, UI_LANGUAGES } from "../i18n/index.js";
 import type { Translator } from "../i18n/index.js";
-import type { ActionOutcome } from "./nav.js";
 import type { PromptPort } from "../ui/prompts.js";
+import type { ActionOutcome } from "./nav.js";
 import type { PreferencesLocation, PreferencesUpdate } from "../preferences.js";
 
 export { renderStatusLine } from "./status.js";
 export type { StatusLine } from "./status.js";
 
-type Action = "scan" | "generate" | "check" | "connection";
+type Action = "scan" | "generate" | "eject" | "check" | "connection";
 type Choice = Action | "uiLanguage" | "docLanguage" | "exit";
 
 /**
@@ -37,7 +39,9 @@ export interface InteractiveDeps {
   runScan         ?: typeof runScan;
   runGenerate     ?: typeof runGenerate;
   runCheck        ?: typeof runCheck;
+  runEject        ?: typeof runEject;
   runConnection   ?: typeof runConnection;
+  hasDocs         ?: typeof hasGeneratedDocs;
   cwd             ?: string;
   preferences     ?: PreferencesLocation;
   resolveConfig   ?: typeof resolveEffectiveConfig;
@@ -70,7 +74,9 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   const scan       = deps.runScan ?? runScan;
   const generate   = deps.runGenerate ?? runGenerate;
   const check      = deps.runCheck ?? runCheck;
+  const eject      = deps.runEject ?? runEject;
   const connection = deps.runConnection ?? runConnection;
+  const hasDocs    = deps.hasDocs ?? hasGeneratedDocs;
   const resolve    = deps.resolveConfig ?? resolveEffectiveConfig;
   const save       = deps.writePreferences ?? writePreferences;
   const location   = deps.preferences ?? {};
@@ -102,6 +108,14 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         const result = await check(".", {});
 
         return { ok: result.ok, printed: true };
+      }
+
+      if (choice === "eject") {
+        const result = await eject(".", {});
+
+        prompts.note(t("eject.done", { count: result.pages.length, path: result.outDir }));
+
+        return { ok: true, printed: true };
       }
 
       if (choice === "connection") {
@@ -136,10 +150,11 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
 
     first = false;
 
-    const noAiCalls = t("menu.hint.noAiCalls");
-    const provider  = status.provider ?? "claude-code";
+    const documented = await hasDocs(root, defaultOut);
+    const noAiCalls  = t("menu.hint.noAiCalls");
+    const provider   = status.provider ?? "claude-code";
 
-    const generateHint =
+    const generateHint = 
       knownUnits === undefined
         ? t("menu.hint.usesProvider", { provider })
         : t("menu.hint.usesProviderUnits", {
@@ -152,6 +167,11 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       options: [
         { value: "scan", label: t("menu.scan"), hint: noAiCalls },
         { value: "generate", label: t("menu.generate"), hint: generateHint },
+        {
+          value: "eject",
+          label: t("menu.eject"),
+          hint : documented ? noAiCalls : t("menu.hint.needsDocs"),
+        },
         { value: "check", label: t("menu.check"), hint: noAiCalls },
         { value: "connection", label: t("menu.connection") },
         {
