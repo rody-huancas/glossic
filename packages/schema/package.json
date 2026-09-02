@@ -2,7 +2,26 @@
   "name": "@glossic/schema",
   "version": "0.1.0",
   "description": "Zod schemas and inferred types shared across glossic",
+  "keywords": [
+    "documentation",
+    "docs",
+    "docs-as-code",
+    "glossic",
+    "schema",
+    "zod",
+    "types"
+  ],
   "license": "MIT",
+  "author": "Rody Huancas",
+  "homepage": "https://github.com/rody-huancas/glosik#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rody-huancas/glosik.git",
+    "directory": "packages/schema"
+  },
+  "bugs": {
+    "url": "https://github.com/rody-huancas/glosik/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -10,6 +29,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -2,7 +2,25 @@
   "name": "@glossic/adapter-nestjs",
   "version": "0.1.0",
   "description": "NestJS extraction adapter for glossic",
+  "keywords": [
+    "documentation",
+    "docs",
+    "docs-as-code",
+    "glossic",
+    "adapter",
+    "nestjs"
+  ],
   "license": "MIT",
+  "author": "Rody Huancas",
+  "homepage": "https://github.com/rody-huancas/glosik#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rody-huancas/glosik.git",
+    "directory": "packages/adapters/nestjs"
+  },
+  "bugs": {
+    "url": "https://github.com/rody-huancas/glosik/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -10,6 +28,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

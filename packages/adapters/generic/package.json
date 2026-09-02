@@ -2,7 +2,26 @@
   "name": "@glossic/adapter-generic",
   "version": "0.1.0",
   "description": "Language-agnostic fallback adapter for glossic",
+  "keywords": [
+    "documentation",
+    "docs",
+    "docs-as-code",
+    "glossic",
+    "adapter",
+    "static-analysis",
+    "language-agnostic"
+  ],
   "license": "MIT",
+  "author": "Rody Huancas",
+  "homepage": "https://github.com/rody-huancas/glosik#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rody-huancas/glosik.git",
+    "directory": "packages/adapters/generic"
+  },
+  "bugs": {
+    "url": "https://github.com/rody-huancas/glosik/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -10,6 +29,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
