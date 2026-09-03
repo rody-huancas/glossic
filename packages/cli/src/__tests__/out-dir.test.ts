@@ -6,7 +6,7 @@ import { createFakeProvider, toPosix } from "@glossic/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { runEject } from "../commands/eject/index.js";
-import { runGenerate } from "../commands/generate.js";
+import { runGenerate } from "../commands/generate/index.js";
 import { runScan } from "../commands/scan.js";
 import { runInteractive } from "../interactive/index.js";
 import type { PromptPort, SelectOption } from "../ui/prompts.js";
@@ -42,10 +42,11 @@ afterAll(async () => {
 });
 
 /** Answers every prompt from a script instead of a terminal. */
-const scripted = (answers: unknown[]): PromptPort => {
+const scripted = (answers: unknown[], offered: string[] = []): PromptPort => {
   let cursor = 0;
 
-  const next = async (): Promise<never> => {
+  const next = async (options: { message: string; placeholder?: string | undefined }): Promise<never> => {
+    if (options.placeholder !== undefined) offered.push(options.placeholder);
     if (cursor >= answers.length) throw new Error("the script ran out of answers");
     return answers[cursor++] as never;
   };
@@ -115,6 +116,35 @@ describe("the output directory chosen in the menu", () => {
     expect(await generateInteractively("")).toBe(0);
 
     expect(await exists(path.join(root, "docs-handbook", "index.md"))).toBe(true);
+  });
+
+  it("proposes the directory the last run recorded, not the default", async () => {
+    const fake    = createFakeProvider();
+    const offered: string[] = [];
+
+    const menu = async (answers: unknown[]): Promise<number> =>
+      runInteractive({
+        prompts    : scripted(answers, offered),
+        cwd        : root,
+        preferences: { env: { APPDATA: home }, platform: "win32", homedir: home },
+        runGenerate: (target, options) =>
+          runGenerate(target, options, { cwd: root, createProviders: () => [fake] }),
+      });
+
+    // Generate somewhere the config never mentions, so the manifest is the only
+    // thing that knows where the documentation went.
+    expect(await menu(["generate", "es", "docs-walearning", true, "exit"])).toBe(0);
+    expect(await exists(path.join(root, "docs-walearning", "index.md"))).toBe(true);
+
+    offered.length = 0;
+
+    // Second visit: the placeholder is the recorded directory, and accepting it
+    // writes there rather than starting a second folder called docs.
+    expect(await menu(["generate", "es", "", true, "exit"])).toBe(0);
+
+    expect(offered).toContain("docs-walearning");
+    expect(offered).not.toContain("docs");
+    expect(await exists(path.join(root, "docs"))).toBe(false);
   });
 });
 

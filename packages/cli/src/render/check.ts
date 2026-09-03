@@ -21,7 +21,7 @@ export const renderCheckReport = (result: CheckResult, context: CheckReportConte
 
   if (result.ok) {
     return `${t("check.upToDate", {
-      units: counted(t, result.upToDate.length, "unit"),
+      units: counted(t, result.upToDate.length, "count.unit"),
       out: docs,
     })}\n`;
   }
@@ -61,8 +61,8 @@ export const renderCheckReport = (result: CheckResult, context: CheckReportConte
   lines.push(
     "",
     t("check.problems", {
-      problems: counted(t, problems, "problem"),
-      units   : counted(t, result.upToDate.length, "unit"),
+      problems: counted(t, problems, "count.problem"),
+      units   : counted(t, result.upToDate.length, "count.unit"),
     }),
     "",
   );

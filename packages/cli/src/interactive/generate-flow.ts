@@ -1,11 +1,12 @@
 import { LANGUAGES } from "../language.js";
+import { counted, formatTokens } from "../render/index.js";
 import { cancelled } from "./nav.js";
 import { pickLanguage } from "./language.js";
 import type { Translator } from "../i18n/index.js";
 import type { PromptPort } from "../ui/prompts.js";
-import type { runGenerate } from "../commands/generate.js";
+import type { runGenerate } from "../commands/generate/index.js";
 import type { ActionOutcome } from "./nav.js";
-import type { GenerateCliOptions } from "../commands/generate.js";
+import type { GenerateCliOptions, QuotaChoice } from "../commands/generate/index.js";
 
 /**
  * The language is already resolved from the chain, so its prompt is an Enter
@@ -23,6 +24,7 @@ export const generateInteractively = async (
   generate  : typeof runGenerate,
   resolved  : string,
   defaultOut: string,
+  warnAbove : number,
 ): Promise<ActionOutcome> => {
 
   const codes    = LANGUAGES.map((entry) => entry.code);
@@ -41,34 +43,58 @@ export const generateInteractively = async (
     return cancelled(prompts, t);
   }
 
+  // An empty answer accepts the placeholder, so the placeholder has to travel
+  // as the real destination: leaving `out` unset would send the run to the
+  // configured directory rather than the one just offered on screen.
   const answer = out.trim();
-  const options: GenerateCliOptions = {
-    lang: language,
-    ...(answer === "" ? {} : { out: answer }),
-  };
+  const target = answer === "" ? defaultOut : answer;
 
-  const plan  = await generate(".", { ...options, dryRun: true });
-  const units = plan.plan.length;
+  const options: GenerateCliOptions = { lang: language, out: target };
 
-  const confirmed = await prompts.confirm({
-    message: t("prompt.confirmGenerate", {
-      units : plan.plan.filter((entry) => entry.regenerate).length,
-      tokens: Math.round(plan.estimatedTokens / 1000),
-    }),
-    initialValue: true,
-  });
+  const plan    = await generate(".", { ...options, dryRun: true });
+  const units   = plan.plan.length;
+  const pending = plan.plan.filter((entry) => entry.regenerate).length;
 
-  if (prompts.isCancel(confirmed) || confirmed !== true) {
-    return { ...cancelled(prompts, t), units };
+  // A plan over the warning size asks a better question of its own once the run
+  // starts -- all at once, one project at a time, or not at all -- so confirming
+  // here first would be that same question with an answer missing.
+  if (pending <= warnAbove) {
+    const confirmed = await prompts.confirm({
+      message: t("prompt.confirmGenerate", {
+        units : counted(t, pending, "count.unit"),
+        tokens: formatTokens(plan.estimatedTokens),
+      }),
+      initialValue: true,
+    });
+
+    if (prompts.isCancel(confirmed) || confirmed !== true) {
+      return { ...cancelled(prompts, t), units };
+    }
   }
 
-  const result = await generate(".", options);
-  prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
+  // "Back to the menu" is an answer about where to go next, so it goes there:
+  // the report is not held on screen waiting for a keypress first.
+  let quota: QuotaChoice | undefined;
+
+  const result = await generate(".", options, {
+    prompts,
+    menu         : true,
+    onQuotaChoice: (choice) => {
+      quota = choice;
+    },
+  });
+
+  prompts.outro(
+    [
+      counted(t, result.generated, "count.written"),
+      counted(t, result.failures.length, "count.failed"),
+    ].join(" · "),
+  );
 
   return {
     ok     : result.failures.length === 0,
     units,
-    printed: true,
-    ...(answer === "" ? {} : { outDir: answer }),
+    printed: quota !== "menu",
+    outDir: target,
   };
 };

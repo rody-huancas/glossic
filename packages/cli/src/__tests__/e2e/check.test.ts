@@ -397,7 +397,8 @@ describe("a preamble is trimmed rather than rejected", () => {
     expect(result.warnings).toEqual([
       {
         unitId : "root:src/utils",
-        message: expect.stringContaining("before the first heading") as unknown as string,
+        dropped: PREAMBLE.length,
+        excerpt: expect.stringContaining(PREAMBLE.trim().slice(0, 20)) as unknown as string,
       },
     ]);
 

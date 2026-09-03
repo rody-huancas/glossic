@@ -7,7 +7,7 @@ import { counted } from "../render/index.js";
 import { runScan } from "../commands/scan.js";
 import { runCheck } from "../commands/check.js";
 import { printBanner } from "../ui/banner.js";
-import { runGenerate } from "../commands/generate.js";
+import { runGenerate } from "../commands/generate/index.js";
 import { pickLanguage } from "./language.js";
 import { clackPrompts } from "../ui/prompts.js";
 import { runConnection } from "./connection.js";
@@ -87,7 +87,6 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
   const { config } = await resolve({ root, location });
 
   let language       = config.lang;
-  const defaultOut   = config.output.dir;
   let uiLang: string = config.uiLang;
   let first          = true;
 
@@ -100,7 +99,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     await save(update, location);
   };
 
-  const perform = async (choice: Action, t: Translator): Promise<ActionOutcome> => {
+  const perform = async (choice: Action, t: Translator, defaultOut: string): Promise<ActionOutcome> => {
     try {
       if (choice === "scan") {
         const result = await scan(".", { json: false, write: true });
@@ -117,7 +116,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       if (choice === "eject") {
         const result = await eject(".", sessionDocs === undefined ? {} : { docs: sessionDocs });
 
-        prompts.note(t("eject.done", { count: result.pages.length, path: result.outDir }));
+        prompts.note(counted(t, result.pages.length, "eject.done", { path: result.outDir }));
 
         return { ok: true, printed: true };
       }
@@ -126,7 +125,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         return connection({ prompts, t, root, location });
       }
 
-      return generateInteractively(prompts, t, generate, language, defaultOut);
+      return generateInteractively(prompts, t, generate, language, defaultOut, config.warnAboveUnits);
     } catch (error) {
       process.stderr.write(`${formatCliError(error)}\n`);
       prompts.note(t("menu.actionFailed"));
@@ -155,7 +154,13 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     first = false;
 
     const recorded   = await readManifest(path.resolve(root, config.output.manifest));
-    const docsDir    = resolveDocsDir({ cwd, root }, sessionDocs, recorded?.docsDir, defaultOut);
+    const docsDir    = resolveDocsDir({ cwd, root }, sessionDocs, recorded?.docsDir, config.output.dir);
+
+    // Where generate would write if the reader just presses enter: the
+    // directory the last run recorded, then the configured one, which itself
+    // defaults to docs. Proposing "docs" to someone who generated elsewhere
+    // offers to scatter their documentation over two folders.
+    const defaultOut = recorded?.docsDir ?? config.output.dir;
     const documented = await hasDocs(root, docsDir);
     const noAiCalls  = t("menu.hint.noAiCalls");
     const provider   = status.provider ?? "claude-code";
@@ -165,7 +170,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         ? t("menu.hint.usesProvider", { provider })
         : t("menu.hint.usesProviderUnits", {
             provider,
-            units: counted(t, knownUnits, "unit"),
+            units: counted(t, knownUnits, "count.unit"),
           });
 
     const choice = await prompts.select<Choice>({
@@ -223,7 +228,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       continue;
     }
 
-    const outcome = await perform(choice, t);
+    const outcome = await perform(choice, t, defaultOut);
 
     if (!outcome.ok) {
       failed = true;

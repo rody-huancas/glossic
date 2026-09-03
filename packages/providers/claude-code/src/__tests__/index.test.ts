@@ -59,9 +59,35 @@ describe("parseClaudeOutput", () => {
 
   it("turns a reported error into a typed ProviderError", async () => {
     const raw   = await fixture("error.json");
-    const error = expectProviderError(() => parse(raw), "api");
+    const error = expectProviderError(() => parse(raw), "quota");
 
-    expect(error.detail).toBe("Credit balance is too low to run this request.");
+    // The sentence, not the envelope it arrived in.
+    expect(error.message).toBe("Credit balance is too low to run this request.");
+    expect(error.detail).toBeUndefined();
+  });
+
+  it("reads a reported error the CLI put in `result` rather than in `error`", () => {
+    const raw = JSON.stringify({
+      type    : "result",
+      subtype : "success",
+      is_error: true,
+      result  : "Claude AI usage limit reached|1767225600",
+    });
+
+    const error = expectProviderError(() => parse(raw), "quota");
+
+    expect(error.message).toBe("Claude AI usage limit reached|1767225600");
+  });
+
+  it("keeps an error it cannot name as api rather than as a spent quota", () => {
+    const raw = JSON.stringify({
+      type    : "result",
+      subtype : "error_during_execution",
+      is_error: true,
+      error   : "the model stopped mid-sentence",
+    });
+
+    expectProviderError(() => parse(raw), "api");
   });
 
   it("rejects malformed JSON", () => {

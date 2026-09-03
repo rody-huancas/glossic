@@ -1,4 +1,4 @@
-import type { GenerateResult } from "@glossic/core";
+import type { GenerateResult, PlanReview } from "@glossic/core";
 
 import { counted, displayPath } from "./shared.js";
 import { defaultTranslator } from "../i18n/index.js";
@@ -12,8 +12,47 @@ export interface GenerateReportContext {
   t       ?: Translator | undefined;
 }
 
-const formatTokens = (tokens: number): string =>
+/**
+ * Token counts round to thousands past a thousand, since the number is an
+ * estimate either way. The "~" that says so is added here and only here: a
+ * catalogue string that carried its own printed it twice.
+ */
+export const formatTokens = (tokens: number): string =>
   tokens < 1000 ? `${tokens}` : `~${Math.round(tokens / 1000)}k`;
+
+/**
+ * What generate says before it sends anything: how much of the plan the cache
+ * already covers, and a warning when the rest is large enough that one run
+ * could cost a whole quota.
+ *
+ * It is printed in every mode. Without a terminal to ask on, saying so and
+ * carrying on is the whole of the feature; with one, the caller follows it
+ * with the question.
+ */
+export const renderPlanIntro = (review: PlanReview, warnAbove: number, t: Translator = defaultTranslator): string => {
+  const lines: string[] = [];
+
+  if (review.cached > 0) {
+    lines.push(
+      [
+        counted(t, review.pending, "count.pending"),
+        counted(t, review.cached, "count.done"),
+      ].join(", "),
+    );
+  }
+
+  if (review.pending > warnAbove) {
+    lines.push(
+      t("generate.largePlan", {
+        units : counted(t, review.pending, "count.unit"),
+        tokens: formatTokens(review.estimatedTokens),
+      }),
+      t("generate.largePlanRisk"),
+    );
+  }
+
+  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+};
 
 /** Renders the generate report, for both a dry run and a real run. */
 export const renderGenerateReport = (result: GenerateResult, context: GenerateReportContext): string => {
@@ -42,7 +81,7 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
     lines.push(
       [
         `  ${entry.unitId.padEnd(nameWidth)}`,
-        counted(t, entry.files, "file").padStart(9),
+        counted(t, entry.files, "count.file").padStart(9),
         t("generate.tokens", { tokens: formatTokens(entry.estimatedTokens) }).padStart(13),
         entry.reason.padEnd(22),
         entry.docPath,
@@ -57,15 +96,17 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
     : result.generated;
 
   const counts = [
-    t("generate.counts", {
-      generated,
-      cached: result.fromCache,
-      failed: result.failures.length,
-    }),
+    counted(t, generated, "count.written"),
+    counted(t, result.fromCache, "count.cached"),
+    counted(t, result.failures.length, "count.failed"),
   ];
 
   if (result.filteredOut.length > 0) {
-    counts.push(t("generate.filteredOut", { count: result.filteredOut.length }));
+    counts.push(counted(t, result.filteredOut.length, "generate.filteredOut"));
+  }
+
+  if (result.skipped.length > 0) {
+    counts.push(t("generate.skipped", { count: result.skipped.length }));
   }
 
   lines.push(counts.join(", "));
@@ -82,11 +123,15 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
   }
 
   if (!result.dryRun) {
-    lines.push(t("generate.written", { count: result.written.length, out: relativeOut }));
+    lines.push(counted(t, result.written.length, "generate.written", { out: relativeOut }));
   }
 
   for (const warning of result.warnings) {
-    lines.push(`  ${t("generate.trimmed", { unit: warning.unitId, message: warning.message })}`);
+    const message = counted(t, warning.dropped, "generate.droppedPreamble", {
+      excerpt: warning.excerpt,
+    });
+
+    lines.push(`  ${t("generate.trimmed", { unit: warning.unitId, message })}`);
   }
 
   for (const failure of result.failures) {
@@ -97,6 +142,17 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
     if (failure.detail !== undefined) {
       lines.push(`          ${failure.detail}`);
     }
+  }
+
+  if (result.aborted !== undefined) {
+    lines.push(
+      "",
+      counted(t, result.aborted.remaining, "generate.stopped", {
+        unit: result.aborted.unitId,
+        code: result.aborted.code,
+      }),
+      t("generate.resume"),
+    );
   }
 
   return `${lines.join("\n")}\n`;

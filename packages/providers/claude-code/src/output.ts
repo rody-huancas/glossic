@@ -1,5 +1,7 @@
-import { ProviderError } from "@glossic/schema";
+import { looksLikeQuota, ProviderError } from "@glossic/schema";
 import type { CompletionResult } from "@glossic/schema";
+
+import { debugEnabled, describeFailure, oneLine } from "./failure.js";
 
 
 /** The result envelope of `claude -p --output-format json`, all of it untrusted. */
@@ -17,6 +19,8 @@ interface ClaudeResultPayload {
     cache_read_input_tokens?: unknown;
   };
 }
+
+const rawDetail = (trimmed: string): string => (debugEnabled() ? trimmed : oneLine(trimmed));
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -85,7 +89,7 @@ export const parseClaudeOutput = (providerName: string, stdout: string, fallback
       provider: providerName,
       code    : "invalid-output",
       message : "claude did not return valid JSON",
-      detail  : trimmed.slice(0, 400),
+      detail  : rawDetail(trimmed),
       cause,
     });
   }
@@ -97,18 +101,17 @@ export const parseClaudeOutput = (providerName: string, stdout: string, fallback
       provider: providerName,
       code    : "invalid-output",
       message : "claude returned JSON without a result",
-      detail  : trimmed.slice(0, 400),
+      detail  : rawDetail(trimmed),
     });
   }
 
   if (payload.is_error === true || payload.subtype === "error_during_execution") {
-    const detail = typeof payload.error === "string" ? payload.error : payload.subtype;
+    const explained = describeFailure(trimmed, `claude reported an error (${payload.subtype ?? "no subtype"})`);
 
     throw new ProviderError({
       provider: providerName,
-      code    : "api",
-      message : "claude reported an error",
-      ...(detail === undefined ? {} : { detail }),
+      code    : looksLikeQuota(explained.message) ? "quota" : "api",
+      ...explained,
     });
   }
 
@@ -117,7 +120,7 @@ export const parseClaudeOutput = (providerName: string, stdout: string, fallback
       provider: providerName,
       code    : "invalid-output",
       message : "claude returned a result that is not text",
-      detail  : trimmed.slice(0, 400),
+      detail  : rawDetail(trimmed),
     });
   }
 

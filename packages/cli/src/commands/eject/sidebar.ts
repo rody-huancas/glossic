@@ -1,3 +1,4 @@
+import { SPLIT_SEPARATOR } from "@glossic/adapter-generic";
 import { unitDocPath } from "@glossic/core";
 import type { Manifest, Project, Unit } from "@glossic/schema";
 
@@ -20,12 +21,40 @@ export type SidebarNode = SidebarEntry | SidebarGroup;
 export const isGroup = (node: SidebarNode): node is SidebarGroup => "items" in node;
 
 /**
- * Astro lowercases every segment when it derives a slug from a filename, so a
- * unit under `src/Modules` is addressed as `src/modules`.
+ * The punctuation Astro drops when it derives a content entry's slug from a
+ * filename. It is github-slugger's set, minus the dash, which survives.
  */
-export const slugFor = (unit: Unit): string => {
-  return unitDocPath(unit).replace(/\.md$/, "").toLowerCase();
-};
+const DROPPED_BY_ASTRO = /['!"#$%&()*+,./:;<=>?@[\]^`{|}~\u2000-\u206f\u2e00-\u2e7f]/g;
+
+/**
+ * What `~~` becomes. A dash survives slugification and the tilde does not, so
+ * a split unit written under its own name would be addressed by a slug that no
+ * longer contains the separator, and Starlight would reject it.
+ */
+const SPLIT_IN_SLUG = "--";
+
+/** One path segment as Astro would slugify it: lower case, no punctuation. */
+const slugifySegment = (segment: string): string =>
+  segment
+    .split(SPLIT_SEPARATOR)
+    .join(SPLIT_IN_SLUG)
+    .toLowerCase()
+    .replace(DROPPED_BY_ASTRO, "")
+    .replace(/\s+/g, "-");
+
+/**
+ * How Starlight addresses a unit's page, and the name the page is written
+ * under, which is the same string on purpose: eject slugifies once and Astro's
+ * own slugification of the resulting filename is then a no-op, so the sidebar
+ * can never point at a slug the site does not have.
+ */
+export const slugFor = (unit: Unit): string =>
+  unitDocPath(unit)
+    .replace(/\.md$/, "")
+    .split("/")
+    .map(slugifySegment)
+    .join("/")
+    .replace(/\/index$/, "");
 
 /** The unit's path with the project's own directory taken off the front. */
 const withinProject = (unit: Unit, project: Project): string => {
@@ -157,6 +186,26 @@ export const buildSidebar = (
 
   return nodes;
 };
+
+/**
+ * The sidebar with every entry the site has no page for taken out, and any
+ * group left empty by that taken out with it.
+ *
+ * The labels already leave out a unit with no page, so this is the guarantee
+ * rather than the filter: Starlight refuses to build against a slug that does
+ * not resolve, and a unit whose generation failed is in the manifest without
+ * ever reaching the disk.
+ */
+export const pruneSidebar = (nodes: readonly SidebarNode[], slugs: ReadonlySet<string>): SidebarNode[] =>
+  nodes.flatMap((node): SidebarNode[] => {
+    if (!isGroup(node)) {
+      return slugs.has(node.slug) ? [node] : [];
+    }
+
+    const items = pruneSidebar(node.items, slugs);
+
+    return items.length === 0 ? [] : [{ label: node.label, items }];
+  });
 
 /** Every page the sidebar links to, in the order it shows them. */
 export const sidebarEntries = (nodes: readonly SidebarNode[]): SidebarEntry[] => {
