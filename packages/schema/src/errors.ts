@@ -4,6 +4,7 @@ export type ProviderErrorCode =
   | "unauthenticated"
   | "timeout"
   | "rate-limit"
+  | "quota"
   | "server"
   | "exit-code"
   | "invalid-output"
@@ -17,6 +18,25 @@ const RETRYABLE_CODES: ReadonlySet<ProviderErrorCode> = new Set([
   "rate-limit",
   "server",
 ]);
+
+const FATAL_CODES: ReadonlySet<ProviderErrorCode> = new Set(["quota"]);
+
+const QUOTA_PHRASES: readonly RegExp[] = [
+  /usage limit/,
+  /quota/,
+  /credit balance/,
+  /out of credits/,
+  /insufficient (?:credit|balance|funds)/,
+  /billing/,
+  /upgrade (?:your )?plan/,
+  /limit will reset/,
+];
+
+export const looksLikeQuota = (text: string): boolean => {
+  const lower = text.toLowerCase();
+
+  return QUOTA_PHRASES.some((phrase) => phrase.test(lower));
+};
 
 export interface ProviderErrorOptions {
   provider : string;
@@ -51,4 +71,8 @@ export const isProviderError = (value: unknown): value is ProviderError => {
 /** True for the codes worth another attempt: timeout, rate limit, server error. */
 export const isRetryableProviderError = (value: unknown): boolean => {
   return isProviderError(value) && RETRYABLE_CODES.has(value.code);
+}
+
+export const isFatalProviderError = (value: unknown): boolean => {
+  return isProviderError(value) && FATAL_CODES.has(value.code);
 }

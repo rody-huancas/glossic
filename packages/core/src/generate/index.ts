@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import picomatch from "picomatch";
-import { GlossicConfigSchema } from "@glossic/schema";
+import { GlossicConfigSchema, isFatalProviderError } from "@glossic/schema";
 import type { Unit } from "@glossic/schema";
 
 import { scan } from "../scan.js";
@@ -16,7 +16,7 @@ import { INDEX_DOC_PATH, renderIndexDoc, renderUnitDoc } from "../markdown.js";
 import { type CacheEntry, type CacheFile, DEFAULT_CACHE_PATH, emptyCache, indexCache, readCache, writeCache } from "../cache.js";
 import type { Job } from "./jobs.js";
 import type { DecisionContext } from "./decide.js";
-import type { GenerateContext, GenerateEvent, GenerateFailure, GeneratePlanEntry, GenerateResult, GenerateWarning, UnitOutcome } from "./types.js";
+import type { GenerateAbort, GenerateContext, GenerateEvent, GenerateFailure, GeneratePlanEntry, GenerateResult, GenerateWarning, UnitOutcome } from "./types.js";
 
 export * from "./types.js";
 export { modelCacheKey } from "./decide.js";
@@ -111,6 +111,8 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
       failures: [],
       warnings: [],
       filteredOut,
+      skipped: [],
+      aborted: undefined,
       estimatedTokens,
       savedTokens,
       generated: 0,
@@ -124,6 +126,12 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
   const warnings: GenerateWarning[] = [];
   const summaries                   = new Map<string, string>();
   const pending                     = decisions.filter(({ reason }) => reason !== "cached");
+
+  // Set by the first fatal failure. Units already in flight run to the end;
+  // every unit still queued is skipped rather than sent to a provider that has
+  // just said it has nothing left to answer with.
+  const skipped: string[] = [];
+  let aborted: GenerateAbort | undefined;
 
   const total   = decisions.length;
   let completed = 0;
@@ -141,6 +149,11 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
   }
 
   const outcomes = await mapWithConcurrency(pending, config.concurrency, async ({ job }) => {
+    if (aborted !== undefined) {
+      skipped.push(job.unit.id);
+      return undefined;
+    }
+
     const startedAt = Date.now();
     report({ type: "unit-start", unitId: job.unit.id, index: completed + 1, total });
 
@@ -159,17 +172,32 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
       finished(job.unit.id, "generated", Date.now() - startedAt);
       return { job, body: prepared.body };
     } catch (cause) {
-      failures.push({
+      const failure: GenerateFailure = {
         unitId: job.unit.id,
         reason: cause instanceof Error ? cause.message: String(cause),
         code  : stringField(cause, "code"),
         detail: stringField(cause, "detail"),
-      });
+      };
+
+      failures.push(failure);
+
+      if (aborted === undefined && isFatalProviderError(cause)) {
+        aborted = {
+          unitId   : failure.unitId,
+          code     : failure.code ?? "unknown",
+          reason   : failure.reason,
+          remaining: 0,
+        };
+      }
 
       finished(job.unit.id, "failed", Date.now() - startedAt);
       return undefined;
     }
   });
+
+  if (aborted !== undefined) {
+    aborted = { ...aborted, remaining: skipped.length };
+  }
 
   const written: string[]   = [];
   const fresh: CacheEntry[] = [];
@@ -231,6 +259,8 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     failures: failures.sort((a, b) => compareStrings(a.unitId, b.unitId)),
     warnings: warnings.sort((a, b) => compareStrings(a.unitId, b.unitId)),
     filteredOut,
+    skipped : skipped.sort(compareStrings),
+    aborted,
     estimatedTokens,
     savedTokens,
     generated: fresh.length,

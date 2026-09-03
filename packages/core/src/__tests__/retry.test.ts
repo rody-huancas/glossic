@@ -32,7 +32,7 @@ describe("withRetry", () => {
     expect(task).toHaveBeenCalledTimes(2);
   });
 
-  it.each(["refused", "unauthenticated", "not-installed", "invalid-output", "api"] as const)(
+  it.each(["refused", "unauthenticated", "not-installed", "invalid-output", "quota", "api"] as const)(
     "never retries a %s failure",
     async (code) => {
       const { sleep, delays } = instantSleep();

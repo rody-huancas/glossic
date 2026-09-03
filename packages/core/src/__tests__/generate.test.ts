@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext } from "@glossic/schema";
+import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext, Provider } from "@glossic/schema";
 import { GlossicConfigSchema, ProviderError } from "@glossic/schema";
 import { afterAll, describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
@@ -88,8 +88,48 @@ const fakeAdapter: Adapter = {
   }),
 };
 
+/**
+ * As many units as a test asks for, every one of them reading the same real
+ * file: what these drive is the loop over the plan, not the sources.
+ */
+const wideAdapter = (names: readonly string[]): Adapter => ({
+  name  : "wide",
+  detect: async (): Promise<boolean> => true,
+  discover: async (ctx: DiscoverContext): Promise<DiscoveredUnit[]> =>
+    names.map((name) => ({
+      id          : `${ctx.project.id}:src/${name}`,
+      projectId   : ctx.project.id,
+      name        : `src/${name}`,
+      path        : `src/${name}`,
+      files       : ["src/main.ts"],
+      testFiles   : [],
+      ignoredFiles: [],
+    })),
+  extract: fakeAdapter.extract,
+});
+
 /** The adapter has to be named in the config, or it is never tried. */
 const FAKE_CONFIG = GlossicConfigSchema.parse({ adapters: ["fake"] });
+
+/** One at a time, so "the unit it stopped on" is a single, predictable unit. */
+const WIDE_CONFIG = GlossicConfigSchema.parse({ adapters: ["wide"], concurrency: 1 });
+
+const UNIT_NAMES = ["a", "b", "c", "d", "e"];
+
+/** A provider that spends its quota on `failOn` and answers everything else. */
+const quotaAt = (failOn: string) =>
+  createFakeProvider({
+    respond: (request) => {
+      if (request.metadata.unitId === failOn) {
+        throw new ProviderError({
+          provider: "fake",
+          code    : "quota",
+          message : "Claude AI usage limit reached",
+        });
+      }
+      return OK_DOCUMENT;
+    },
+  });
 
 const run = async (overrides: Partial<Parameters<typeof generate>[0]> = {}) =>
   generate({
@@ -234,5 +274,92 @@ describe("generate", () => {
 
     await run({ provider, outDir: await outDir() });
     expect(peak).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("when the provider runs out of quota", () => {
+  const wideRun = async (options: { provider: Provider; outDir: string; cachePath: string }) =>
+    generate({
+      root       : exampleDir("nestjs-api"),
+      adapters   : [wideAdapter(UNIT_NAMES)],
+      config     : WIDE_CONFIG,
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      ...options,
+    });
+
+  it("stops the rest of the plan instead of failing every unit in turn", async () => {
+    const provider = quotaAt("root:src/b");
+    const result   = await wideRun({
+      provider,
+      outDir   : await outDir(),
+      cachePath: path.join(await outDir(), "cache.json"),
+    });
+
+    // Two calls for five units: the wall is hit once, not once per unit.
+    expect(provider.calls).toHaveLength(2);
+    expect(result.skipped).toEqual(["root:src/c", "root:src/d", "root:src/e"]);
+    expect(result.aborted).toEqual({
+      unitId   : "root:src/b",
+      code     : "quota",
+      reason   : "Claude AI usage limit reached",
+      remaining: 3,
+    });
+  });
+
+  it("keeps the unit that hit the wall in the failures, and no other", async () => {
+    const result = await wideRun({
+      provider : quotaAt("root:src/b"),
+      outDir   : await outDir(),
+      cachePath: path.join(await outDir(), "cache.json"),
+    });
+
+    expect(result.failures.map((failure) => failure.unitId)).toEqual(["root:src/b"]);
+    expect(result.generated).toBe(1);
+  });
+
+  it("writes and caches what it did generate, so the next run continues", async () => {
+    const docs  = await outDir();
+    const cache = path.join(await outDir(), "cache.json");
+
+    const first = await wideRun({ provider: quotaAt("root:src/b"), outDir: docs, cachePath: cache });
+
+    expect(first.written).toEqual(["index.md", "src/a.md"]);
+    await expect(fs.readFile(path.join(docs, "src/a.md"), "utf8")).resolves.toContain("## What it does");
+
+    const provider = createFakeProvider();
+    const second   = await wideRun({ provider, outDir: docs, cachePath: cache });
+
+    // The unit the first run paid for is not paid for twice.
+    expect(provider.calls.map((call) => call.metadata.unitId)).toEqual([
+      "root:src/b",
+      "root:src/c",
+      "root:src/d",
+      "root:src/e",
+    ]);
+    expect(second.aborted).toBeUndefined();
+    expect(second.skipped).toEqual([]);
+    expect(second.fromCache).toBe(1);
+  });
+
+  it("keeps going for a failure that is only this unit's problem", async () => {
+    const provider = createFakeProvider({
+      respond: (request) => {
+        if (request.metadata.unitId === "root:src/b") {
+          throw new ProviderError({ provider: "fake", code: "api", message: "malformed request" });
+        }
+        return OK_DOCUMENT;
+      },
+    });
+
+    const result = await wideRun({
+      provider,
+      outDir   : await outDir(),
+      cachePath: path.join(await outDir(), "cache.json"),
+    });
+
+    expect(provider.calls).toHaveLength(5);
+    expect(result.aborted).toBeUndefined();
+    expect(result.skipped).toEqual([]);
+    expect(result.generated).toBe(4);
   });
 });

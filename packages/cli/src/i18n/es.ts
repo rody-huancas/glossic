@@ -75,6 +75,7 @@ export const es: Partial<Record<MessageKey, string>> = {
   "generate.tokens"              : "{tokens} tokens",
   "generate.counts"              : "{generated} generadas, {cached} desde cache, {failed} fallidas",
   "generate.filteredOut"         : "{count} filtradas",
+  "generate.skipped"             : "{count} sin intentar",
   "generate.inputTokens"         : "{tokens} tokens de entrada",
   "generate.inputTokensEstimated": "{tokens} tokens de entrada estimados",
   "generate.savedTokens"         : "{tokens} tokens de entrada ahorrados por el cache",
@@ -82,6 +83,8 @@ export const es: Partial<Record<MessageKey, string>> = {
   "generate.trimmed"             : "recortado: {unit} — {message}",
   "generate.failed"              : "falló: {unit}{code} — {reason}",
   "generate.droppedPreamble"     : "se descartaron {count} caracteres antes del primer encabezado: {excerpt}",
+  "generate.stopped"             : "detenido en {unit} [{code}] — {count} units no se enviaron",
+  "generate.resume"              : "Lo generado quedó en cache; vuelve a correr el mismo comando para continuar donde se detuvo.",
 
   "progress.generated": "generada",
   "progress.cached"   : "cache",

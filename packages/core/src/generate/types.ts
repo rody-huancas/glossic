@@ -58,6 +58,13 @@ export interface GenerateFailure {
   detail: string | undefined;
 }
 
+export interface GenerateAbort {
+  unitId   : string;
+  code     : string;
+  reason   : string;
+  remaining: number;
+}
+
 export interface GenerateResult {
   manifest       : Manifest;
   written        : string[];
@@ -65,6 +72,8 @@ export interface GenerateResult {
   failures       : GenerateFailure[];
   warnings       : GenerateWarning[];
   filteredOut    : string[];
+  skipped        : string[];
+  aborted        : GenerateAbort | undefined;
   estimatedTokens: number;
   savedTokens    : number;
   generated      : number;

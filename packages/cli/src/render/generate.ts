@@ -68,6 +68,10 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
     counts.push(t("generate.filteredOut", { count: result.filteredOut.length }));
   }
 
+  if (result.skipped.length > 0) {
+    counts.push(t("generate.skipped", { count: result.skipped.length }));
+  }
+
   lines.push(counts.join(", "));
 
   const tokens = formatTokens(result.estimatedTokens);
@@ -97,6 +101,18 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
     if (failure.detail !== undefined) {
       lines.push(`          ${failure.detail}`);
     }
+  }
+
+  if (result.aborted !== undefined) {
+    lines.push(
+      "",
+      t("generate.stopped", {
+        unit : result.aborted.unitId,
+        code : result.aborted.code,
+        count: result.aborted.remaining,
+      }),
+      t("generate.resume"),
+    );
   }
 
   return `${lines.join("\n")}\n`;

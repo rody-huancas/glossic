@@ -82,6 +82,7 @@ export const en = {
   "generate.tokens"              : "{tokens} tokens",
   "generate.counts"              : "{generated} generated, {cached} from cache, {failed} failed",
   "generate.filteredOut"         : "{count} filtered out",
+  "generate.skipped"             : "{count} not attempted",
   "generate.inputTokens"         : "{tokens} input tokens",
   "generate.inputTokensEstimated": "{tokens} input tokens estimated",
   "generate.savedTokens"         : "{tokens} input tokens saved by the cache",
@@ -89,6 +90,8 @@ export const en = {
   "generate.trimmed"             : "trimmed: {unit} — {message}",
   "generate.failed"              : "failed: {unit}{code} — {reason}",
   "generate.droppedPreamble"     : "dropped {count} characters before the first heading: {excerpt}",
+  "generate.stopped"             : "stopped on {unit} [{code}] — {count} units were never sent",
+  "generate.resume"              : "What was generated is cached; run the same command again to continue where it stopped.",
 
   // Progress
   "progress.generated": "generated",

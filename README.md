@@ -162,6 +162,25 @@ you what that saved. Commit `.glossic/cache.json` next to `docs/` so the next
 person gets the same deal. `.glossic/manifest.json` is a scan artifact and does
 not need committing.
 
+### When the quota runs out
+
+A provider that says it has nothing left to spend fails every remaining unit the
+same way, so `generate` stops on the first one instead of paying the timeout for
+each of the other hundred. It reports the unit it stopped on and how many were
+never sent:
+
+```
+1 generated, 12 from cache, 1 failed, 132 not attempted
+  failed: api:src/orders [quota] — Claude AI usage limit reached
+
+stopped on api:src/orders [quota] — 132 units were never sent
+What was generated is cached; run the same command again to continue where it stopped.
+```
+
+Everything written before the stop is on disk and in the cache, so running the
+same command once the quota resets picks up where it left off. A rate limit is a
+different thing and is still retried with backoff.
+
 ---
 
 ## Providers
