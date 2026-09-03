@@ -1,5 +1,12 @@
 # @glossic/adapter-generic
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [1d6fca4]
+  - @glossic/schema@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
