@@ -12,7 +12,11 @@ export interface GenerateReportContext {
   t       ?: Translator | undefined;
 }
 
-/** Token counts round to thousands past a thousand: the estimate is one anyway. */
+/**
+ * Token counts round to thousands past a thousand, since the number is an
+ * estimate either way. The "~" that says so is added here and only here: a
+ * catalogue string that carried its own printed it twice.
+ */
 export const formatTokens = (tokens: number): string =>
   tokens < 1000 ? `${tokens}` : `~${Math.round(tokens / 1000)}k`;
 
@@ -29,13 +33,18 @@ export const renderPlanIntro = (review: PlanReview, warnAbove: number, t: Transl
   const lines: string[] = [];
 
   if (review.cached > 0) {
-    lines.push(t("generate.resuming", { pending: review.pending, cached: review.cached }));
+    lines.push(
+      [
+        counted(t, review.pending, "count.pending"),
+        counted(t, review.cached, "count.done"),
+      ].join(", "),
+    );
   }
 
   if (review.pending > warnAbove) {
     lines.push(
       t("generate.largePlan", {
-        units : review.pending,
+        units : counted(t, review.pending, "count.unit"),
         tokens: formatTokens(review.estimatedTokens),
       }),
       t("generate.largePlanRisk"),
@@ -72,7 +81,7 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
     lines.push(
       [
         `  ${entry.unitId.padEnd(nameWidth)}`,
-        counted(t, entry.files, "file").padStart(9),
+        counted(t, entry.files, "count.file").padStart(9),
         t("generate.tokens", { tokens: formatTokens(entry.estimatedTokens) }).padStart(13),
         entry.reason.padEnd(22),
         entry.docPath,
@@ -87,15 +96,13 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
     : result.generated;
 
   const counts = [
-    t("generate.counts", {
-      generated,
-      cached: result.fromCache,
-      failed: result.failures.length,
-    }),
+    counted(t, generated, "count.written"),
+    counted(t, result.fromCache, "count.cached"),
+    counted(t, result.failures.length, "count.failed"),
   ];
 
   if (result.filteredOut.length > 0) {
-    counts.push(t("generate.filteredOut", { count: result.filteredOut.length }));
+    counts.push(counted(t, result.filteredOut.length, "generate.filteredOut"));
   }
 
   if (result.skipped.length > 0) {
@@ -116,11 +123,15 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
   }
 
   if (!result.dryRun) {
-    lines.push(t("generate.written", { count: result.written.length, out: relativeOut }));
+    lines.push(counted(t, result.written.length, "generate.written", { out: relativeOut }));
   }
 
   for (const warning of result.warnings) {
-    lines.push(`  ${t("generate.trimmed", { unit: warning.unitId, message: warning.message })}`);
+    const message = counted(t, warning.dropped, "generate.droppedPreamble", {
+      excerpt: warning.excerpt,
+    });
+
+    lines.push(`  ${t("generate.trimmed", { unit: warning.unitId, message })}`);
   }
 
   for (const failure of result.failures) {
@@ -136,10 +147,9 @@ export const renderGenerateReport = (result: GenerateResult, context: GenerateRe
   if (result.aborted !== undefined) {
     lines.push(
       "",
-      t("generate.stopped", {
-        unit : result.aborted.unitId,
-        code : result.aborted.code,
-        count: result.aborted.remaining,
+      counted(t, result.aborted.remaining, "generate.stopped", {
+        unit: result.aborted.unitId,
+        code: result.aborted.code,
       }),
       t("generate.resume"),
     );

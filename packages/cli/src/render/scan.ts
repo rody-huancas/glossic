@@ -43,7 +43,7 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
   const nameWidth  = Math.max(0, ...units.map((unit) => unit.name.length));
   const filesWidth = Math.max(
     0,
-    ...units.map((unit) => counted(t, unit.facts.base.files.length, "file").length),
+    ...units.map((unit) => counted(t, unit.facts.base.files.length, "count.file").length),
   );
   const languageWidth = Math.max(0, ...units.map((unit) => dominantLanguage(unit).length));
 
@@ -64,7 +64,7 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
 
       const columns = [
         unit.name.padEnd(nameWidth),
-        counted(t, unit.facts.base.files.length, "file").padStart(filesWidth),
+        counted(t, unit.facts.base.files.length, "count.file").padStart(filesWidth),
         dominantLanguage(unit).padEnd(languageWidth),
         unit.facts.base.roleHint ?? "",
       ];
@@ -77,9 +77,9 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
   const totalFiles = units.reduce((sum, unit) => sum + unit.facts.base.files.length, 0);
   lines.push(
     t("scan.summary", {
-      projects: counted(t, manifest.workspace.projects.length, "project"),
-      units   : counted(t, units.length, "unit"),
-      files   : counted(t, totalFiles, "file"),
+      projects: counted(t, manifest.workspace.projects.length, "count.project"),
+      units   : counted(t, units.length, "count.unit"),
+      files   : counted(t, totalFiles, "count.file"),
     }),
   );
 

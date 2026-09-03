@@ -204,8 +204,9 @@ describe("runInteractive", () => {
     const code = await runInteractive(deps(["generate", "es", "", true, "exit"], { runGenerate }));
 
     expect(code).toBe(1);
-    // An empty answer leaves the destination to the config chain.
-    expect(runGenerate.mock.calls[1]?.[1]).not.toHaveProperty("out");
+    // An empty answer accepts the directory the placeholder offered, and that
+    // one travels with the run rather than being resolved a second time.
+    expect(runGenerate.mock.calls[1]?.[1]).toMatchObject({ out: "docs" });
   });
 });
 

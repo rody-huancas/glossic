@@ -6,7 +6,7 @@ import type { Manifest } from "@glossic/schema";
 import { Command } from "commander";
 import { compareStrings, readManifest, toPosix, unitDocPath } from "@glossic/core";
 
-import { displayPath } from "../../render/index.js";
+import { counted, displayPath } from "../../render/index.js";
 import { templateFiles } from "./template.js";
 import { createTranslator } from "../../i18n/index.js";
 import { buildSidebar, pruneSidebar, slugFor } from "./sidebar.js";
@@ -208,11 +208,11 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
 export const renderEjectReport = (result: EjectResult, cwd: string, t: Translator): string => {
   const lines = [
     "",
-    t("eject.done", { count: result.pages.length, path: displayPath(cwd, result.outDir) }),
+    counted(t, result.pages.length, "eject.done", { path: displayPath(cwd, result.outDir) }),
   ];
 
   if (result.skipped.length > 0) {
-    lines.push(t("eject.skipped", { count: result.skipped.length }));
+    lines.push(counted(t, result.skipped.length, "eject.skipped"));
   }
 
   lines.push("", t("eject.next"), "", `  cd ${displayPath(cwd, result.outDir)}`, "  npm install", "  npm run dev", "");

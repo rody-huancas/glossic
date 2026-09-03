@@ -1,4 +1,5 @@
 import { LANGUAGES } from "../language.js";
+import { counted, formatTokens } from "../render/index.js";
 import { cancelled } from "./nav.js";
 import { pickLanguage } from "./language.js";
 import type { Translator } from "../i18n/index.js";
@@ -42,11 +43,13 @@ export const generateInteractively = async (
     return cancelled(prompts, t);
   }
 
+  // An empty answer accepts the placeholder, so the placeholder has to travel
+  // as the real destination: leaving `out` unset would send the run to the
+  // configured directory rather than the one just offered on screen.
   const answer = out.trim();
-  const options: GenerateCliOptions = {
-    lang: language,
-    ...(answer === "" ? {} : { out: answer }),
-  };
+  const target = answer === "" ? defaultOut : answer;
+
+  const options: GenerateCliOptions = { lang: language, out: target };
 
   const plan    = await generate(".", { ...options, dryRun: true });
   const units   = plan.plan.length;
@@ -57,7 +60,10 @@ export const generateInteractively = async (
   // here first would be that same question with an answer missing.
   if (pending <= warnAbove) {
     const confirmed = await prompts.confirm({
-      message     : t("prompt.confirmGenerate", { units: pending, tokens: Math.round(plan.estimatedTokens / 1000) }),
+      message: t("prompt.confirmGenerate", {
+        units : counted(t, pending, "count.unit"),
+        tokens: formatTokens(plan.estimatedTokens),
+      }),
       initialValue: true,
     });
 
@@ -78,12 +84,17 @@ export const generateInteractively = async (
     },
   });
 
-  prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
+  prompts.outro(
+    [
+      counted(t, result.generated, "count.written"),
+      counted(t, result.failures.length, "count.failed"),
+    ].join(" · "),
+  );
 
   return {
     ok     : result.failures.length === 0,
     units,
     printed: quota !== "menu",
-    ...(answer === "" ? {} : { outDir: answer }),
+    outDir: target,
   };
 };

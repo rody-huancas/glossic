@@ -1,6 +1,6 @@
 import type { PlanProject, PlanReview } from "@glossic/core";
 
-import { formatTokens } from "../../render/index.js";
+import { counted, formatTokens } from "../../render/index.js";
 import { BACK, leftPrompt } from "../../interactive/nav.js";
 import type { Translator } from "../../i18n/index.js";
 import type { PromptPort, SelectOption } from "../../ui/prompts.js";
@@ -34,8 +34,8 @@ const projectOption = (project: PlanProject, t: Translator): SelectOption<string
   hint : project.pending === 0
     ? t("prompt.projectDone")
     : t("prompt.projectPending", {
-        units : project.pending,
-        tokens: formatTokens(project.estimatedTokens),
+        pending: counted(t, project.pending, "count.pending"),
+        tokens : formatTokens(project.estimatedTokens),
       }),
 });
 

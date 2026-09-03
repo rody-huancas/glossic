@@ -238,7 +238,7 @@ describe("generating one project at a time", () => {
     const provider = createFakeProvider();
     await run({ prompts: scripted(["by-project", "packages/web", BACK]).port, provider });
 
-    expect(printed()).toContain("1 units pending, 1 already generated");
+    expect(printed()).toContain("1 unit pending, 1 already generated");
     expect(askedFor(provider)).toEqual(["packages/web:src"]);
   });
 });
@@ -316,7 +316,7 @@ describe("when the quota runs out mid-run", () => {
 
     // The unit the first run paid for is cached; only the other one is sent.
     expect(askedFor(later)).toEqual(["packages/web:src"]);
-    expect(printed()).toContain("1 units pending, 1 already generated");
+    expect(printed()).toContain("1 unit pending, 1 already generated");
   });
 
   it("says nothing and returns where there is nobody to ask", async () => {
