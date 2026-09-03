@@ -1,4 +1,4 @@
-import type { GenerateResult } from "@glossic/core";
+import type { GenerateResult, PlanReview } from "@glossic/core";
 
 import { counted, displayPath } from "./shared.js";
 import { defaultTranslator } from "../i18n/index.js";
@@ -12,8 +12,38 @@ export interface GenerateReportContext {
   t       ?: Translator | undefined;
 }
 
-const formatTokens = (tokens: number): string =>
+/** Token counts round to thousands past a thousand: the estimate is one anyway. */
+export const formatTokens = (tokens: number): string =>
   tokens < 1000 ? `${tokens}` : `~${Math.round(tokens / 1000)}k`;
+
+/**
+ * What generate says before it sends anything: how much of the plan the cache
+ * already covers, and a warning when the rest is large enough that one run
+ * could cost a whole quota.
+ *
+ * It is printed in every mode. Without a terminal to ask on, saying so and
+ * carrying on is the whole of the feature; with one, the caller follows it
+ * with the question.
+ */
+export const renderPlanIntro = (review: PlanReview, warnAbove: number, t: Translator = defaultTranslator): string => {
+  const lines: string[] = [];
+
+  if (review.cached > 0) {
+    lines.push(t("generate.resuming", { pending: review.pending, cached: review.cached }));
+  }
+
+  if (review.pending > warnAbove) {
+    lines.push(
+      t("generate.largePlan", {
+        units : review.pending,
+        tokens: formatTokens(review.estimatedTokens),
+      }),
+      t("generate.largePlanRisk"),
+    );
+  }
+
+  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+};
 
 /** Renders the generate report, for both a dry run and a real run. */
 export const renderGenerateReport = (result: GenerateResult, context: GenerateReportContext): string => {

@@ -3,9 +3,9 @@ import { cancelled } from "./nav.js";
 import { pickLanguage } from "./language.js";
 import type { Translator } from "../i18n/index.js";
 import type { PromptPort } from "../ui/prompts.js";
-import type { runGenerate } from "../commands/generate.js";
+import type { runGenerate } from "../commands/generate/index.js";
 import type { ActionOutcome } from "./nav.js";
-import type { GenerateCliOptions } from "../commands/generate.js";
+import type { GenerateCliOptions, QuotaChoice } from "../commands/generate/index.js";
 
 /**
  * The language is already resolved from the chain, so its prompt is an Enter
@@ -23,6 +23,7 @@ export const generateInteractively = async (
   generate  : typeof runGenerate,
   resolved  : string,
   defaultOut: string,
+  warnAbove : number,
 ): Promise<ActionOutcome> => {
 
   const codes    = LANGUAGES.map((entry) => entry.code);
@@ -47,28 +48,42 @@ export const generateInteractively = async (
     ...(answer === "" ? {} : { out: answer }),
   };
 
-  const plan  = await generate(".", { ...options, dryRun: true });
-  const units = plan.plan.length;
+  const plan    = await generate(".", { ...options, dryRun: true });
+  const units   = plan.plan.length;
+  const pending = plan.plan.filter((entry) => entry.regenerate).length;
 
-  const confirmed = await prompts.confirm({
-    message: t("prompt.confirmGenerate", {
-      units : plan.plan.filter((entry) => entry.regenerate).length,
-      tokens: Math.round(plan.estimatedTokens / 1000),
-    }),
-    initialValue: true,
-  });
+  // A plan over the warning size asks a better question of its own once the run
+  // starts -- all at once, one project at a time, or not at all -- so confirming
+  // here first would be that same question with an answer missing.
+  if (pending <= warnAbove) {
+    const confirmed = await prompts.confirm({
+      message     : t("prompt.confirmGenerate", { units: pending, tokens: Math.round(plan.estimatedTokens / 1000) }),
+      initialValue: true,
+    });
 
-  if (prompts.isCancel(confirmed) || confirmed !== true) {
-    return { ...cancelled(prompts, t), units };
+    if (prompts.isCancel(confirmed) || confirmed !== true) {
+      return { ...cancelled(prompts, t), units };
+    }
   }
 
-  const result = await generate(".", options);
+  // "Back to the menu" is an answer about where to go next, so it goes there:
+  // the report is not held on screen waiting for a keypress first.
+  let quota: QuotaChoice | undefined;
+
+  const result = await generate(".", options, {
+    prompts,
+    menu         : true,
+    onQuotaChoice: (choice) => {
+      quota = choice;
+    },
+  });
+
   prompts.outro(t("prompt.outro", { generated: result.generated, failed: result.failures.length }));
 
   return {
     ok     : result.failures.length === 0,
     units,
-    printed: true,
+    printed: quota !== "menu",
     ...(answer === "" ? {} : { outDir: answer }),
   };
 };

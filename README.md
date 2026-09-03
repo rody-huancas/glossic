@@ -162,12 +162,35 @@ you what that saved. Commit `.glossic/cache.json` next to `docs/` so the next
 person gets the same deal. `.glossic/manifest.json` is a scan artifact and does
 not need committing.
 
+### Before a big run
+
+`generate` knows the size of the plan before it sends anything, so that is when
+it says so. A run that resumes says what is left, and a run over
+`warnAboveUnits` says what it risks:
+
+```
+38 units pending, 109 already generated
+This project has 147 units (~380k estimated tokens).
+Generating it all at once may exhaust your quota.
+```
+
+On a terminal it then asks what to do about it: generate everything at once,
+generate one project at a time, or nothing at all. One project at a time runs
+the same work project by project and comes back to the list after each, with the
+finished ones marked done — the cache is what keeps them out of the next pass.
+
+In CI, in a pipe, or under `--quiet` there is nobody to ask: the warning is
+printed and the run carries on.
+
 ### When the quota runs out
 
 A provider that says it has nothing left to spend fails every remaining unit the
 same way, so `generate` stops on the first one instead of paying the timeout for
-each of the other hundred. It reports the unit it stopped on and how many were
-never sent:
+each of the other hundred. The same is true of a missing `claude` binary and of
+a session that is not signed in: all three are facts about the machine or the
+account, not about the unit that happened to ask.
+
+It reports the unit it stopped on and how many were never sent:
 
 ```
 1 generated, 12 from cache, 1 failed, 132 not attempted
@@ -178,7 +201,8 @@ What was generated is cached; run the same command again to continue where it st
 ```
 
 Everything written before the stop is on disk and in the cache, so running the
-same command once the quota resets picks up where it left off. A rate limit is a
+same command once the quota resets picks up where it left off — on a terminal
+`generate` says so and offers to retry there and then. A rate limit is a
 different thing and is still retried with backoff.
 
 Failures print the provider's own sentence rather than the envelope it arrived
@@ -242,6 +266,7 @@ its default.
 | `temperature` | unset | Left unset on purpose: recent Claude models reject sampling parameters. |
 | `concurrency` | `3` | Completions in flight at once. |
 | `timeoutMs` | `300000` | Milliseconds before one completion is abandoned. |
+| `warnAboveUnits` | `30` | Units a run may plan before `generate` says so up front. Set it higher than any project you have to stop asking. |
 | `output.dir` | `"docs"` | Where `generate` writes, relative to the workspace root. |
 | `output.manifest` | `".glossic/manifest.json"` | Where `scan` writes. |
 
