@@ -102,7 +102,7 @@ describe("a missing key falls back rather than breaking", () => {
   });
 
   it("substitutes numbers as well as strings", () => {
-    expect(createTranslator("en")("count.files", { count: 3 })).toBe("3 files");
+    expect(createTranslator("en")("count.file.many", { count: 3 })).toBe("3 files");
   });
 });
 
@@ -282,7 +282,8 @@ describe("every visible surface is translated", () => {
     const spanish = renderGenerateReport(generateResult, { ...context, t: t.es });
 
     expect(spanish).toContain("proveedor:");
-    expect(spanish).toContain("generadas");
+    // One generated unit, so the whole clause is singular.
+    expect(spanish).toContain("1 generada,");
     expect(spanish).toContain("tokens de entrada");
     expect(spanish).not.toContain("from cache");
   });

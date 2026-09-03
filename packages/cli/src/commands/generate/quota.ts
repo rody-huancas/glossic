@@ -1,5 +1,6 @@
 import type { GenerateResult } from "@glossic/core";
 
+import { counted } from "../../render/index.js";
 import type { Translator } from "../../i18n/index.js";
 import type { PromptPort, SelectOption } from "../../ui/prompts.js";
 
@@ -28,9 +29,8 @@ export const askAfterQuota = async (prompts: PromptPort, t: Translator, result: 
   }
 
   const answer = await prompts.select<QuotaChoice>({
-    message: t("prompt.quotaSpent", {
+    message: counted(t, result.plan.length, "prompt.quotaSpent", {
       generated: result.generated + result.fromCache,
-      total    : result.plan.length,
     }),
     options,
     initialValue: "stop",

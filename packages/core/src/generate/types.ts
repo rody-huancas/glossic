@@ -77,9 +77,15 @@ export interface GeneratePlanEntry {
   regenerate     : boolean;
 }
 
+/**
+ * A page that was written, but not exactly as the provider wrote it. It carries
+ * the numbers rather than a sentence, because the sentence has to be spelled
+ * and pluralised in whatever language the CLI is speaking.
+ */
 export interface GenerateWarning {
   unitId : string;
-  message: string;
+  dropped: number;
+  excerpt: string;
 }
 
 export interface GenerateFailure {

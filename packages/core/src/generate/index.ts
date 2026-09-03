@@ -237,7 +237,8 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
       if (prepared.droppedPreamble !== undefined) {
         warnings.push({
           unitId : job.unit.id,
-          message: `dropped ${prepared.droppedPreamble.length} characters before the first heading: ${excerpt(prepared.droppedPreamble, 120)}`,
+          dropped: prepared.droppedPreamble.length,
+          excerpt: excerpt(prepared.droppedPreamble, 120),
         });
       }
 
