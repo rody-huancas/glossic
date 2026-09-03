@@ -95,12 +95,19 @@ export const startSlug = (manifest: Manifest, documented?: ReadonlySet<string>):
  * units in manifest order, with the file count and the language most of the
  * unit is written in.
  *
- * It reads the manifest and nothing else, so it describes the code that was
- * scanned rather than the pages that happened to be generated.
+ * Every unit the scan found is listed, so the page describes the code rather
+ * than the pages that happened to be generated. Only the ones `documented`
+ * names are linked: a link to a page the site does not have is a dead end the
+ * reader discovers by clicking it.
  */
-export const structurePage = (manifest: Manifest, lang: string): string => {
+export const structurePage = (manifest: Manifest, lang: string, documented?: ReadonlySet<string>): string => {
   const s     = siteStrings(lang);
   const stats = siteStats(manifest);
+
+  const cell = (unit: Unit): string =>
+    documented === undefined || documented.has(unit.id)
+      ? `[${unit.path}](/${slugFor(unit)}/)`
+      : unit.path;
 
   const lines = [
     "---",
@@ -125,8 +132,7 @@ export const structurePage = (manifest: Manifest, lang: string): string => {
       `| ${s.directory} | ${s.files} | ${s.language} |`,
       "| --- | ---: | --- |",
       ...units.map(
-        (unit) =>
-          `| [${unit.path}](/${slugFor(unit)}/) | ${unit.facts.base.files.length} | ${dominantLanguage(unit)} |`,
+        (unit) => `| ${cell(unit)} | ${unit.facts.base.files.length} | ${dominantLanguage(unit)} |`,
       ),
       "",
     );

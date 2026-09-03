@@ -8,7 +8,11 @@ export const OutputConfigSchema = z.object({
 export type OutputConfig = z.infer<typeof OutputConfigSchema>;
 
 
-/** Every option glossic accepts, with the default that applies when nothing sets it. */
+/**
+ * Every option glossic accepts, with the default that applies when nothing
+ * sets it. `warnAboveUnits` is the size a plan has to reach before generate
+ * says so up front, which is the point where one run can cost a whole quota.
+ */
 export const GlossicConfigSchema = z.object({
   include    : z.array(z.string()).default(["**/*"]),
   exclude    : z.array(z.string()).default(["**/node_modules/**", "**/dist/**", "**/vendor/**"]),
@@ -50,6 +54,7 @@ export const GlossicConfigSchema = z.object({
   output           : OutputConfigSchema.default({ dir: "docs", manifest: ".glossic/manifest.json" }),
   concurrency      : z.number().int().positive().default(3),
   timeoutMs        : z.number().int().positive().default(300_000),
+  warnAboveUnits   : z.number().int().nonnegative().default(30),
 });
 
 

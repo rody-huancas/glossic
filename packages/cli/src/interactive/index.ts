@@ -7,7 +7,7 @@ import { counted } from "../render/index.js";
 import { runScan } from "../commands/scan.js";
 import { runCheck } from "../commands/check.js";
 import { printBanner } from "../ui/banner.js";
-import { runGenerate } from "../commands/generate.js";
+import { runGenerate } from "../commands/generate/index.js";
 import { pickLanguage } from "./language.js";
 import { clackPrompts } from "../ui/prompts.js";
 import { runConnection } from "./connection.js";
@@ -126,7 +126,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
         return connection({ prompts, t, root, location });
       }
 
-      return generateInteractively(prompts, t, generate, language, defaultOut);
+      return generateInteractively(prompts, t, generate, language, defaultOut, config.warnAboveUnits);
     } catch (error) {
       process.stderr.write(`${formatCliError(error)}\n`);
       prompts.note(t("menu.actionFailed"));

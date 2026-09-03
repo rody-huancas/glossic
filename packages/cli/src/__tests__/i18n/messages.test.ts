@@ -214,11 +214,33 @@ describe("every visible surface is translated", () => {
     failures       : [],
     warnings       : [],
     filteredOut    : [],
+    skipped        : [],
+    aborted        : undefined,
     estimatedTokens: 500,
     savedTokens    : 100,
     generated      : 1,
     fromCache      : 0,
     dryRun         : false,
+  } as unknown as GenerateResult;
+
+  /** The same run, stopped by a spent quota with two units never sent. */
+  const stoppedResult = {
+    ...generateResult,
+    failures: [
+      {
+        unitId: "root:src",
+        reason: "Claude AI usage limit reached",
+        code  : "quota",
+        detail: undefined,
+      },
+    ],
+    skipped: ["root:lib", "root:test"],
+    aborted: {
+      unitId   : "root:src",
+      code     : "quota",
+      reason   : "Claude AI usage limit reached",
+      remaining: 2,
+    },
   } as unknown as GenerateResult;
 
   const checkResult = {
@@ -263,6 +285,22 @@ describe("every visible surface is translated", () => {
     expect(spanish).toContain("generadas");
     expect(spanish).toContain("tokens de entrada");
     expect(spanish).not.toContain("from cache");
+  });
+
+  it("says in both languages that a run stopped and what it left behind", () => {
+    const context = { outDir: "/tmp/demo/docs", cwd: "/tmp/demo", provider: "claude-code" };
+
+    const english = renderGenerateReport(stoppedResult, { ...context, t: t.en });
+    const spanish = renderGenerateReport(stoppedResult, { ...context, t: t.es });
+
+    expect(english).toContain("2 not attempted");
+    expect(english).toContain("stopped on root:src [quota] — 2 units were never sent");
+    expect(english).toContain("run the same command again");
+
+    expect(spanish).toContain("2 sin intentar");
+    expect(spanish).toContain("detenido en root:src [quota]");
+    expect(spanish).not.toContain("not attempted");
+    expect(spanish).not.toContain("never sent");
   });
 
   it("renders the check report in both languages", () => {

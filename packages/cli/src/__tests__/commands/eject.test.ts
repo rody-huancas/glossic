@@ -271,6 +271,22 @@ describe("the scaffold", () => {
     expect(packageName("...")).toBe("docs-site");
   });
 
+  it("makes the site its own pnpm workspace, so a site inside a monorepo installs", async () => {
+    const { root } = await fixture();
+    const result   = await runEject(root, { uiLang: "en" });
+
+    // Without this file pnpm walks up to the outer workspace and installs that
+    // one instead, leaving docs-site with no node_modules and no astro.
+    const workspace = await fs.readFile(path.join(result.outDir, "pnpm-workspace.yaml"), "utf8");
+
+    expect(workspace).toContain("packages: []");
+
+    const readme = await fs.readFile(path.join(result.outDir, "README.md"), "utf8");
+
+    expect(readme).toContain("pnpm-workspace.yaml");
+    expect(readme).toContain("## Inside a monorepo");
+  });
+
   it("declares the content collection Astro 5 needs to load the docs", () => {
     const files = templateFiles({ lang: "en", stats: { projects: 1, units: 3, files: 9, languages: [{ language: "typescript", count: 9 }], generatedAt: "2026-01-01T00:00:00.000Z" }, title: "demo", accent: DEFAULT_ACCENT, sidebar: [] });
 

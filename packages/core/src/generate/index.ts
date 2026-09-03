@@ -1,8 +1,8 @@
 import path from "node:path";
 
 import picomatch from "picomatch";
-import { GlossicConfigSchema } from "@glossic/schema";
-import type { Unit } from "@glossic/schema";
+import { GlossicConfigSchema, isFatalProviderError } from "@glossic/schema";
+import type { Manifest, Unit } from "@glossic/schema";
 
 import { scan } from "../scan.js";
 import { withRetry } from "../retry.js";
@@ -16,7 +16,7 @@ import { INDEX_DOC_PATH, renderIndexDoc, renderUnitDoc } from "../markdown.js";
 import { type CacheEntry, type CacheFile, DEFAULT_CACHE_PATH, emptyCache, indexCache, readCache, writeCache } from "../cache.js";
 import type { Job } from "./jobs.js";
 import type { DecisionContext } from "./decide.js";
-import type { GenerateContext, GenerateEvent, GenerateFailure, GeneratePlanEntry, GenerateResult, GenerateWarning, UnitOutcome } from "./types.js";
+import type { GenerateAbort, GenerateContext, GenerateEvent, GenerateFailure, GeneratePlanEntry, GenerateReason, GenerateResult, GenerateWarning, PlanReview, UnitOutcome } from "./types.js";
 
 export * from "./types.js";
 export { modelCacheKey } from "./decide.js";
@@ -27,6 +27,51 @@ const docsDirOf = (root: string, outDir: string): string => {
   const relative = toPosix(path.relative(root, outDir));
 
   return relative === "" ? "." : relative;
+};
+
+
+/** A job and what was decided about it, which is what every summary is built from. */
+interface Decision {
+  job   : Job;
+  reason: GenerateReason;
+}
+
+/** The parts of a result that depend on which units a run ended up keeping. */
+interface PlanSummary {
+  plan           : GeneratePlanEntry[];
+  estimatedTokens: number;
+  savedTokens    : number;
+  fromCache      : number;
+}
+
+/**
+ * The plan grouped by project, in the manifest's own project order so the
+ * numbers line up with what `glossic scan` printed. A project the plan has no
+ * unit for is left out: there is nothing to offer the reader about it.
+ */
+const reviewOf = (decisions: readonly Decision[], manifest: Manifest): PlanReview => {
+  const projects = manifest.workspace.projects
+    .map((project) => {
+      const own = decisions.filter(({ job }) => job.unit.projectId === project.id);
+
+      return {
+        id             : project.id,
+        name           : project.name,
+        pending        : own.filter(({ reason }) => reason !== "cached").length,
+        cached         : own.filter(({ reason }) => reason === "cached").length,
+        estimatedTokens: own
+          .filter(({ reason }) => reason !== "cached")
+          .reduce((sum, { job }) => sum + job.estimatedTokens, 0),
+      };
+    })
+    .filter((project) => project.pending + project.cached > 0);
+
+  return {
+    pending        : projects.reduce((sum, project) => sum + project.pending, 0),
+    cached         : projects.reduce((sum, project) => sum + project.cached, 0),
+    estimatedTokens: projects.reduce((sum, project) => sum + project.estimatedTokens, 0),
+    projects,
+  };
 };
 
 
@@ -84,48 +129,83 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     })),
   );
 
-  const plan: GeneratePlanEntry[] = decisions
-    .map(({ job, reason }) => ({
-      unitId         : job.unit.id,
-      docPath        : job.docPath,
-      files          : job.unit.facts.base.files.length,
-      estimatedTokens: job.estimatedTokens,
-      reason,
-      regenerate: reason !== "cached",
-    }))
-    .sort((a, b) => compareStrings(a.unitId, b.unitId));
+  const summarise = (entries: readonly Decision[]): PlanSummary => {
+    const plan = entries
+      .map(({ job, reason }) => ({
+        unitId         : job.unit.id,
+        docPath        : job.docPath,
+        files          : job.unit.facts.base.files.length,
+        estimatedTokens: job.estimatedTokens,
+        reason,
+        regenerate: reason !== "cached",
+      }))
+      .sort((a, b) => compareStrings(a.unitId, b.unitId));
 
-  const sumTokens = (regenerate: boolean): number => plan
-    .filter((entry) => entry.regenerate === regenerate)
-    .reduce((sum, entry) => sum + entry.estimatedTokens, 0);
+    const sumTokens = (regenerate: boolean): number => plan
+      .filter((entry) => entry.regenerate === regenerate)
+      .reduce((sum, entry) => sum + entry.estimatedTokens, 0);
 
-  const estimatedTokens = sumTokens(true);
-  const savedTokens     = sumTokens(false);
-  const fromCache       = plan.filter((entry) => !entry.regenerate).length;
+    return {
+      plan,
+      estimatedTokens: sumTokens(true),
+      savedTokens    : sumTokens(false),
+      fromCache      : plan.filter((entry) => !entry.regenerate).length,
+    };
+  };
 
   if (ctx.dryRun === true || ctx.provider === undefined) {
+    const whole = summarise(decisions);
+
     return {
       manifest,
       written: [],
-      plan,
+      plan   : whole.plan,
       failures: [],
       warnings: [],
       filteredOut,
-      estimatedTokens,
-      savedTokens,
-      generated: 0,
-      fromCache,
-      dryRun: true,
+      skipped: [],
+      aborted: undefined,
+      estimatedTokens: whole.estimatedTokens,
+      savedTokens    : whole.savedTokens,
+      generated      : 0,
+      fromCache      : whole.fromCache,
+      dryRun         : true,
     };
   }
+
+  // The review sees the whole plan and answers with the projects to keep, so a
+  // workspace nobody wants to pay for in one go can be done a project at a time.
+  const requested = ctx.reviewPlan === undefined
+    ? ctx.projects
+    : (await ctx.reviewPlan(reviewOf(decisions, manifest))) ?? ctx.projects;
+
+  const inScope = requested === undefined
+    ? decisions
+    : decisions.filter(({ job }) => requested.includes(job.unit.projectId));
+
+  const outOfScope = requested === undefined
+    ? []
+    : decisions
+        .filter(({ job }) => !requested.includes(job.unit.projectId))
+        .map(({ job }) => job.unit.id);
+
+  const { plan, estimatedTokens, savedTokens, fromCache } = summarise(inScope);
+
+  const scopedFilteredOut = [...filteredOut, ...outOfScope].sort(compareStrings);
 
   const provider                    = ctx.provider;
   const failures: GenerateFailure[] = [];
   const warnings: GenerateWarning[] = [];
   const summaries                   = new Map<string, string>();
-  const pending                     = decisions.filter(({ reason }) => reason !== "cached");
+  const pending                     = inScope.filter(({ reason }) => reason !== "cached");
 
-  const total   = decisions.length;
+  // Set by the first fatal failure. Units already in flight run to the end;
+  // every unit still queued is skipped rather than sent to a provider that has
+  // just said it has nothing left to answer with.
+  const skipped: string[] = [];
+  let aborted: GenerateAbort | undefined;
+
+  const total   = inScope.length;
   let completed = 0;
 
   const report = (event: GenerateEvent): void => ctx.onEvent?.(event);
@@ -135,12 +215,17 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     report({ type: "unit-done", unitId, index: completed, total, outcome, durationMs });
   };
 
-  for (const { job } of decisions.filter(({ reason }) => reason === "cached")) {
+  for (const { job } of inScope.filter(({ reason }) => reason === "cached")) {
     report({ type: "unit-start", unitId: job.unit.id, index: completed + 1, total });
     finished(job.unit.id, "cached", 0);
   }
 
   const outcomes = await mapWithConcurrency(pending, config.concurrency, async ({ job }) => {
+    if (aborted !== undefined) {
+      skipped.push(job.unit.id);
+      return undefined;
+    }
+
     const startedAt = Date.now();
     report({ type: "unit-start", unitId: job.unit.id, index: completed + 1, total });
 
@@ -159,18 +244,35 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
       finished(job.unit.id, "generated", Date.now() - startedAt);
       return { job, body: prepared.body };
     } catch (cause) {
-      failures.push({
+      const failure: GenerateFailure = {
         unitId: job.unit.id,
         reason: cause instanceof Error ? cause.message: String(cause),
         code  : stringField(cause, "code"),
         detail: stringField(cause, "detail"),
-      });
+      };
+
+      failures.push(failure);
+
+      if (aborted === undefined && isFatalProviderError(cause)) {
+        aborted = {
+          unitId   : failure.unitId,
+          code     : failure.code ?? "unknown",
+          reason   : failure.reason,
+          remaining: 0,
+        };
+      }
 
       finished(job.unit.id, "failed", Date.now() - startedAt);
       return undefined;
     }
   });
 
+  if (aborted !== undefined) {
+    aborted = { ...aborted, remaining: skipped.length };
+  }
+
+  // Everything that did come back is written and cached before returning, so a
+  // second run picks up at the unit the first one stopped on.
   const written: string[]   = [];
   const fresh: CacheEntry[] = [];
 
@@ -230,7 +332,9 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     plan,
     failures: failures.sort((a, b) => compareStrings(a.unitId, b.unitId)),
     warnings: warnings.sort((a, b) => compareStrings(a.unitId, b.unitId)),
-    filteredOut,
+    filteredOut: scopedFilteredOut,
+    skipped    : skipped.sort(compareStrings),
+    aborted,
     estimatedTokens,
     savedTokens,
     generated: fresh.length,

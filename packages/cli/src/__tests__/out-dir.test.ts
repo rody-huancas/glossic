@@ -6,7 +6,7 @@ import { createFakeProvider, toPosix } from "@glossic/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { runEject } from "../commands/eject/index.js";
-import { runGenerate } from "../commands/generate.js";
+import { runGenerate } from "../commands/generate/index.js";
 import { runScan } from "../commands/scan.js";
 import { runInteractive } from "../interactive/index.js";
 import type { PromptPort, SelectOption } from "../ui/prompts.js";

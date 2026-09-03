@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { CompletionRequest, CompletionResult, Provider } from "@glossic/schema";
-import { isProviderError, ProviderError } from "@glossic/schema";
+import { isProviderError, looksLikeQuota, ProviderError } from "@glossic/schema";
 
 export const anthropicProviderName   = "anthropic";
 export const ANTHROPIC_DEFAULT_MODEL = "claude-opus-5";
@@ -44,6 +44,16 @@ const toProviderError = (cause: unknown): ProviderError => {
       provider: anthropicProviderName,
       code    : "unauthenticated",
       message : "ANTHROPIC_API_KEY was rejected",
+      detail  : cause.message,
+      cause,
+    });
+  }
+
+  if (cause instanceof Anthropic.APIError && looksLikeQuota(cause.message)) {
+    return new ProviderError({
+      provider: anthropicProviderName,
+      code    : "quota",
+      message : "the Anthropic account has no quota left",
       detail  : cause.message,
       cause,
     });
