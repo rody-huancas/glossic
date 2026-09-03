@@ -1,5 +1,16 @@
 # @glossic/adapter-nestjs
 
+## 0.2.0
+
+### Minor Changes
+
+- a7553b9: Nuevo comando eject para generar sitio Astro/Starlight, y correcciones en init, deteccion de config y agrupamiento de units
+
+### Patch Changes
+
+- Updated dependencies [a7553b9]
+  - @glossic/schema@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
