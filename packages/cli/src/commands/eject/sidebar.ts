@@ -187,6 +187,26 @@ export const buildSidebar = (
   return nodes;
 };
 
+/**
+ * The sidebar with every entry the site has no page for taken out, and any
+ * group left empty by that taken out with it.
+ *
+ * The labels already leave out a unit with no page, so this is the guarantee
+ * rather than the filter: Starlight refuses to build against a slug that does
+ * not resolve, and a unit whose generation failed is in the manifest without
+ * ever reaching the disk.
+ */
+export const pruneSidebar = (nodes: readonly SidebarNode[], slugs: ReadonlySet<string>): SidebarNode[] =>
+  nodes.flatMap((node): SidebarNode[] => {
+    if (!isGroup(node)) {
+      return slugs.has(node.slug) ? [node] : [];
+    }
+
+    const items = pruneSidebar(node.items, slugs);
+
+    return items.length === 0 ? [] : [{ label: node.label, items }];
+  });
+
 /** Every page the sidebar links to, in the order it shows them. */
 export const sidebarEntries = (nodes: readonly SidebarNode[]): SidebarEntry[] => {
   return nodes.flatMap((node) => (isGroup(node) ? sidebarEntries(node.items) : [node]));

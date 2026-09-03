@@ -4,12 +4,12 @@ import process from "node:process";
 
 import type { Manifest } from "@glossic/schema";
 import { Command } from "commander";
-import { readManifest, toPosix, unitDocPath } from "@glossic/core";
+import { compareStrings, readManifest, toPosix, unitDocPath } from "@glossic/core";
 
 import { displayPath } from "../../render/index.js";
 import { templateFiles } from "./template.js";
 import { createTranslator } from "../../i18n/index.js";
-import { buildSidebar, slugFor } from "./sidebar.js";
+import { buildSidebar, pruneSidebar, slugFor } from "./sidebar.js";
 import { pathTitle, sidebarLabel } from "./titles.js";
 import { siteStrings } from "./site-strings.js";
 import { siteStats, startSlug, structurePage, STRUCTURE_SLUG } from "./structure.js";
@@ -18,7 +18,7 @@ import { renderStarlightPage, toStarlightPage } from "./frontmatter.js";
 import { flagsToConfig, resolveEffectiveConfig } from "../../config.js";
 import type { Translator } from "../../i18n/index.js";
 
-export { buildSidebar, isGroup, renderSidebar, sidebarEntries, slugFor } from "./sidebar.js";
+export { buildSidebar, isGroup, pruneSidebar, renderSidebar, sidebarEntries, slugFor } from "./sidebar.js";
 export { renderStarlightPage, summarise, toStarlightPage } from "./frontmatter.js";
 export { extractHeading, looksLikePath, MAX_SIDEBAR_TITLE, pathTitle, sidebarLabel, titleCase } from "./titles.js";
 export { accentPalette, customCss, DEFAULT_ACCENT, normaliseHex } from "./theme.js";
@@ -160,10 +160,17 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
     throw new Error(t("eject.noPages", { path: displayPath(cwd, docsDir) }));
   }
 
-  const sidebar = [
-    { label: siteStrings(config.lang).structure, slug: STRUCTURE_SLUG },
-    ...buildSidebar(manifest, labels),
-  ];
+  const documented = new Set(labels.keys());
+
+  const written = new Set([STRUCTURE_SLUG, ...pages.map((page) => page.replace(/\.md$/, ""))]);
+
+  const sidebar = pruneSidebar(
+    [
+      { label: siteStrings(config.lang).structure, slug: STRUCTURE_SLUG },
+      ...buildSidebar(manifest, labels),
+    ],
+    written,
+  );
 
   const files = templateFiles({
     title,
@@ -171,7 +178,7 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
     accent,
     lang     : config.lang,
     stats    : siteStats(manifest),
-    startSlug: startSlug(manifest, new Set(labels.keys())),
+    startSlug: startSlug(manifest, documented),
     sidebar,
   });
 
@@ -181,7 +188,7 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
 
   await write(
     path.resolve(contentDir, `${STRUCTURE_SLUG}.md`),
-    structurePage(manifest, config.lang),
+    structurePage(manifest, config.lang, documented),
   );
 
   pages.push("index.mdx", `${STRUCTURE_SLUG}.md`);
@@ -191,8 +198,8 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
     outDir : toPosix(outDir),
     title,
     accent,
-    pages  : pages.sort(),
-    skipped,
+    pages  : pages.sort(compareStrings),
+    skipped: skipped.sort(compareStrings),
     template,
   };
 };

@@ -151,4 +151,25 @@ describe("what eject writes", () => {
     }
   });
 
+  it("leaves the unit with no page out of the sidebar and says how many it left out", async () => {
+    const { root } = await fixture();
+    const result   = await runEject(root, { uiLang: "en" });
+
+    expect(await configuredSlugs(result.outDir)).not.toContain("src/never-generated");
+    expect(result.skipped).toEqual(["root:src/never-generated"]);
+  });
+
+  it("lists the undocumented unit on the structure page without linking it", async () => {
+    const { root } = await fixture();
+    const result   = await runEject(root, { uiLang: "en" });
+
+    const page = await fs.readFile(
+      path.join(result.outDir, "src/content/docs/structure.md"),
+      "utf8",
+    );
+
+    expect(page).toContain("| src/never-generated |");
+    expect(page).toContain("[src/dto~~assign-course](/src/dto--assign-course/)");
+    expect(page).not.toContain("(/src/never-generated/)");
+  });
 });
