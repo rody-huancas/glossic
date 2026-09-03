@@ -30,10 +30,22 @@ describe("the two questions a caller asks about a failure", () => {
     expect(isRetryableProviderError(error("quota"))).toBe(false);
   });
 
-  it("calls only the spent quota fatal, so a busy provider is still worth another unit", () => {
-    expect(isFatalProviderError(error("quota"))).toBe(true);
-    expect(isFatalProviderError(error("rate-limit"))).toBe(false);
-    expect(isFatalProviderError(error("api"))).toBe(false);
+  it.each(["quota", "unauthenticated", "not-installed"] as const)(
+    "calls %s fatal: no other unit of the run would get past it either",
+    (code) => {
+      expect(isFatalProviderError(error(code))).toBe(true);
+    },
+  );
+
+  it.each(["rate-limit", "timeout", "server", "api", "invalid-output", "refused"] as const)(
+    "leaves %s to the one unit that hit it",
+    (code) => {
+      expect(isFatalProviderError(error(code))).toBe(false);
+    },
+  );
+
+  it("says no to anything that is not a provider failure at all", () => {
     expect(isFatalProviderError(new Error("not a provider error"))).toBe(false);
+    expect(isFatalProviderError(undefined)).toBe(false);
   });
 });
