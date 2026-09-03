@@ -181,6 +181,9 @@ Everything written before the stop is on disk and in the cache, so running the
 same command once the quota resets picks up where it left off. A rate limit is a
 different thing and is still retried with backoff.
 
+Failures print the provider's own sentence rather than the envelope it arrived
+in. Set `GLOSSIC_DEBUG=1` to keep the raw answer alongside it.
+
 ---
 
 ## Providers

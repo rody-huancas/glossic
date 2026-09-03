@@ -2,9 +2,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { CompletionRequest, CompletionResult, Provider, ProviderErrorCode } from "@glossic/schema";
-import { ProviderError } from "@glossic/schema";
+import { looksLikeQuota, ProviderError } from "@glossic/schema";
 import { run } from "./run.js";
 import { parseClaudeOutput } from "./output.js";
+import { describeFailure } from "./failure.js";
 
 export const claudeCodeProviderName    = "claude-code";
 /** The CLI picks its own model, so "claude-code" stands in for whatever it used. */
@@ -35,9 +36,17 @@ export interface ClaudeCodeProviderOptions {
   extraArgs?: readonly string[];
 }
 
-/** Reads a non-zero exit's stderr for the reason, so a retryable failure is retried. */
-const classifyExit = (stderr: string): ProviderErrorCode => {
-  const text = stderr.toLowerCase();
+/**
+ * Reads a non-zero exit for the reason, so a retryable failure is retried and a
+ * spent quota is not. Quota is tested first: "usage limit reached" is not the
+ * transient limit that "rate limit" names, and lifts only when the plan resets.
+ */
+const classifyExit = (output: string): ProviderErrorCode => {
+  const text = output.toLowerCase();
+
+  if (looksLikeQuota(text)) {
+    return "quota";
+  }
 
   if (/rate.?limit|overloaded|too many requests|529|503/.test(text)) {
     return "rate-limit";
@@ -125,11 +134,12 @@ export const createClaudeCodeProvider = (options: ClaudeCodeProviderOptions = {}
       });
 
       if (outcome.code !== 0) {
+        const raw = outcome.stderr.trim() === "" ? outcome.stdout : outcome.stderr;
+
         throw new ProviderError({
           provider: claudeCodeProviderName,
-          code    : classifyExit(outcome.stderr),
-          message : `claude exited with code ${outcome.code}`,
-          detail  : (outcome.stderr.trim() || outcome.stdout.trim()).slice(0, 400),
+          code    : classifyExit(`${outcome.stderr} ${outcome.stdout}`),
+          ...describeFailure(raw, `claude exited with code ${outcome.code}`),
         });
       }
 
@@ -146,4 +156,6 @@ export const createClaudeCodeProvider = (options: ClaudeCodeProviderOptions = {}
 export const claudeCodeProvider: Provider = createClaudeCodeProvider();
 
 export { parseClaudeOutput } from "./output.js";
+export { DEBUG_ENV, debugEnabled, describeFailure, extractMessage, oneLine } from "./failure.js";
+export type { FailureText } from "./failure.js";
 export default claudeCodeProvider;
