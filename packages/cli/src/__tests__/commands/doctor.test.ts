@@ -128,6 +128,50 @@ describe("the effective configuration", () => {
     expect(byKey.lang?.origin).not.toBe("project");
   });
 
+  it("prints every additive list one pattern per line, marked", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "glossic-doctor-lists-"));
+    tempDirs.push(root);
+
+    await fs.writeFile(path.join(root, "package.json"), '{ "name": "demo" }', "utf8");
+    await fs.writeFile(
+      path.join(root, "glossic.config.ts"),
+      'export default { exclude: ["-**/out/**", "**/legacy/**"] };\n',
+      "utf8",
+    );
+
+    const report = await collectDoctorReport({
+      root,
+      providers: [createFakeProvider({ name: "claude-code", available: true })],
+      adapters : builtinAdapters,
+    });
+
+    const exclude = report.lists.find((list) => list.key === "exclude");
+
+    expect(exclude?.rows).toContainEqual({ mark: "removed", pattern: "**/out/**" });
+    expect(exclude?.rows).toContainEqual({ mark: "added", pattern: "**/legacy/**" });
+    expect(exclude?.rows).toContainEqual({ mark: "default", pattern: "**/dist/**" });
+
+    // Every default is still accounted for, kept or dropped, plus the addition.
+    expect(exclude?.rows.filter((row) => row.mark === "added")).toHaveLength(1);
+    expect(report.lists.map((list) => list.key)).toEqual([
+      "exclude",
+      "ignoreUnits",
+      "excludeFromContent",
+    ]);
+
+    // The table counts them rather than printing thirty globs on one line.
+    const row = report.config.find((entry) => entry.key === "exclude");
+
+    expect(row?.value).toMatch(/^\d+ \(\+1, -1\)$/);
+    expect(row?.origin).toBe("project");
+
+    const rendered = renderDoctorReport(report, createTranslator("en"));
+
+    expect(rendered).toContain("additive lists");
+    expect(rendered).toContain("removed  **/out/**");
+    expect(rendered).toContain("added    **/legacy/**");
+  });
+
   it("renders the block so a human can read it", async () => {
     const rendered = renderDoctorReport(await report(await project()), createTranslator("en"));
 

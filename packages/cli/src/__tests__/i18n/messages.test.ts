@@ -260,6 +260,7 @@ describe("every visible surface is translated", () => {
     providers    : [{ name: "claude-code", available: false }],
     selected     : undefined,
     adapters     : ["generic"],
+    lists        : [{ key: "exclude", rows: [{ mark: "default", pattern: "**/dist/**" }] }],
     projectConfig: { status: "missing" },
     config       : [{ key: "lang", value: "es", origin: "default" }],
     lang         : "es",

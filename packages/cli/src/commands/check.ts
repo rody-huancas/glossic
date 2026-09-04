@@ -7,8 +7,8 @@ import type { CheckResult } from "@glossic/core";
 
 import { builtinAdapters } from "../registries.js";
 import { createTranslator } from "../i18n/index.js";
-import { renderCheckReport } from "../render/index.js";
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
+import { renderCheckReport, renderUnmatchedRemovals } from "../render/index.js";
 
 export interface CheckCliOptions {
   json  ?: boolean;
@@ -16,18 +16,16 @@ export interface CheckCliOptions {
   out   ?: string;
 }
 
-/**
- * Prints how stale the documentation is and exits non-zero when it is, which
- * is the whole point of running this in CI.
- */
 export const runCheck = async (target: string, options: CheckCliOptions): Promise<CheckResult> => {
   const cwd  = process.cwd();
   const root = path.resolve(cwd, target);
-  const { config } = await resolveEffectiveConfig({
+  const { config, lists } = await resolveEffectiveConfig({
     root,
     flags: flagsToConfig({ uiLang: options.uiLang }),
   });
   const t = createTranslator(config.uiLang);
+
+  process.stderr.write(renderUnmatchedRemovals(lists, t));
 
   const outDir = options.out === undefined
     ? path.resolve(root, config.output.dir)

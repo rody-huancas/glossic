@@ -1,5 +1,5 @@
 export * from "./adapter.js";
-export * from "./config.js";
+export * from "./config/index.js";
 export * from "./errors.js";
 export * from "./manifest.js";
 export * from "./provider.js";
