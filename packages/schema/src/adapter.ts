@@ -1,4 +1,4 @@
-import type { GlossicConfig } from "./config.js";
+import type { GlossicConfig } from "./config/index.js";
 import type { Relation, Unit } from "./unit.js";
 import type { Project, Workspace } from "./workspace.js";
 

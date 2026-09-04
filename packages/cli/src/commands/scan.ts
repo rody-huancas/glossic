@@ -5,8 +5,8 @@ import { Command } from "commander";
 
 import { builtinAdapters } from "../registries.js";
 import { createTranslator } from "../i18n/index.js";
-import { displayPath, renderScanReport } from "../render/index.js";
 import { flagsToConfig, resolveEffectiveConfig } from "../config.js";
+import { displayPath, renderScanReport, renderUnmatchedRemovals } from "../render/index.js";
 
 export interface ScanOptions {
   json   : boolean;
@@ -15,20 +15,21 @@ export interface ScanOptions {
   write  : boolean;
 }
 
-/**
- * An explicit --out is the user's path, so it follows the cwd; the default
- * manifest belongs to the scanned project, so it follows the scanned root.
- */
+
 export const runScan = async (target: string, options: ScanOptions): Promise<ScanResult> => {
   const cwd  = process.cwd();
   const root = path.resolve(cwd, target);
 
-  const { config } = await resolveEffectiveConfig({
+  const { config, lists } = await resolveEffectiveConfig({
     root,
     flags: flagsToConfig({ uiLang: options.uiLang }),
   });
 
-  const t      = createTranslator(config.uiLang);
+  const t = createTranslator(config.uiLang);
+
+  // stderr, so --json keeps a clean manifest on stdout.
+  process.stderr.write(renderUnmatchedRemovals(lists, t));
+
   const result = await scan({ root, adapters: builtinAdapters, config });
 
   if (options.json) {

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 
+import { resolveConfig } from "@glossic/core";
 import { GlossicConfigSchema } from "@glossic/schema";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
@@ -73,6 +74,7 @@ const scripted = (answers: unknown[], canClear = true) => {
 const fakeConfig = () => async () => ({
   config : GlossicConfigSchema.parse({ lang: "en", uiLang: "en" }),
   origins: {},
+  lists  : resolveConfig().lists,
   project: { status: "missing" } as const,
 });
 
@@ -371,6 +373,7 @@ describe("the status the menu shows", () => {
     adapters     : ["nestjs", "treesitter", "generic"],
     projectConfig: { status: "missing" },
     config       : [{ key: "concurrency", value: "3", origin: "default" }],
+    lists        : [],
     lang         : "es",
     uiLang       : "en",
     exitCode     : 0,

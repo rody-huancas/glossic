@@ -1,11 +1,10 @@
 import { compareStrings } from "@glossic/schema";
 
-import { inferRoleHint } from "../roles.js";
+import { inferRoleHint } from "../roles/index.js";
 import { absorb, emptyDraft, nearestAncestor, sortDraft } from "./draft.js";
 import { depthOf, dirname, isDescendantDir, ROOT_UNIT, unitDir } from "./paths.js";
 import type { FileClassifier, GroupingOptions, UnitDraft } from "./draft.js";
 
-/** One draft per directory, with each file sorted into documented, test or ignored. */
 export const groupByDirectory = (files: readonly string[], classifier: FileClassifier): UnitDraft[] => {
   const drafts = new Map<string, UnitDraft>();
 
@@ -33,10 +32,6 @@ export const groupByDirectory = (files: readonly string[], classifier: FileClass
 };
 
 
-/**
- * Drops drafts with nothing to document, pushing their tests and ignored files
- * up to the nearest ancestor so those files still count towards its hash.
- */
 export const absorbUndocumentedUnits = (drafts: readonly UnitDraft[]): UnitDraft[] => {
   const kept = drafts.filter((draft) => draft.files.length > 0).map((draft) => ({ ...draft }));
 
@@ -54,7 +49,6 @@ export const absorbUndocumentedUnits = (drafts: readonly UnitDraft[]): UnitDraft
   return kept;
 };
 
-/** Every directory that could act as a merge root, deepest first. */
 const candidateRoots = (drafts: readonly UnitDraft[]): string[] => {
   const roots = new Set<string>();
 
@@ -72,10 +66,6 @@ const candidateRoots = (drafts: readonly UnitDraft[]): string[] => {
 };
 
 
-/**
- * Folds a directory and all its descendants into one unit when together they
- * stay under the threshold: a module and its dto and entity folders read as one.
- */
 export const mergeSubtrees = (drafts: readonly UnitDraft[], threshold: number): UnitDraft[] => {
   let current = drafts.map((draft) => ({ ...draft }));
 
