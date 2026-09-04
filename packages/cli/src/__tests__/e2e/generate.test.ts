@@ -54,7 +54,6 @@ describe("generate over the nestjs-api fixture", () => {
       "src/users.md",
       "src/users/dto.md",
       "src/users/entities.md",
-      "test.md",
     ]);
 
     const index = await fs.readFile(path.join(docs, "index.md"), "utf8");
@@ -62,7 +61,7 @@ describe("generate over the nestjs-api fixture", () => {
       expect(index).toContain(`(./${doc})`);
     }
 
-    expect(provider.calls).toHaveLength(7);
+    expect(provider.calls).toHaveLength(6);
   });
 
   it("stamps the unit hash from the manifest into the frontmatter", async () => {

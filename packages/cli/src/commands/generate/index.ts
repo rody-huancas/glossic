@@ -5,17 +5,17 @@ import type { GenerateResult, PlanReview } from "@glossic/core";
 import { generate, resolveProvider, writeManifest } from "@glossic/core";
 import { Command } from "commander";
 
-import { askAfterQuota } from "./quota.js";
 import type { QuotaChoice } from "./quota.js";
-import { askPlanScope, pickProject } from "./plan.js";
-import { flagsToConfig, resolveEffectiveConfig } from "../../config.js";
-import { createTranslator } from "../../i18n/index.js";
-import { readPreferences } from "../../preferences.js";
-import { builtinAdapters, createProviders } from "../../registries.js";
-import { renderGenerateReport, renderPlanIntro } from "../../render/index.js";
-import { shouldDecorate } from "../../ui/banner.js";
-import { createGenerateProgress } from "../../ui/progress.js";
 import { clackPrompts } from "../../ui/prompts.js";
+import { askAfterQuota } from "./quota.js";
+import { shouldDecorate } from "../../ui/banner.js";
+import { readPreferences } from "../../preferences.js";
+import { createTranslator } from "../../i18n/index.js";
+import { createGenerateProgress } from "../../ui/progress.js";
+import { askPlanScope, pickProject } from "./plan.js";
+import { builtinAdapters, createProviders } from "../../registries.js";
+import { flagsToConfig, resolveEffectiveConfig } from "../../config.js";
+import { renderGenerateReport, renderPlanIntro, renderUnmatchedRemovals } from "../../render/index.js";
 import type { PromptPort } from "../../ui/prompts.js";
 
 export type { QuotaChoice } from "./quota.js";
@@ -33,7 +33,6 @@ export interface GenerateCliOptions {
   quiet      ?: boolean;
 }
 
-/** Reads --concurrency, rejecting anything that is not a positive integer. */
 const parseConcurrency = (value: string | undefined): number | undefined => {
   if (value === undefined) {
     return undefined;
@@ -48,11 +47,7 @@ const parseConcurrency = (value: string | undefined): number | undefined => {
   return parsed;
 };
 
-/**
- * `createProviders` is injected so a test can drive the whole chain without a
- * real provider, and `prompts` so it can answer the questions a large plan or a
- * spent quota asks. `menu` says the caller has one to offer going back to.
- */
+
 export interface GenerateDeps {
   createProviders?: typeof createProviders;
   cwd            ?: string;
@@ -61,23 +56,11 @@ export interface GenerateDeps {
   onQuotaChoice  ?: (choice: QuotaChoice) => void;
 }
 
-/**
- * An explicit --out is the user's path, so it follows the cwd; anything coming
- * from the config belongs to the project, so it follows the scanned root.
- *
- * A failed unit does not abort the run, but it does set a non-zero exit code:
- * CI must not pass on documentation that was never written.
- *
- * The run is a loop rather than a call because two answers send it round again:
- * generating a workspace one project at a time, and retrying after a quota ran
- * out. Every pass is a whole `generate`, so every pass reads the cache the
- * previous one wrote and plans only what is still missing.
- */
 export const runGenerate = async (target: string, options: GenerateCliOptions, deps: GenerateDeps = {}): Promise<GenerateResult> => {
   const cwd  = deps.cwd ?? process.cwd();
   const root = path.resolve(cwd, target);
 
-  const { config, origins } = await resolveEffectiveConfig({
+  const { config, origins, lists } = await resolveEffectiveConfig({
     root,
     flags: flagsToConfig({
       lang       : options.lang,
@@ -88,14 +71,15 @@ export const runGenerate = async (target: string, options: GenerateCliOptions, d
     }),
   });
 
-  const outDir =
-    options.out === undefined
-      ? path.resolve(root, config.output.dir)
-      : path.resolve(cwd, options.out);
+  const outDir = options.out === undefined
+    ? path.resolve(root, config.output.dir)
+    : path.resolve(cwd, options.out);
 
   const t      = createTranslator(config.uiLang);
   const dryRun = options.dryRun === true;
   const saved  = await readPreferences();
+
+  process.stderr.write(renderUnmatchedRemovals(lists, t));
 
   const provider = dryRun
     ? undefined
@@ -108,21 +92,14 @@ export const runGenerate = async (target: string, options: GenerateCliOptions, d
 
   const decorate = shouldDecorate({ quiet: options.quiet });
 
-  // A caller that handed over a prompt port already has someone answering;
-  // otherwise there is only the terminal, and a pipe or a CI log has nobody.
   const prompts = deps.prompts ?? (decorate ? clackPrompts : undefined);
 
-  // Only a run about to spend something has anything worth asking about: a dry
-  // run sends nothing, and --quiet is how a script says not to be stopped.
   const canAsk = !dryRun && options.quiet !== true && prompts !== undefined;
 
   let byProject = false;
   let cancelled = false;
   let pass      = 0;
 
-  // How many projects the last review still had work for, the chosen one aside.
-  // At zero the loop stops rather than scanning again to ask a question whose
-  // only answer would be "nothing left".
   let elsewhere = 0;
 
   const reviewPlan = async (review: PlanReview): Promise<readonly string[] | undefined> => {
@@ -219,10 +196,7 @@ export const runGenerate = async (target: string, options: GenerateCliOptions, d
   return result;
 };
 
-/**
- * No eager defaults on the language flags: resolving them here would make
- * `--help` print a different line on every machine. The action resolves them.
- */
+
 export const generateCommand = (): Command =>
   new Command("generate")
     .description("generate documentation (scan + LLM completion)")

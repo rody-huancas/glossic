@@ -162,6 +162,11 @@ you what that saved. Commit `.glossic/cache.json` next to `docs/` so the next
 person gets the same deal. `.glossic/manifest.json` is a scan artifact and does
 not need committing.
 
+A file that is hashed but never documented — a test, a migration — counts
+towards the unit it sits under, so editing it invalidates that unit's page.
+There is one shape where it counts towards nothing at all: see
+[Known limitations](#known-limitations).
+
 ### Before a big run
 
 `generate` knows the size of the plan before it sends anything, so that is when
@@ -252,10 +257,10 @@ its default.
 | Option | Default | What it does |
 | --- | --- | --- |
 | `include` | `["**/*"]` | Globs walked, relative to each project root. |
-| `exclude` | `["**/node_modules/**", "**/dist/**", "**/vendor/**"]` | Globs never walked into, on top of the adapter's own hard ignores. |
+| `exclude` *(additive)* | build output of every ecosystem: `obj`, `out`, `build`, `dist`, `target`, `coverage`, `__pycache__`, `.gradle`, `.tox`, `tmp`, `storage/framework`, … | What your own build emits, never walked into. Code that is not yours — `node_modules`, `vendor`, `.venv`, `site-packages`, the VCS — is the adapter's hard ignore and is not configurable. |
 | `adapters` | `["nestjs", "treesitter", "generic"]` | Adapter ids in priority order; the first whose `detect()` passes wins. |
-| `ignoreUnits` | config files, `tsconfig*.json`, `package.json`, dotfiles, migrations, seeds, generated | Files with no documentable content. A unit whose files all match is dropped. |
-| `excludeFromContent` | `["**/*.test.*", "**/*.spec.*", "**/__tests__/**"]` | Counted in the unit hash, never sent as prompt content. |
+| `ignoreUnits` *(additive)* | config files, manifests, dotfiles, migrations, seeds, `bin`, and the generated code of every ecosystem (`*.pb.go`, `*_pb2.py`, `*.Designer.cs`, `R.java`, …) | Files with no documentable content. A unit whose files all match is dropped. Matched without regard to case, so .NET's `Migrations/` meets `**/migrations/**`. |
+| `excludeFromContent` *(additive)* | `**/__tests__/**`, `**/test/**`, `**/tests/**`, `**/spec/**`, `*.test.*`, `*.spec.*`, `*_test.go`, `test_*.py`, `*_test.py`, `*_test.rs`, `*_spec.rb` | Counted in the unit hash, never sent as prompt content. |
 | `mergeChildrenInto` | `25` | A directory absorbs every descendant when together they stay at or below this many files. |
 | `minUnitFiles` | `3` | A leaf unit below this is folded into the unit above it, unless it has subdirectories or a role of its own. |
 | `maxUnitFiles` | `10` | A unit above this is split by filename root. |
@@ -284,6 +289,91 @@ is the fastest way to find out why glossic did something you did not expect.
 `mergeChildrenInto` decide which files land in which unit. Change one and the
 affected units are regenerated, because the unit hash covers the bucket each
 file landed in, not just its path and contents.
+
+**The three long lists are additive.** `exclude`, `ignoreUnits` and
+`excludeFromContent` add to their default rather than replacing it; to drop one
+of the defaults, prefix that entry with `-`.
+
+```ts
+export default {
+  exclude: [
+    "**/legacy/**",   // added to the default
+    "-**/out/**",     // dropped from the default
+  ],
+};
+```
+
+A `-` entry that matches no default is reported rather than ignored, because a
+typo there fails silently otherwise. `include` and `adapters` still replace:
+one is a single glob and the other is an ordered priority list, so merging
+either would be wrong.
+
+`glossic doctor` prints all three resolved lists one pattern per line, marked
+`default`, `added` or `removed`, which is the fastest way to see what your
+config actually did.
+
+### Known limitations
+
+**A test or a migration at the project root counts towards no hash.**
+
+A unit is a directory that holds documentable source. A directory that holds
+none — a `tests/` folder holds only tests, a `migrations/` folder holds only
+files matched by `ignoreUnits` — never becomes a unit of its own; its files are
+pushed up to the nearest unit above it, so they still count towards *that*
+unit's hash. When there is no unit above it, they are pushed nowhere and count
+towards nothing.
+
+That is what happens when the folder sits at the project root, beside `src/`,
+`app/` or `internal/` rather than inside it — which is the convention in most
+of the ecosystems that are not JS/TS:
+
+| | Affected | Not affected |
+| --- | --- | --- |
+| Python | `tests/`, `alembic/versions/` | |
+| .NET | `tests/` | `src/Api/Migrations/`, inside the project |
+| Rust | `tests/`, `benches/` | |
+| PHP | `tests/`, `database/migrations/` | |
+| Ruby | `spec/`, `db/migrate/` | |
+| Go | | `internal/handlers/users_test.go`, beside the code |
+| JS/TS | a root `test/` | `src/**/__tests__/`, inside the tree |
+
+**The practical consequence: in those projects, changing a test does not mark
+the documentation as out of date.** No unit hash moves, so `glossic check`
+stays green and `generate` serves every page from the cache. Editing the code
+under `src/` still invalidates normally — it is only the root-level test and
+migration folders that go unnoticed.
+
+A test that sits beside the code it covers is unaffected: it has a unit above
+it, so it counts towards that unit's hash without ever being sent as content.
+That is the shape Go and JS/TS use, and the one to prefer if it is open to you.
+
+**Workaround.** Drop `**/tests/**` from `excludeFromContent` and the folder
+becomes a unit in its own right, with its own hash — so editing a test does
+invalidate something again. The cost is that it stops being merely hashed: its
+files are sent to the provider as prompt content, and it gets its own page in
+`docs/`. You pay tokens for test code, which is what `excludeFromContent`
+exists to avoid.
+
+```ts
+export default {
+  excludeFromContent: ["-**/tests/**"],
+};
+```
+
+Dropping the directory pattern alone is not always enough, because a file can
+be caught by a filename pattern as well. Python is the one to watch: it needs
+its filename patterns out too, and `conftest.py` out of `ignoreUnits`, before
+the folder holds anything documentable.
+
+```ts
+export default {
+  excludeFromContent: ["-**/tests/**", "-**/test_*.py", "-**/*_test.py"],
+  ignoreUnits       : ["-**/conftest.py"],
+};
+```
+
+`glossic scan` settles it either way. If the workaround took, the folder shows
+up in the manifest as a unit of its own; if it did not, it is still absent.
 
 ---
 

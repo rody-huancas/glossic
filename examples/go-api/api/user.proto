@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/example/go-api/api/gen";
+
+message User {
+  string id           = 1;
+  string email        = 2;
+  string display_name = 3;
+}

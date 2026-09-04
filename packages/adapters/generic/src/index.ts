@@ -4,7 +4,7 @@ import { compareStrings, joinPosix, toPosix } from "@glossic/schema";
 import type { Adapter, DiscoverContext, DiscoveredUnit, ExtractContext, ExtractResult, FileFact, Unit } from "@glossic/schema";
 
 import { hashUnit } from "./hash.js";
-import { inferRoleHint } from "./roles.js";
+import { inferRoleHint } from "./roles/index.js";
 import { inferLanguage } from "./languages.js";
 import { countLanguages, readFile } from "./files.js";
 import { SPLIT_SEPARATOR, shapeUnits, unitName } from "./grouping/index.js";
@@ -15,16 +15,16 @@ import type { GroupingOptions, UnitDraft } from "./grouping/index.js";
 export const genericAdapterName = "generic";
 
 
-/** Directories never walked into, whatever the config says. */
 export const HARD_IGNORES: readonly string[] = [
   "**/.git/**",
-  "**/.next/**",
-  "**/build/**",
-  "**/coverage/**",
-  "**/dist/**",
+  "**/.hg/**",
+  "**/.svn/**",
+  "**/.venv/**",
+  "**/bower_components/**",
   "**/node_modules/**",
-  "**/target/**",
+  "**/site-packages/**",
   "**/vendor/**",
+  "**/venv/**",
 ];
 
 
@@ -32,7 +32,6 @@ const unitId = (projectId: string, draft: UnitDraft): string => {
   return `${projectId}:${unitName(draft)}`;
 }
 
-/** The unit name without the split suffix, so a split unit keeps its parent's role. */
 const roleSource = (name: string): string => {
   const split = name.lastIndexOf(SPLIT_SEPARATOR);
 
@@ -49,7 +48,6 @@ const groupingOptions = (ctx: DiscoverContext): GroupingOptions => ({
 });
 
 
-/** Turns a draft into a discovered unit, with every path relative to the workspace root. */
 const toDiscovered = (draft: UnitDraft, projectId: string, projectDir: string): DiscoveredUnit => {
   const name = unitName(draft);
 
@@ -57,7 +55,7 @@ const toDiscovered = (draft: UnitDraft, projectId: string, projectDir: string): 
     id: unitId(projectId, draft),
     projectId,
     name,
-    path        : name === "root" ? projectDir                                                   : joinPosix(projectDir, name),
+    path        : name === "root" ? projectDir : joinPosix(projectDir, name),
     files       : draft.files.map((file) => joinPosix(projectDir, file)).sort(compareStrings),
     testFiles   : draft.testFiles.map((file) => joinPosix(projectDir, file)).sort(compareStrings),
     ignoredFiles: draft.ignoredFiles
@@ -89,7 +87,11 @@ export const genericAdapter: Adapter = {
       dot                : true,
     });
 
-    const scopes       = await collectGitignores(ctx.root, projectDir, HARD_IGNORES);
+    const scopes = await collectGitignores(ctx.root, projectDir, [
+      ...HARD_IGNORES,
+      ...ctx.config.exclude,
+    ]);
+
     const isGitignored = createGitignoreFilter(scopes);
 
     const files = entries
@@ -156,5 +158,5 @@ export const genericAdapter: Adapter = {
 
 export * from "./grouping/index.js";
 export { inferLanguage, isSourceFile } from "./languages.js";
-export { inferRoleHint } from "./roles.js";
+export { inferRoleHint } from "./roles/index.js";
 export default genericAdapter;

@@ -1,4 +1,5 @@
 import type { GenerateResult } from "@glossic/core";
+import { resolveConfig } from "@glossic/core";
 import { GlossicConfigSchema } from "@glossic/schema";
 import { describe, expect, it, vi } from "vitest";
 import { createTranslator } from "../i18n/index.js";
@@ -82,6 +83,7 @@ const fakeConfig =
   async () => ({
     config : GlossicConfigSchema.parse({ lang: values.lang ?? "es", uiLang: values.uiLang ?? "en" }),
     origins: {},
+    lists  : resolveConfig().lists,
     project: { status: "missing" } as const,
   });
 

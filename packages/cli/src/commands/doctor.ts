@@ -3,7 +3,8 @@ import process from "node:process";
 
 import type { ConfigOrigins, ProjectConfig } from "@glossic/core";
 import { probeProviders, resolveProvider } from "@glossic/core";
-import type { Adapter, Provider } from "@glossic/schema";
+import { ADDITIVE_LIST_KEYS, LIST_DEFAULTS } from "@glossic/schema";
+import type { Adapter, ListOverrides, Provider } from "@glossic/schema";
 import { Command } from "commander";
 
 import { resolveEffectiveConfig } from "../config.js";
@@ -18,6 +19,16 @@ export interface DoctorConfigEntry {
   origin: string;
 }
 
+export interface DoctorListRow {
+  mark   : "default" | "added" | "removed";
+  pattern: string;
+}
+
+export interface DoctorList {
+  key : string;
+  rows: DoctorListRow[];
+}
+
 export interface DoctorReport {
   node         : string;
   platform     : string;
@@ -26,12 +37,12 @@ export interface DoctorReport {
   adapters     : string[];
   projectConfig: ProjectConfig;
   config       : DoctorConfigEntry[];
+  lists        : DoctorList[];
   lang         : string;
   uiLang       : string;
   exitCode     : number;
 }
 
-/** Values are printed, so they have to survive being printed. */
 const display = (value: unknown): string => {
   if (value === undefined) {
     return "—";
@@ -50,20 +61,52 @@ const display = (value: unknown): string => {
   return String(value);
 };
 
+const summarize = (lists: ListOverrides, key: string): string | undefined => {
+  const override = lists[key as keyof ListOverrides];
+
+  if (override === undefined) {
+    return undefined;
+  }
+
+  const edits = [
+    override.added.length === 0 ? "" : `+${override.added.length}`,
+    override.removed.length === 0 ? "" : `-${override.removed.length}`,
+  ].filter((part) => part !== "");
+
+  return edits.length === 0
+    ? `${override.value.length}`
+    : `${override.value.length} (${edits.join(", ")})`;
+};
+
+
 /** Every resolved option paired with the source that decided its value. */
-const configEntries = (config: Record<string, unknown>, origins: ConfigOrigins): DoctorConfigEntry[] =>
+const configEntries = (config: Record<string, unknown>, origins: ConfigOrigins, lists: ListOverrides): DoctorConfigEntry[] =>
   Object.keys(config)
     .sort()
     .map((key) => ({
       key,
-      value : display(config[key]),
+      value : summarize(lists, key) ?? display(config[key]),
       origin: origins[key] ?? "default",
     }));
 
-/**
- * The four states worth telling apart: no file, a file that would not load, a
- * file that loaded but sets nothing, and a file that is doing its job.
- */
+
+const configLists = (lists: ListOverrides): DoctorList[] =>
+  ADDITIVE_LIST_KEYS.map((key) => {
+    const override = lists[key];
+
+    const rows: DoctorListRow[] = LIST_DEFAULTS[key].map((pattern) => ({
+      mark: override.removed.includes(pattern) ? ("removed" as const) : ("default" as const),
+      pattern,
+    }));
+
+    for (const pattern of override.added) {
+      rows.push({ mark: "added", pattern });
+    }
+
+    return { key, rows };
+  });
+
+
 const configLine = (project: ProjectConfig, t: Translator): string => {
   if (project.status === "missing") {
     return t("doctor.noConfigFile");
@@ -85,10 +128,9 @@ export interface DoctorOptions {
   adapters  : readonly Adapter[];
 }
 
-/** What glossic can see on this machine: providers, adapters and the effective config. */
 export const collectDoctorReport = async (options: DoctorOptions): Promise<DoctorReport> => {
   const providers = await probeProviders(options.providers);
-  const { config, origins, project } = await resolveEffectiveConfig({
+  const { config, origins, project, lists } = await resolveEffectiveConfig({
     root: options.root,
     ...(options.uiLang === undefined ? {} : { flags: { uiLang: options.uiLang as "en" | "es" } }),
   });
@@ -104,18 +146,15 @@ export const collectDoctorReport = async (options: DoctorOptions): Promise<Docto
     selected,
     adapters     : options.adapters.map((adapter) => adapter.name),
     projectConfig: project,
-    config       : configEntries(config as unknown as Record<string, unknown>, origins),
+    config       : configEntries(config as unknown as Record<string, unknown>, origins, lists),
+    lists        : configLists(lists),
     lang         : config.lang,
     uiLang       : config.uiLang,
     exitCode     : providers.some((entry) => entry.available) ? 0 : 1,
   };
 };
 
-/**
- * The four lines someone opening the menu wants: what runs it, what would
- * write the prose, what reads the code and in which language. The table of
- * effective configuration belongs to `glossic doctor`, not to a menu.
- */
+
 export const renderDoctorSummary = (report: DoctorReport, translator?: Translator): string => {
   const t = translator ?? createTranslator(report.uiLang) ?? defaultTranslator;
 
@@ -158,11 +197,6 @@ export const renderDoctorSummary = (report: DoctorReport, translator?: Translato
 };
 
 
-/**
- * The effective configuration is part of the report because debugging "why did
- * glossic do that" is guesswork without knowing which source won for each
- * option.
- */
 export const renderDoctorReport = (report: DoctorReport, translator?: Translator): string => {
   const t = translator ?? createTranslator(report.uiLang) ?? defaultTranslator;
 
@@ -207,6 +241,21 @@ export const renderDoctorReport = (report: DoctorReport, translator?: Translator
     lines.push(
       `  ${entry.key.padEnd(keyWidth)}  ${entry.origin.padEnd(originWidth)}  ${entry.value}`,
     );
+  }
+
+  lines.push("", t("doctor.additiveLists"), `  ${t("doctor.additiveHint")}`);
+
+  const markWidthList = Math.max(
+    0,
+    ...report.lists.flatMap((list) => list.rows.map((row) => row.mark.length)),
+  );
+
+  for (const list of report.lists) {
+    lines.push("", `  ${list.key}`);
+
+    for (const row of list.rows) {
+      lines.push(`    ${row.mark.padEnd(markWidthList)}  ${row.pattern}`);
+    }
   }
 
   lines.push("");

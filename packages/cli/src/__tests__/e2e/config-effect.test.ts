@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createFakeProvider, generate, scan } from "@glossic/core";
+import { createFakeProvider, generate, resolveConfig, scan } from "@glossic/core";
 
 import type { GlossicUserConfig } from "@glossic/schema";
-import { GlossicConfigSchema } from "@glossic/schema";
+import { DEFAULT_EXCLUDE_FROM_CONTENT } from "@glossic/schema";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { builtinAdapters } from "../../registries.js";
@@ -25,6 +25,10 @@ const SOURCES: Record<string, string> = {
   "src/migrations/0001-init.ts": "export const up = 1;\n",
   // No role in its name, so it is the one directory minUnitFiles can fold.
   "src/legacy/old-client.ts"   : "export const legacy = 1;\n",
+  // Build output: the default exclude keeps both out until a "-" entry lets
+  // one in. Two of them, so subtracting one cannot look like dropping all.
+  "dist/bundle.ts"             : "export const bundle = 1;\n",
+  "coverage/report.ts"         : "export const report = 1;\n",
 };
 
 let root: string;
@@ -48,7 +52,15 @@ afterAll(async () => {
   await Promise.all(tempDirs.map((dir) => fs.rm(dir, { force: true, recursive: true })));
 });
 
-const config = (values: GlossicUserConfig = {}) => GlossicConfigSchema.parse(values);
+/**
+ * The real path a config takes, so these tests cover list resolution too:
+ * `exclude`, `ignoreUnits` and `excludeFromContent` add to their defaults here,
+ * which is what a `glossic.config.ts` actually does.
+ */
+const config = (values: GlossicUserConfig = {}) => resolveConfig({ project: values }).config;
+
+/** There is no replace mode, so emptying a list means subtracting all of it. */
+const drop = (patterns: readonly string[]): string[] => patterns.map((pattern) => `-${pattern}`);
 
 const units = async (values: GlossicUserConfig = {}) => {
   const { manifest } = await scan({ root, adapters: builtinAdapters, config: config(values) });
@@ -71,6 +83,26 @@ describe("every option has an effect on scan", () => {
     );
   });
 
+  it("an added exclude pattern does not cost the defaults", async () => {
+    const added = await names({ exclude: ["**/routes/**"], mergeChildrenInto: 1 });
+
+    // "**/dist/**" is a default, and adding one pattern must not drop it.
+    expect(added).not.toContain("src/routes");
+    expect(added).not.toContain("dist");
+  });
+
+  it("a `-` entry lets one default-excluded directory back in, and only one", async () => {
+    const byDefault = await names({ mergeChildrenInto: 1 });
+
+    expect(byDefault).not.toContain("dist");
+    expect(byDefault).not.toContain("coverage");
+
+    const relaxed = await names({ exclude: ["-**/dist/**"], mergeChildrenInto: 1 });
+
+    expect(relaxed).toContain("dist");
+    expect(relaxed).not.toContain("coverage");
+  });
+
   it("adapters decides which adapter runs, and an empty list means none", async () => {
     expect(await names({ adapters: [] })).toEqual([]);
     expect((await names({ adapters: ["generic"] })).length).toBeGreaterThan(0);
@@ -91,7 +123,10 @@ describe("every option has an effect on scan", () => {
 
   it("excludeFromContent moves a file out of the content and into the tests", async () => {
     const asTest    = await units({ mergeChildrenInto: 1 });
-    const asContent = await units({ mergeChildrenInto: 1, excludeFromContent: [] });
+    const asContent = await units({
+      mergeChildrenInto : 1,
+      excludeFromContent: drop(DEFAULT_EXCLUDE_FROM_CONTENT),
+    });
 
     expect(asTest.find((unit) => unit.name === "src")?.facts.base.testFiles).toHaveLength(1);
     expect(asContent.find((unit) => unit.name === "src")?.facts.base.testFiles).toEqual([]);
@@ -218,7 +253,10 @@ describe("the grouping options invalidate the cache", () => {
 
   it("changing excludeFromContent changes the hash without moving a file", async () => {
     const before = await units({ mergeChildrenInto: 1 });
-    const after  = await units({ mergeChildrenInto: 1, excludeFromContent: [] });
+    const after  = await units({
+      mergeChildrenInto : 1,
+      excludeFromContent: drop(DEFAULT_EXCLUDE_FROM_CONTENT),
+    });
 
     const name       = "src";
     const hashBefore = before.find((unit) => unit.name === name)?.hash;
@@ -231,12 +269,33 @@ describe("the grouping options invalidate the cache", () => {
 
   it("changing ignoreUnits changes the hash of the unit above", async () => {
     const before = await units({ mergeChildrenInto: 1 });
+    const after  = await units({ mergeChildrenInto: 1, ignoreUnits: ["-**/migrations/**"] });
+
+    const src = "src";
+
+    // Dropping that default moves the migration out of the ignored bucket and
+    // into the documented one: same file, same digest, different hash.
+    expect(before.find((unit) => unit.name === src)?.facts.base.ignoredFiles).toHaveLength(1);
+    expect(after.find((unit) => unit.name === src)?.facts.base.ignoredFiles).toEqual([]);
+
+    // The other defaults held: "*.config.ts" still keeps tsup.config.ts out, so
+    // the project root never becomes a documented unit of its own.
+    expect(after.map((unit) => unit.name)).not.toContain("root");
+
+    expect(after.find((unit) => unit.name === src)?.hash).not.toBe(
+      before.find((unit) => unit.name === src)?.hash,
+    );
+  });
+
+  it("adding an ignoreUnits pattern the default already covers changes nothing", async () => {
+    const before = await units({ mergeChildrenInto: 1 });
     const after  = await units({ mergeChildrenInto: 1, ignoreUnits: ["tsup.config.ts"] });
 
-    const hashBefore = before.find((unit) => unit.name === "src")?.hash;
-    const hashAfter  = after.find((unit) => unit.name === "src")?.hash;
-
-    expect(hashAfter).not.toBe(hashBefore);
+    // "*.config.ts" is a default, so naming this file again is a no-op. Under
+    // the old replace semantics it silently dropped the other fifty-four.
+    expect(after.map((unit) => [unit.id, unit.hash])).toEqual(
+      before.map((unit) => [unit.id, unit.hash]),
+    );
   });
 
   it("a threshold change that regroups nothing leaves the cache alone", async () => {
