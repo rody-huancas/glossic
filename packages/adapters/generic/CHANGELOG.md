@@ -1,5 +1,83 @@
 # @glossic/adapter-generic
 
+## 0.4.0
+
+### Minor Changes
+
+- a4c4beb: `exclude`, `ignoreUnits` y `excludeFromContent` ahora suman en vez de reemplazar
+
+  **Esto cambia la semantica de las configs existentes. Si tu `glossic.config.ts`
+  define alguna de esas tres listas, la primera ejecucion tras actualizar
+  regenera la documentacion entera: la lista resuelta cambia, con ella cambia en
+  que unidad cae cada fichero, y con ella los hashes. `glossic check` marcara todo
+  como desactualizado una vez, y `generate` lo reescribira. Presupuesta esa
+  pasada.**
+
+  Con 29 patrones por defecto, reemplazar la lista entera era una trampa: quien
+  queria anadir uno perdia los otros 28 sin enterarse. Ahora:
+
+  ```ts
+  export default {
+    exclude: [
+      "**/legacy/**", // se anade al default
+      "-**/out/**", // descarta esa entrada del default
+    ],
+  };
+  ```
+
+  - Un patron sin prefijo se anade. Uno con `-` descarta esa entrada del default.
+    `\-` escapa un patron que de verdad empieza por guion.
+  - Una resta que no coincide con ningun default se avisa por stderr en `scan`,
+    `generate` y `check`, en vez de no hacer nada en silencio.
+  - `glossic doctor` imprime las tres listas resueltas, un patron por linea,
+    marcado `default`, `added` o `removed`.
+  - `include` y `adapters` siguen reemplazando: uno es un solo glob y el otro es
+    una lista de prioridad ordenada, donde fusionar seria incorrecto.
+
+  No hay modo de reemplazo total. Si de verdad no quieres ninguno de los
+  defaults, restalos uno a uno.
+
+  `GROUPING_KEYS`, exportado desde `@glossic/core` y sin ningun consumidor, se
+  elimina. La invalidacion al cambiar una opcion de agrupacion sigue ocurriendo
+  por el hash de unidad, que cubre en que bucket cayo cada fichero.
+
+- 00b36b5: Defaults que dejan de asumir JS/TS
+
+  `exclude`, `ignoreUnits`, `excludeFromContent`, la deteccion de lenguaje y los
+  roleHint solo conocian convenciones de JS/TS. Ahora cubren .NET, Python, Go,
+  Java/Kotlin, PHP/Laravel, Rust y Ruby/Rails.
+
+  - `exclude` pasa a ser una sola cosa: lo que emite tu propio build (`obj`,
+    `__pycache__`, `.gradle`, `out`, `tmp`, `storage/framework`...), y es tuyo
+    para reemplazar. Lo que no es codigo tuyo — `node_modules`, `vendor`,
+    `.venv`, `site-packages` y el VCS — es el `HARD_IGNORES` del adapter y no se
+    configura. Antes los dos listaban lo mismo.
+  - `ignoreUnits` cubre codigo generado, migraciones y artefactos de cada
+    ecosistema, y se compara **sin distinguir mayusculas**, para que
+    `Migrations/` de .NET llegue al mismo patron que `migrations/`.
+  - `excludeFromContent` reconoce las convenciones de test de cada ecosistema
+    (`tests/`, `spec/`, `*_test.go`, `test_*.py`, `*_spec.rb`...).
+  - `RoleHint` gana `repositories` y `jobs`, que aparecen en cinco de los siete
+    ecosistemas y antes se perdian como `services`.
+
+  Dos cambios de comportamiento a tener en cuenta: un fichero bajo `tests/`,
+  `test/` o `spec/` deja de documentarse como codigo de produccion, y una
+  configuracion que redefine `exclude` reemplaza la lista entera, asi que hay que
+  copiar las entradas que se quieran conservar.
+
+- 2d78eee: BREAKING: exclude, ignoreUnits y excludeFromContent ahora se suman al default en vez de reemplazarlo. Usa el prefijo `-` para quitar una entrada. Si tienes listas propias, la primera corrida regenera todo porque los hashes se mueven.
+
+  Soporte de convenciones para .NET, Python, Go, Java/Kotlin, PHP/Laravel, Rust y Ruby: artefactos de build excluidos, roles reconocidos, y matching insensible a mayúsculas (antes PascalCase rompía .NET, Java y Laravel).
+
+  GROUPING_KEYS eliminado de la API pública de @glossic/core.
+
+### Patch Changes
+
+- Updated dependencies [a4c4beb]
+- Updated dependencies [00b36b5]
+- Updated dependencies [2d78eee]
+  - @glossic/schema@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes
