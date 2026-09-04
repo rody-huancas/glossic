@@ -1,6 +1,6 @@
 {
   "name": "@glossic/provider-claude-code",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Completion provider backed by the Claude Code CLI",
   "keywords": [
     "documentation",

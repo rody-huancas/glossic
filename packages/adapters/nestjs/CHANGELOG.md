@@ -1,5 +1,14 @@
 # @glossic/adapter-nestjs
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [a4c4beb]
+- Updated dependencies [00b36b5]
+- Updated dependencies [2d78eee]
+  - @glossic/schema@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes
