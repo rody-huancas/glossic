@@ -211,37 +211,6 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
       "path": "src/users/entities",
       "projectId": "root",
     },
-    {
-      "facts": {
-        "base": {
-          "files": [
-            {
-              "bytes": 312,
-              "language": "typescript",
-              "path": "test/users.e2e-spec.ts",
-            },
-          ],
-          "ignoredFiles": [],
-          "languages": [
-            {
-              "count": 1,
-              "language": "typescript",
-            },
-          ],
-          "roleHint": "tests",
-          "testFiles": [],
-        },
-        "producedBy": [
-          "generic",
-        ],
-      },
-      "hash": "9130db564d9d0551b7a8eb867d7b53ef524ea06ccdc5674cf3d85b047f72d465",
-      "id": "root:test",
-      "kind": "directory",
-      "name": "test",
-      "path": "test",
-      "projectId": "root",
-    },
   ],
   "version": "1",
   "workspace": {
