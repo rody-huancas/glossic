@@ -8,44 +8,79 @@ import { Command } from "commander";
 import { resolveEffectiveConfig } from "../config.js";
 import { createTranslator } from "../i18n/index.js";
 
-/**
- * Every option, its real default, and one line on what it does. Commented out
- * so the file starts as a no-op: what is written here overrides the defaults
- * and the saved preference, but never a flag.
- *
- * The type arrives through `satisfies` and an inline `import(...)` type, never
- * a real import: an import that the project running glossic cannot resolve —
- * and it has no reason to have `@glossic/schema` installed — makes the whole
- * file unloadable, while a type that does not resolve costs nothing at all.
- */
+
 const TEMPLATE = `export default {
   // ── What gets walked ──────────────────────────────────────────────────────
 
-  // Globs an adapter walks, relative to each project root.
+  // Globs an adapter walks, relative to each project root. Replaces, not adds.
   // include: ["**/*"],
 
-  // Globs never walked into, on top of the adapter's own hard ignores.
-  // exclude: ["**/node_modules/**", "**/dist/**", "**/vendor/**"],
+  // What your own build emits, never walked into. This list is ADDITIVE: what
+  // you write is added to the defaults below, and an entry prefixed with "-"
+  // drops that default instead. Code that is not yours — node_modules, vendor,
+  // .venv, site-packages and the VCS itself — is the adapter's own hard ignore
+  // and is not configurable from here.
+  //
+  //   exclude: ["**/legacy/**", "-**/out/**"],
+  //
+  // The defaults it adds to:
+  // exclude: [
+  //   "**/.gradle/**", "**/.ipynb_checkpoints/**", "**/.mypy_cache/**",
+  //   "**/.next/**", "**/.nox/**", "**/.nuxt/**", "**/.pytest_cache/**",
+  //   "**/.ruff_cache/**", "**/.svelte-kit/**", "**/.tox/**", "**/.turbo/**",
+  //   "**/.vs/**", "**/TestResults/**", "**/*.egg-info/**", "**/.eggs/**",
+  //   "**/__pycache__/**", "**/bootstrap/cache/**", "**/build/**",
+  //   "**/coverage/**", "**/dist/**", "**/htmlcov/**", "**/obj/**",
+  //   "**/out/**", "**/public/assets/**", "**/public/build/**",
+  //   "**/public/packs/**", "**/storage/framework/**", "**/target/**",
+  //   "**/tmp/**",
+  // ],
 
   // ── How files become units ────────────────────────────────────────────────
 
   // Adapter ids in priority order; the first whose detect() passes wins.
+  // Replaces, not adds: the order is the point.
   // adapters: ["nestjs", "treesitter", "generic"],
 
   // Files with no documentable content. A unit whose files all match is
   // dropped; the files still count towards the hash of the unit above them.
+  // Matched without regard to case, so "Migrations" meets "**/migrations/**".
+  // Additive, like exclude: prefix an entry with "-" to drop a default.
+  //
+  // The defaults it adds to:
   // ignoreUnits: [
   //   "*.config.ts", "*.config.mts", "*.config.cts",
   //   "*.config.js", "*.config.mjs", "*.config.cjs", "*.config.json",
   //   "tsconfig*.json", "package.json", ".*",
-  //   "**/migrations/**", "**/migration/**",
-  //   "**/seeders/**", "**/seeds/**",
+  //   "**/bin/**", "**/gen/**", "**/generated-sources/**",
   //   "**/__generated__/**", "**/generated/**", "**/*.generated.*",
+  //   "**/migrations/**", "**/migration/**", "**/db/migrate/**",
+  //   "**/alembic/versions/**", "**/seeders/**", "**/seeds/**",
+  //   "**/factories/**", "**/schema.rb", "**/seeds.rb",
+  //   "**/*.designer.cs", "**/*.g.cs", "**/*.g.i.cs",
+  //   "**/assemblyinfo.cs", "**/globalusings.g.cs",
+  //   "**/*_pb2.py", "**/*_pb2_grpc.py", "**/setup.py", "**/manage.py",
+  //   "**/wsgi.py", "**/asgi.py", "**/conftest.py",
+  //   "**/*.pb.go", "**/*.pb.gw.go", "**/*_gen.go", "**/*.gen.go",
+  //   "**/zz_generated.*", "**/wire_gen.go", "**/*_string.go",
+  //   "**/testdata/**", "**/mocks/**",
+  //   "**/r.java", "**/buildconfig.java", "**/dagger*.java",
+  //   "**/*_factory.java", "**/*_membersinjector.java",
+  //   "**/_ide_helper*.php",
+  //   "**/bindings.rs", "**/*.gen.rs", "**/benches/**",
   // ],
 
   // Files that count towards the unit hash but are never sent as content, so
   // the prompt can say the unit is covered without paying for the test code.
-  // excludeFromContent: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**"],
+  // Additive, like exclude: prefix an entry with "-" to drop a default.
+  //
+  // The defaults it adds to:
+  // excludeFromContent: [
+  //   "**/*.test.*", "**/*.spec.*", "**/__tests__/**",
+  //   "**/test/**", "**/tests/**", "**/spec/**",
+  //   "**/*_test.go", "**/*_test.py", "**/test_*.py",
+  //   "**/*_test.rs", "**/*_spec.rb",
+  // ],
 
   // A directory absorbs every descendant directory when their documentable
   // files together stay at or below this. Turns a module and its dto,
@@ -94,7 +129,6 @@ const TEMPLATE = `export default {
 } satisfies import("@glossic/schema").GlossicUserConfig;
 `;
 
-/** Writes glossic.config.ts and returns its path, refusing to overwrite one unless forced. */
 export const runInit = async (root: string, force: boolean): Promise<string> => {
   const existing = await findConfigFile(root);
 
