@@ -1,17 +1,17 @@
 import path from "node:path";
 import process from "node:process";
 
-import type { ConfigOrigins, ProjectConfig } from "@glossic/core";
+import { Command } from "commander";
 import { probeProviders, resolveProvider } from "@glossic/core";
 import { ADDITIVE_LIST_KEYS, LIST_DEFAULTS } from "@glossic/schema";
-import type { Adapter, ListOverrides, Provider } from "@glossic/schema";
-import { Command } from "commander";
+import type { ConfigOrigins, ProjectConfig } from "@glossic/core";
+import type { Layer, ListOverrides, Provider } from "@glossic/schema";
 
-import { resolveEffectiveConfig } from "../config.js";
 import type { Translator } from "../i18n/index.js";
-import { createTranslator, defaultTranslator } from "../i18n/index.js";
 import { languageLabel } from "../language.js";
+import { resolveEffectiveConfig } from "../config.js";
 import { builtinAdapters, builtinProviders } from "../registries.js";
+import { createTranslator, defaultTranslator } from "../i18n/index.js";
 
 export interface DoctorConfigEntry {
   key   : string;
@@ -125,7 +125,7 @@ export interface DoctorOptions {
   root      : string;
   uiLang   ?: string | undefined;
   providers : readonly Provider[];
-  adapters  : readonly Adapter[];
+  adapters  : readonly Layer[];
 }
 
 export const collectDoctorReport = async (options: DoctorOptions): Promise<DoctorReport> => {
