@@ -4,6 +4,7 @@ import type { Node } from "web-tree-sitter";
 import { aliasSignature, bindingSignature, callableSignature, headerSignature, valueSignature } from "./signature.js";
 import { fieldText, isIdentifier, lineOf, namedChildren } from "./nodes.js";
 
+/** What each declaration the grammars name turns into, whatever the language. */
 const KIND_BY_TYPE: Readonly<Record<string, SymbolKind>> = {
   abstract_class_declaration    : "class",
   class_declaration             : "class",
@@ -15,6 +16,7 @@ const KIND_BY_TYPE: Readonly<Record<string, SymbolKind>> = {
   type_alias_declaration        : "type",
 };
 
+/** Declarations that hold members worth listing beside them. */
 const HOLDS_MEMBERS = new Set([
   "abstract_class_declaration",
   "class_declaration",
@@ -27,11 +29,13 @@ const METHOD_TYPES = new Set([
   "method_signature",
 ]);
 
+/** A binding is a function when it is bound to one, whatever the keyword says. */
 const FUNCTION_VALUES = new Set(["arrow_function", "function_expression", "generator_function"]);
 
 const VARIABLE_TYPES = new Set(["lexical_declaration", "variable_declaration"]);
 
 
+/** Hidden from the outside, so it is not part of what the class exports. */
 const isHidden = (member: Node): boolean => {
   const name = member.childForFieldName("name");
 
@@ -45,6 +49,11 @@ const isHidden = (member: Node): boolean => {
 };
 
 
+/**
+ * The methods of an exported class or interface, which its callers can reach.
+ * They carry the owner in their name, so `find` on two exported classes stays
+ * two entries rather than one.
+ */
 const membersOf = (declaration: Node, file: string, owner: string): SymbolFact[] => {
   const body = declaration.childForFieldName("body");
 
@@ -88,6 +97,7 @@ const signatureOf = (declaration: Node): string => {
   return callableSignature(declaration);
 };
 
+/** Every binding a `const a = 1, b = 2` declares, skipping the destructured ones. */
 const bindingsOf = (declaration: Node, file: string): SymbolFact[] => {
   return namedChildren(declaration)
     .filter((child) => child.type === "variable_declarator")
@@ -114,6 +124,11 @@ const bindingsOf = (declaration: Node, file: string): SymbolFact[] => {
 };
 
 
+/**
+ * What the declaration names itself, its members left out. An anonymous
+ * `export default class {}` is named for the keyword that exports it, there
+ * being nothing else to call it.
+ */
 export const ownSymbolsOf = (declaration: Node, file: string): SymbolFact[] => {
   if (VARIABLE_TYPES.has(declaration.type)) {
     return bindingsOf(declaration, file);
@@ -138,6 +153,7 @@ export const ownSymbolsOf = (declaration: Node, file: string): SymbolFact[] => {
 };
 
 
+/** What one declaration contributes to the file's exported surface. */
 export const symbolsOf = (declaration: Node, file: string): SymbolFact[] => {
   const own = ownSymbolsOf(declaration, file);
 
@@ -149,6 +165,7 @@ export const symbolsOf = (declaration: Node, file: string): SymbolFact[] => {
 };
 
 
+/** The name an `export { a as b }` publishes, which is the alias when it has one. */
 export const specifierNames = (specifier: Node): { local: string; exported: string } => {
   const local = fieldText(specifier, "name");
   const alias = fieldText(specifier, "alias");

@@ -11,8 +11,10 @@ import { isRelative, resolveSpecifier } from "./resolve.js";
 
 export const treesitterAdapterName = "treesitter";
 
+/** Any of these at the project root means the project is worth handing to a parser. */
 const MANIFESTS = ["package.json", "tsconfig.json", "jsconfig.json", "deno.json"];
 
+/** Two units can import each other, so an edge is keyed by both of its ends. */
 const EDGE_SEPARATOR = "\u0000";
 
 
@@ -25,6 +27,7 @@ const exists = async (target: string): Promise<boolean> => {
   }
 };
 
+/** Undefined rather than a throw: a file that vanished mid-scan is not an error. */
 const readSource = async (root: string, file: string): Promise<string | undefined> => {
   try {
     return await fs.readFile(path.resolve(root, file), "utf8");
@@ -34,6 +37,7 @@ const readSource = async (root: string, file: string): Promise<string | undefine
 };
 
 
+/** Every file in the workspace mapped to the unit that owns it, for resolving an import. */
 const indexFiles = (units: readonly Unit[]): Map<string, string> => {
   const owners = new Map<string, string>();
 
@@ -102,6 +106,11 @@ const toRelations = (edges: ReadonlyMap<string, number>): Relation[] => {
 };
 
 
+/**
+ * Names the exported surface of every TypeScript and JavaScript file a base
+ * adapter already grouped, and draws an edge wherever one unit imports another.
+ * A specifier that leaves the workspace is not an edge, having no unit to reach.
+ */
 export const treesitterAdapter: Enricher = {
   name: treesitterAdapterName,
 

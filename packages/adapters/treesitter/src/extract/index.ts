@@ -5,6 +5,7 @@ import { lineOf, namedChildren } from "./nodes.js";
 import { ownSymbolsOf, specifierNames, symbolsOf } from "./symbols.js";
 import type { Grammar } from "../grammars.js";
 
+/** What one file says about itself: what it publishes and what it depends on. */
 export interface FileFacts {
   symbols: SymbolFact[];
   sources: string[];
@@ -12,6 +13,7 @@ export interface FileFacts {
 
 const EMPTY: FileFacts = { symbols: [], sources: [] };
 
+/** An empty signature is an absent one, and the manifest should not carry the difference. */
 const trimSignature = (symbol: SymbolFact): SymbolFact => {
   const { signature, ...rest } = symbol;
 
@@ -19,6 +21,10 @@ const trimSignature = (symbol: SymbolFact): SymbolFact => {
 };
 
 
+/**
+ * The top-level declarations by name, so an `export { local }` further down can
+ * be published with the kind and the signature the declaration itself carries.
+ */
 const localsOf = (root: Node, file: string): Map<string, SymbolFact> => {
   const locals = new Map<string, SymbolFact>();
 
@@ -32,6 +38,11 @@ const localsOf = (root: Node, file: string): Map<string, SymbolFact> => {
 };
 
 
+/**
+ * Every exported symbol and every module specifier in one file. Two exports of
+ * the same name and kind collapse into the first, which is what makes a set of
+ * overload signatures read as one entry.
+ */
 export const extractFile = (grammar: Grammar, source: string, file: string): FileFacts => {
   const tree = grammar.parser.parse(source);
 
