@@ -3,5 +3,6 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "tsup.config.ts", "vitest.config.ts"]
+  "include": ["src/**/*.ts", "tsup.config.ts", "vitest.config.ts"],
+  "exclude": ["src/__fixtures__"]
 }
