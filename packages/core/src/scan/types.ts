@@ -1,5 +1,6 @@
 import type { GlossicConfig, Layer, Manifest, Workspace } from "@glossic/schema";
 
+/** What every pipeline stage needs: where to scan, with which adapters and config. */
 export interface PipelineContext {
   root        : string;
   adapters    : readonly Layer[];
@@ -8,6 +9,7 @@ export interface PipelineContext {
 }
 
 
+/** `enrichersByProject` lists them in the order they ran, empty when none claimed the project. */
 export interface ScanResult {
   manifest          : Manifest;
   workspace         : Workspace;

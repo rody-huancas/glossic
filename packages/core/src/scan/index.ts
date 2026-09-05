@@ -14,6 +14,7 @@ export { applyEnrichment } from "./enrich.js";
 export { orderAdapters, selectAdapter, selectEnrichers } from "./layers.js";
 
 
+/** Walks the workspace and turns it into a manifest, calling no provider. */
 export const scan = async (ctx: PipelineContext): Promise<ScanResult> => {
   const config                         = ctx.config ?? GlossicConfigSchema.parse({});
   const workspace                      = await resolveWorkspace(path.resolve(ctx.root));
