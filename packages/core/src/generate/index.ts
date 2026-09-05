@@ -4,7 +4,7 @@ import picomatch from "picomatch";
 import { GlossicConfigSchema, isFatalProviderError } from "@glossic/schema";
 import type { Manifest, Unit } from "@glossic/schema";
 
-import { scan } from "../scan.js";
+import { scan } from "../scan/index.js";
 import { withRetry } from "../retry.js";
 import { PROMPT_VERSION } from "../prompt.js";
 import { mapWithConcurrency } from "../utils/concurrency.js";
@@ -22,7 +22,6 @@ export * from "./types.js";
 export { modelCacheKey } from "./decide.js";
 
 
-/** Relative to the root and posix, because the manifest travels between machines. */
 const docsDirOf = (root: string, outDir: string): string => {
   const relative = toPosix(path.relative(root, outDir));
 
@@ -30,13 +29,11 @@ const docsDirOf = (root: string, outDir: string): string => {
 };
 
 
-/** A job and what was decided about it, which is what every summary is built from. */
 interface Decision {
   job   : Job;
   reason: GenerateReason;
 }
 
-/** The parts of a result that depend on which units a run ended up keeping. */
 interface PlanSummary {
   plan           : GeneratePlanEntry[];
   estimatedTokens: number;
@@ -44,11 +41,7 @@ interface PlanSummary {
   fromCache      : number;
 }
 
-/**
- * The plan grouped by project, in the manifest's own project order so the
- * numbers line up with what `glossic scan` printed. A project the plan has no
- * unit for is left out: there is nothing to offer the reader about it.
- */
+
 const reviewOf = (decisions: readonly Decision[], manifest: Manifest): PlanReview => {
   const projects = manifest.workspace.projects
     .map((project) => {
@@ -75,7 +68,6 @@ const reviewOf = (decisions: readonly Decision[], manifest: Manifest): PlanRevie
 };
 
 
-/** One string field off an unknown error cause, for the failure report. */
 const stringField = (cause: unknown, field: string): string | undefined => {
   if (typeof cause !== "object" || cause === null || !(field in cause)) {
     return undefined;
@@ -173,8 +165,6 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     };
   }
 
-  // The review sees the whole plan and answers with the projects to keep, so a
-  // workspace nobody wants to pay for in one go can be done a project at a time.
   const requested = ctx.reviewPlan === undefined
     ? ctx.projects
     : (await ctx.reviewPlan(reviewOf(decisions, manifest))) ?? ctx.projects;
@@ -199,9 +189,6 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
   const summaries                   = new Map<string, string>();
   const pending                     = inScope.filter(({ reason }) => reason !== "cached");
 
-  // Set by the first fatal failure. Units already in flight run to the end;
-  // every unit still queued is skipped rather than sent to a provider that has
-  // just said it has nothing left to answer with.
   const skipped: string[] = [];
   let aborted: GenerateAbort | undefined;
 
@@ -272,8 +259,6 @@ export const generate = async (ctx: GenerateContext): Promise<GenerateResult> =>
     aborted = { ...aborted, remaining: skipped.length };
   }
 
-  // Everything that did come back is written and cached before returning, so a
-  // second run picks up at the unit the first one stopped on.
   const written: string[]   = [];
   const fresh: CacheEntry[] = [];
 

@@ -14,7 +14,7 @@ export * from "./prompt.js";
 export * from "./provider.js";
 export * from "./registry.js";
 export * from "./retry.js";
-export * from "./scan.js";
+export * from "./scan/index.js";
 export * from "./testing.js";
 export * from "./utils/index.js";
 export * from "./validate.js";
