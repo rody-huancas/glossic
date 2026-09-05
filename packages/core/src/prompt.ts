@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { CompletionRequest, Project, Unit } from "@glossic/schema";
+import type { CompletionRequest, Project, SymbolFact, Unit } from "@glossic/schema";
 import { compareStrings } from "./utils/index.js";
 
 /** A file longer than this is truncated before it goes into a prompt. */
@@ -28,7 +28,7 @@ export interface BuildPromptInput {
 
 
 /** Bumped by hand when the prompt changes, which invalidates every cached unit. */
-export const PROMPT_VERSION = "4";
+export const PROMPT_VERSION = "5";
 
 /** The rules the model is held to; assertDocumentContent checks the answer against them. */
 export const SYSTEM_PROMPT = [
@@ -40,17 +40,42 @@ export const SYSTEM_PROMPT = [
   "Cover, in this order:",
   "  1. What the unit does, in one or two sentences.",
   "  2. Its responsibilities, and what it deliberately leaves to other units.",
-  "  3. The important public elements (exported classes, functions, types,",
-  "     endpoints, commands) and what each is for.",
-  "  4. Architectural decisions that are visible in the code: dependency",
-  "     direction, patterns, error handling, boundaries, notable trade-offs.",
+  "  3. The public elements a consumer needs: the ones you would name when",
+  "     telling somebody how to use this unit, and what each is for. Be",
+  "     selective. Do not enumerate every export and do not turn the section",
+  "     into an inventory.",
+  "  4. What the code reveals when it is read as a whole: dependency",
+  "     direction, patterns, error handling, boundaries, trade-offs, and above",
+  "     all whatever does not line up.",
+  "",
+  "     That last part is the one worth your attention. Look for:",
+  "       - a declared interface, schema, annotation or documented contract",
+  "         that the implementation does not match;",
+  "       - a dependency the code uses but never declares;",
+  "       - data lost without a word: a truncation, a swallowed error, a",
+  "         narrowing cast, a result computed and dropped;",
+  "       - work done twice: a second pass, a redundant deduplication, a value",
+  "         recomputed where one was already at hand;",
+  "       - state kept in memory that would not survive a restart or a second",
+  "         instance of the process.",
+  "",
+  "     Report only what you can point at in the code, and say where it is.",
+  "     If the unit has nothing of the kind, write nothing rather than reach:",
+  "     an invented finding costs more than a missing one.",
   "",
   "Hard rules:",
   "  - Describe only what is in the code you were given. Never invent behaviour,",
   "    dependencies, history, performance characteristics or intent.",
   "  - If something is unclear from the code, say so plainly or leave it out.",
   "    Do not guess and do not hedge with filler.",
-  "  - Do not restate the file listing; the reader already has it.",
+  "  - The Facts block is context for writing, not material to quote. Never",
+  "    mention its counts: how many symbols the unit exports, how many files it",
+  "    holds, which languages they are in. Never open the document by measuring",
+  "    the unit. The reader came for the code, not for what we counted about it.",
+  "  - A map of the files is welcome, and it is the only one the reader gets:",
+  "    the page carries no file listing of its own. Give it only if every entry",
+  "    says what that file is for. A map that repeats the paths and adds nothing",
+  "    is worse than none.",
   "  - No preamble, no closing summary, no offer to help.",
   "",
   "Output GitHub-flavoured Markdown. Open with a single top-level (#) heading,",
@@ -89,6 +114,20 @@ const fence = (source: UnitSource): string =>
     "",
   ].join("\n");
 
+
+const exportedSurface = (symbols: readonly SymbolFact[]): string => {
+  const counts = new Map<string, number>();
+
+  for (const symbol of symbols) {
+    counts.set(symbol.kind, (counts.get(symbol.kind) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .sort(([aKind, aCount], [bKind, bCount]) => bCount - aCount || compareStrings(aKind, bKind))
+    .map(([kind, count]) => `${count} ${kind}`)
+    .join(", ");
+};
+
 const factLines = (unit: Unit): string[] => {
   const lines = [
     `- unit: ${unit.name}`,
@@ -110,11 +149,10 @@ const factLines = (unit: Unit): string[] => {
     lines.push(`- test files (content not shown): ${names.join(", ")}`);
   }
 
-  if (unit.facts.symbols !== undefined) {
-    const names = unit.facts.symbols.symbols
-      .map((symbol) => `${symbol.kind} ${symbol.name}`)
-      .sort(compareStrings);
-    lines.push(`- symbols: ${names.join(", ")}`);
+  const symbols = unit.facts.symbols?.symbols ?? [];
+
+  if (symbols.length > 0) {
+    lines.push(`- exported surface: ${exportedSurface(symbols)}`);
   }
 
   if (unit.facts.framework !== undefined) {
