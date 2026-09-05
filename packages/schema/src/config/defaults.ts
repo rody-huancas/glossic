@@ -82,6 +82,7 @@ export const DEFAULT_IGNORE_UNITS: readonly string[] = [
   "**/wire_gen.go",
   "**/*_string.go",
   "**/testdata/**",
+  "**/__fixtures__/**",
   "**/mocks/**",
 
   "**/r.java",
