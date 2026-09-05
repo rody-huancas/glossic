@@ -1,4 +1,5 @@
 import type { ScanResult } from "@glossic/core";
+import { compareStrings } from "@glossic/schema";
 import type { Manifest, Unit } from "@glossic/schema";
 
 import { counted } from "./shared.js";
@@ -20,7 +21,19 @@ const countLanguages = (units: readonly Unit[]): Array<[string, number]> => {
   );
 };
 
-/** The tool already names the package manager for pnpm workspaces. */
+
+const enrichments = (result: ScanResult): Array<[string, number]> => {
+  const names = new Set(Object.values(result.enrichersByProject).flat());
+
+  return [...names].sort(compareStrings).map((name) => [
+    name,
+    result.manifest.units
+      .filter((unit) => unit.facts.producedBy.includes(name))
+      .reduce((sum, unit) => sum + (unit.facts.symbols?.symbols.length ?? 0), 0),
+  ]);
+};
+
+
 const workspaceHeadline = (manifest: Manifest, t: Translator): string => {
   const { workspace } = manifest;
   const kind = workspace.isMonorepo
@@ -32,10 +45,6 @@ const workspaceHeadline = (manifest: Manifest, t: Translator): string => {
   return `${workspace.name} — ${kind}${suffix}`;
 };
 
-/**
- * Renders the scan report. Every list it walks is already sorted by
- * `buildManifest`, so the output only depends on the code that was scanned.
- */
 export const renderScanReport = (result: ScanResult, t: Translator = defaultTranslator): string => {
   const { manifest } = result;
   const { units } = manifest;
@@ -75,13 +84,22 @@ export const renderScanReport = (result: ScanResult, t: Translator = defaultTran
   }
 
   const totalFiles = units.reduce((sum, unit) => sum + unit.facts.base.files.length, 0);
-  lines.push(
-    t("scan.summary", {
-      projects: counted(t, manifest.workspace.projects.length, "count.project"),
-      units   : counted(t, units.length, "count.unit"),
-      files   : counted(t, totalFiles, "count.file"),
-    }),
-  );
+  const summary    = t("scan.summary", {
+    projects: counted(t, manifest.workspace.projects.length, "count.project"),
+    units   : counted(t, units.length, "count.unit"),
+    files   : counted(t, totalFiles, "count.file"),
+  });
+
+  const passes = enrichments(result);
+  const tail   = passes.length === 0
+    ? ""
+    : `  ·  ${t("scan.enrichers", {
+        list: passes
+          .map(([name, symbols]) => `${name} (${counted(t, symbols, "count.symbol")})`)
+          .join(", "),
+      })}`;
+
+  lines.push(`${summary}${tail}`);
 
   const languages = countLanguages(units);
   
