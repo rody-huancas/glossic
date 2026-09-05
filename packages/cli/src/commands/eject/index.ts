@@ -28,11 +28,18 @@ export { siteStats, startSlug, startUnit, structurePage, STRUCTURE_SLUG } from "
 
 export const TEMPLATES = ["starlight"] as const;
 
+/** Where the site goes unless told otherwise, and the name `exclude` covers by default. */
 export const DEFAULT_SITE_DIR = "docs-site";
 
 const CONTENT_DIR = "src/content/docs";
 
 
+/**
+ * The `exclude` pattern a destination needs to stay out of the next scan, or
+ * undefined when it is already covered: named like the default, or outside the
+ * workspace and never walked. Glossic should not document its own output, and
+ * a scaffolded site is source the scan would otherwise read as the project's.
+ */
 export const sitePattern = (root: string, outDir: string): string | undefined => {
   const inside = path.relative(root, outDir);
 
