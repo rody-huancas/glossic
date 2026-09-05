@@ -9,16 +9,20 @@ import { afterAll, describe, expect, it } from "vitest";
 import {
   buildSidebar,
   DEFAULT_ACCENT,
+  DEFAULT_SITE_DIR,
   isGroup,
   packageName,
+  renderEjectReport,
   renderSidebar,
   runEject,
+  sitePattern,
   sidebarEntries,
   slugFor,
   summarise,
   templateFiles,
   toStarlightPage,
 } from "../../commands/eject/index.js";
+import { createTranslator } from "../../i18n/index.js";
 import type { SidebarNode } from "../../commands/eject/sidebar.js";
 
 const tempDirs: string[] = [];
@@ -227,6 +231,67 @@ describe("the frontmatter Starlight gets", () => {
 
   it("leaves out the description when there is no prose to summarise", () => {
     expect(toStarlightPage("---\ntitle: \"x\"\n---\n\n# x\n", "x").description).toBeUndefined();
+  });
+});
+
+describe("keeping the site out of the next scan", () => {
+  const root = path.resolve("/repo");
+
+  it("asks for nothing when the site lands where the default exclude covers", () => {
+    expect(sitePattern(root, path.resolve(root, DEFAULT_SITE_DIR))).toBeUndefined();
+  });
+
+  it("asks for nothing when a nested site still carries the default name", () => {
+    expect(sitePattern(root, path.resolve(root, "packages/web/docs-site"))).toBeUndefined();
+  });
+
+  it("asks for nothing when the site is written outside the workspace", () => {
+    expect(sitePattern(root, path.resolve(root, "../site"))).toBeUndefined();
+  });
+
+  it("names the pattern a destination of its own needs", () => {
+    expect(sitePattern(root, path.resolve(root, "website"))).toBe("**/website/**");
+    expect(sitePattern(root, path.resolve(root, "site/public"))).toBe("**/public/**");
+  });
+
+  it("carries no pattern on a default run", async () => {
+    const { root: fixtureRoot } = await fixture();
+
+    expect((await runEject(fixtureRoot, { uiLang: "en" })).excludePattern).toBeUndefined();
+  });
+
+  it("carries the pattern when --out points somewhere else", async () => {
+    const { root: fixtureRoot } = await fixture();
+    const result                = await runEject(fixtureRoot, {
+      uiLang: "en",
+      out   : path.join(fixtureRoot, "website"),
+    });
+
+    expect(result.excludePattern).toBe("**/website/**");
+  });
+
+  it("prints the config line only when the config needs one", () => {
+    const base = {
+      docsDir       : "/demo/docs",
+      outDir        : "/demo/website",
+      title         : "demo",
+      accent        : DEFAULT_ACCENT,
+      pages         : ["src.md"],
+      skipped       : [],
+      template      : "starlight",
+      excludePattern: "**/website/**" as string | undefined,
+    };
+
+    const english = renderEjectReport(base, "/demo", createTranslator("en"));
+    const spanish = renderEjectReport(base, "/demo", createTranslator("es"));
+
+    expect(english).toContain("read the site as source");
+    expect(spanish).toContain("leer el sitio como fuente");
+    expect(english).toContain('exclude: ["**/website/**"]');
+    expect(spanish).toContain('exclude: ["**/website/**"]');
+
+    expect(renderEjectReport({ ...base, excludePattern: undefined }, "/demo", createTranslator("en")))
+      .not.toContain("exclude:");
   });
 });
 

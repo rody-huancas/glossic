@@ -171,6 +171,7 @@ export const es: Partial<Record<MessageKey, string>> = {
   "eject.skipped.one"     : "{count} unit todavía no tiene página y quedó fuera",
   "eject.skipped.many"    : "{count} units todavía no tienen página y quedaron fuera",
   "eject.next"            : "Para verlo:",
+  "eject.notExcluded"     : "{path} no es el destino por defecto, así que `glossic scan` va a leer el sitio como fuente. Déjalo fuera con:",
   "eject.exists"          : "{path} ya existe. Pasa --force para sobrescribirlo.",
   "eject.noManifest"      : "no hay manifest en {path}. Corre `glossic scan` primero.",
   "eject.noDocs"          : "busqué la documentación en {path} y ahí no hay nada. Si `generate` escribió en otra carpeta, apúntala con --docs <dir>; si no, corre `glossic generate` primero.",

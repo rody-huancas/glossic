@@ -183,6 +183,7 @@ export const en = {
   "eject.skipped.one"    : "{count} unit has no page yet and was left out",
   "eject.skipped.many"   : "{count} units have no page yet and were left out",
   "eject.next"           : "Run it with:",
+  "eject.notExcluded"    : "{path} is not the default destination, so `glossic scan` will read the site as source. Keep it out with:",
   "eject.exists"         : "{path} already exists. Pass --force to overwrite it.",
   "eject.noManifest"     : "no manifest at {path}. Run `glossic scan` first.",
   "eject.noDocs"         : "looked for the documentation in {path} and found nothing there. If `generate` wrote somewhere else, point at it with --docs <dir>; otherwise run `glossic generate` first.",

@@ -26,10 +26,24 @@ export { packageName, templateFiles } from "./template.js";
 export { SITE_LANGUAGES, siteStrings } from "./site-strings.js";
 export { siteStats, startSlug, startUnit, structurePage, STRUCTURE_SLUG } from "./structure.js";
 
-/** The only template there is so far. */
 export const TEMPLATES = ["starlight"] as const;
 
+export const DEFAULT_SITE_DIR = "docs-site";
+
 const CONTENT_DIR = "src/content/docs";
+
+
+export const sitePattern = (root: string, outDir: string): string | undefined => {
+  const inside = path.relative(root, outDir);
+
+  if (inside === "" || inside.startsWith("..") || path.isAbsolute(inside)) {
+    return undefined;
+  }
+
+  const name = path.basename(outDir);
+
+  return name === DEFAULT_SITE_DIR ? undefined : `**/${name}/**`;
+};
 
 export interface EjectOptions {
   template   ?: string;
@@ -44,13 +58,14 @@ export interface EjectOptions {
 }
 
 export interface EjectResult {
-  docsDir : string;
-  outDir  : string;
-  title   : string;
-  accent  : string;
-  pages   : string[];
-  skipped : string[];
-  template: string;
+  docsDir       : string;
+  outDir        : string;
+  title         : string;
+  accent        : string;
+  pages         : string[];
+  skipped       : string[];
+  template      : string;
+  excludePattern: string | undefined;
 }
 
 export const resolveDocsDir = (
@@ -145,7 +160,9 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
     throw new Error(t("eject.noDocs", { path: displayPath(cwd, docsDir) }));
   }
 
-  const outDir = options.out === undefined ? path.resolve(root, "docs-site") : path.resolve(cwd, options.out);
+  const outDir = options.out === undefined
+    ? path.resolve(root, DEFAULT_SITE_DIR)
+    : path.resolve(cwd, options.out);
 
   if ((await exists(outDir)) && options.force !== true) {
     throw new Error(t("eject.exists", { path: displayPath(cwd, outDir) }));
@@ -198,9 +215,10 @@ export const runEject = async (target: string, options: EjectOptions = {}): Prom
     outDir : toPosix(outDir),
     title,
     accent,
-    pages  : pages.sort(compareStrings),
-    skipped: skipped.sort(compareStrings),
+    pages         : pages.sort(compareStrings),
+    skipped       : skipped.sort(compareStrings),
     template,
+    excludePattern: sitePattern(root, outDir),
   };
 };
 
@@ -215,6 +233,15 @@ export const renderEjectReport = (result: EjectResult, cwd: string, t: Translato
     lines.push(counted(t, result.skipped.length, "eject.skipped"));
   }
 
+  if (result.excludePattern !== undefined) {
+    lines.push(
+      "",
+      t("eject.notExcluded", { path: displayPath(cwd, result.outDir) }),
+      "",
+      `  exclude: ["${result.excludePattern}"],`,
+    );
+  }
+
   lines.push("", t("eject.next"), "", `  cd ${displayPath(cwd, result.outDir)}`, "  npm install", "  npm run dev", "");
 
   return lines.join("\n");
@@ -226,7 +253,7 @@ export const ejectCommand = (): Command =>
     .argument("[path]", "workspace root", ".")
     .option("--template <name>", `site template: ${TEMPLATES.join(", ")}`, TEMPLATES[0])
     .option("--docs <dir>", "where the generated markdown is; default the directory generate recorded")
-    .option("--out <dir>", "destination; relative to the cwd, default <root>/docs-site")
+    .option("--out <dir>", `destination; relative to the cwd, default <root>/${DEFAULT_SITE_DIR}`)
     .option("--title <text>", "site title, default the detected project name")
     .option("--description <text>", "site tagline, shown on the landing page")
     .option("--accent <hex>", `accent colour, default ${DEFAULT_ACCENT}`)
