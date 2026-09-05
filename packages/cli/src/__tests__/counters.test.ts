@@ -148,13 +148,14 @@ describe("a count of one", () => {
 
   it("reads as a singular in the eject report", () => {
     const result = {
-      docsDir : "/demo/docs",
-      outDir  : "/demo/docs-site",
-      title   : "demo",
-      accent  : "#0d9488",
-      pages   : ["src.md"],
-      skipped : ["root:lib"],
-      template: "starlight",
+      docsDir       : "/demo/docs",
+      outDir        : "/demo/docs-site",
+      title         : "demo",
+      accent        : "#0d9488",
+      pages         : ["src.md"],
+      skipped       : ["root:lib"],
+      template      : "starlight",
+      excludePattern: undefined,
     };
 
     expect(renderEjectReport(result, "/demo", t.en)).toContain("1 page written to");

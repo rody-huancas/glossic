@@ -5,16 +5,15 @@ import type { Manifest } from "@glossic/schema";
 import { glob } from "tinyglobby";
 import { parse as parseYaml } from "yaml";
 
-import { scan } from "./scan.js";
+import { scan } from "./scan/index.js";
 import { INDEX_DOC_PATH, unitDocPath } from "./markdown.js";
 import { compareStrings, sortBy, toPosix } from "./utils/index.js";
-import type { PipelineContext } from "./scan.js";
+import type { PipelineContext } from "./scan/index.js";
 
 export interface CheckContext extends PipelineContext {
   outDir: string;
 }
 
-/** One unit weighed against its page: the hash expected against the one on disk. */
 export interface CheckEntry {
   unitId        : string;
   docPath       : string;
@@ -38,7 +37,6 @@ interface DocumentFrontmatter {
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 
-/** The frontmatter of a generated page, empty when the file carries none. */
 export const readDocFrontmatter = async (file: string): Promise<DocumentFrontmatter> => {
   try {
     const raw   = await fs.readFile(file, "utf8");
@@ -65,7 +63,6 @@ export const readDocFrontmatter = async (file: string): Promise<DocumentFrontmat
   }
 };
 
-/** Every markdown page under the output directory, as posix paths. */
 const listDocs = async (outDir: string): Promise<string[]> => {
   try {
     const entries = await glob({
@@ -82,10 +79,6 @@ const listDocs = async (outDir: string): Promise<string[]> => {
 };
 
 
-/**
- * Compares the pages on disk against a fresh scan, calling no provider. This
- * is what a CI job runs to fail on documentation nobody regenerated.
- */
 export const check = async (ctx: CheckContext): Promise<CheckResult> => {
   const { manifest }: { manifest: Manifest } = await scan(ctx);
 

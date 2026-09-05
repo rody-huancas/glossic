@@ -1,6 +1,6 @@
-import type { Adapter, Provider } from "@glossic/schema";
+import type { Layer, Provider } from "@glossic/schema";
 
-/** A name-keyed collection of adapters or providers, kept in insertion order. */
+/** A name-keyed collection of layers or providers, kept in insertion order. */
 export class Registry<T extends { name: string }> {
   readonly #items = new Map<string, T>();
 
@@ -26,11 +26,11 @@ export class Registry<T extends { name: string }> {
   }
 }
 
-export type AdapterRegistry  = Registry<Adapter>;
+export type AdapterRegistry  = Registry<Layer>;
 export type ProviderRegistry = Registry<Provider>;
 
-export const createAdapterRegistry = (adapters: Adapter[] = []): AdapterRegistry => {
-  const registry = new Registry<Adapter>();
+export const createAdapterRegistry = (adapters: Layer[] = []): AdapterRegistry => {
+  const registry = new Registry<Layer>();
 
   for (const adapter of adapters) {
     registry.register(adapter);

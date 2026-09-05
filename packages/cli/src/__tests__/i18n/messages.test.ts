@@ -189,13 +189,20 @@ describe("every visible surface is translated", () => {
               languages   : [{ language: "typescript", count: 1 }],
               roleHint    : null,
             },
-            producedBy: ["generic"],
+            producedBy: ["generic", "treesitter"],
+            symbols   : {
+              symbols: [
+                { name: "run", kind: "function", file: "src/a.ts", exported: true, line: 1 },
+                { name: "Opts", kind: "interface", file: "src/a.ts", exported: true, line: 5 },
+              ],
+            },
           },
           hash: "h",
         },
       ],
       relations: [],
     },
+    enrichersByProject: { root: ["treesitter"] },
   } as unknown as ScanResult;
 
   const generateResult = {
@@ -276,6 +283,8 @@ describe("every visible surface is translated", () => {
     expect(spanish).toContain("monorepo pnpm");
     expect(spanish).toContain("lenguajes:");
     expect(spanish).not.toContain("languages:");
+    expect(english).toContain("enrichers: treesitter (2 symbols)");
+    expect(spanish).toContain("enrichers: treesitter (2 símbolos)");
   });
 
   it("renders the generate report in both languages", () => {

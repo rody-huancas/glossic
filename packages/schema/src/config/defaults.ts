@@ -1,4 +1,6 @@
 export const DEFAULT_EXCLUDE: readonly string[] = [
+  "**/.astro/**",
+  "**/.docusaurus/**",
   "**/.gradle/**",
   "**/.ipynb_checkpoints/**",
   "**/.mypy_cache/**",
@@ -10,6 +12,7 @@ export const DEFAULT_EXCLUDE: readonly string[] = [
   "**/.svelte-kit/**",
   "**/.tox/**",
   "**/.turbo/**",
+  "**/.vitepress/cache/**",
   "**/.vs/**",
   "**/TestResults/**",
   "**/*.egg-info/**",
@@ -19,6 +22,7 @@ export const DEFAULT_EXCLUDE: readonly string[] = [
   "**/build/**",
   "**/coverage/**",
   "**/dist/**",
+  "**/docs-site/**",
   "**/htmlcov/**",
   "**/obj/**",
   "**/out/**",
@@ -82,6 +86,7 @@ export const DEFAULT_IGNORE_UNITS: readonly string[] = [
   "**/wire_gen.go",
   "**/*_string.go",
   "**/testdata/**",
+  "**/__fixtures__/**",
   "**/mocks/**",
 
   "**/r.java",
