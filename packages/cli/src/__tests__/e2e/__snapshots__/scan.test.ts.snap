@@ -3,7 +3,38 @@
 exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
 {
   "generatedAt": "2026-01-01T00:00:00.000Z",
-  "relations": [],
+  "relations": [
+    {
+      "from": "root:src",
+      "kind": "imports",
+      "to": "root:src/common/middleware",
+      "weight": 1,
+    },
+    {
+      "from": "root:src",
+      "kind": "imports",
+      "to": "root:src/config",
+      "weight": 1,
+    },
+    {
+      "from": "root:src",
+      "kind": "imports",
+      "to": "root:src/users",
+      "weight": 1,
+    },
+    {
+      "from": "root:src/users",
+      "kind": "imports",
+      "to": "root:src/users/dto",
+      "weight": 2,
+    },
+    {
+      "from": "root:src/users",
+      "kind": "imports",
+      "to": "root:src/users/entities",
+      "weight": 2,
+    },
+  ],
   "units": [
     {
       "facts": {
@@ -32,7 +63,19 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
         },
         "producedBy": [
           "generic",
+          "treesitter",
         ],
+        "symbols": {
+          "symbols": [
+            {
+              "exported": true,
+              "file": "src/app.module.ts",
+              "kind": "class",
+              "line": 10,
+              "name": "AppModule",
+            },
+          ],
+        },
       },
       "hash": "90da7349b0dd153ff359d8f6aefda439b96397d5cf8831b5a2c8e0dc0a895771",
       "id": "root:src",
@@ -63,7 +106,28 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
         },
         "producedBy": [
           "generic",
+          "treesitter",
         ],
+        "symbols": {
+          "symbols": [
+            {
+              "exported": true,
+              "file": "src/common/middleware/logger.middleware.ts",
+              "kind": "class",
+              "line": 5,
+              "name": "LoggerMiddleware",
+              "signature": "implements NestMiddleware",
+            },
+            {
+              "exported": true,
+              "file": "src/common/middleware/logger.middleware.ts",
+              "kind": "method",
+              "line": 6,
+              "name": "LoggerMiddleware.use",
+              "signature": "(req: Request, _res: Response, next: NextFunction): void",
+            },
+          ],
+        },
       },
       "hash": "a6dc6c84f4e106da03134f325db17484c59a1758ffa04d337af19ea2899b80d8",
       "id": "root:src/common/middleware",
@@ -94,7 +158,19 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
         },
         "producedBy": [
           "generic",
+          "treesitter",
         ],
+        "symbols": {
+          "symbols": [
+            {
+              "exported": true,
+              "file": "src/config/app.config.ts",
+              "kind": "const",
+              "line": 1,
+              "name": "appConfig",
+            },
+          ],
+        },
       },
       "hash": "952837672f26c6c6933d8620c89a3f6b57ca011e283603e878a7c48d40e57697",
       "id": "root:src/config",
@@ -135,7 +211,81 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
         },
         "producedBy": [
           "generic",
+          "treesitter",
         ],
+        "symbols": {
+          "symbols": [
+            {
+              "exported": true,
+              "file": "src/users/users.controller.ts",
+              "kind": "class",
+              "line": 8,
+              "name": "UsersController",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.controller.ts",
+              "kind": "method",
+              "line": 12,
+              "name": "UsersController.findAll",
+              "signature": "(): Promise<User[]>",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.controller.ts",
+              "kind": "method",
+              "line": 17,
+              "name": "UsersController.findOne",
+              "signature": "(@Param("id") id: string): Promise<User | undefined>",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.controller.ts",
+              "kind": "method",
+              "line": 22,
+              "name": "UsersController.create",
+              "signature": "(@Body() dto: CreateUserDto): Promise<User>",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.module.ts",
+              "kind": "class",
+              "line": 11,
+              "name": "UsersModule",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.service.ts",
+              "kind": "class",
+              "line": 7,
+              "name": "UsersService",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.service.ts",
+              "kind": "method",
+              "line": 10,
+              "name": "UsersService.findAll",
+              "signature": "(): Promise<User[]>",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.service.ts",
+              "kind": "method",
+              "line": 14,
+              "name": "UsersService.findOne",
+              "signature": "(id: string): Promise<User | undefined>",
+            },
+            {
+              "exported": true,
+              "file": "src/users/users.service.ts",
+              "kind": "method",
+              "line": 18,
+              "name": "UsersService.create",
+              "signature": "(dto: CreateUserDto): Promise<User>",
+            },
+          ],
+        },
       },
       "hash": "3ced6d90c20753666f93dbc7ec4e5152057c704d570aab9824e1e5e24dfaa56a",
       "id": "root:src/users",
@@ -171,7 +321,26 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
         },
         "producedBy": [
           "generic",
+          "treesitter",
         ],
+        "symbols": {
+          "symbols": [
+            {
+              "exported": true,
+              "file": "src/users/dto/create-user.dto.ts",
+              "kind": "class",
+              "line": 1,
+              "name": "CreateUserDto",
+            },
+            {
+              "exported": true,
+              "file": "src/users/dto/update-user.dto.ts",
+              "kind": "class",
+              "line": 1,
+              "name": "UpdateUserDto",
+            },
+          ],
+        },
       },
       "hash": "51241793554536433041cd60abb5f0b838543418c27d7c2e4670d7e19528466e",
       "id": "root:src/users/dto",
@@ -202,7 +371,19 @@ exports[`glossic scan > matches the nestjs-api manifest snapshot 1`] = `
         },
         "producedBy": [
           "generic",
+          "treesitter",
         ],
+        "symbols": {
+          "symbols": [
+            {
+              "exported": true,
+              "file": "src/users/entities/user.entity.ts",
+              "kind": "interface",
+              "line": 1,
+              "name": "User",
+            },
+          ],
+        },
       },
       "hash": "d4f681fad434981d586ff8900372121359f87609f5971495f86b0b63dec33e77",
       "id": "root:src/users/entities",
@@ -242,7 +423,7 @@ exports[`glossic scan > renders a deterministic report 1`] = `
 ├─ src/components  2 files  tsx         components
 └─ src/hooks        1 file  typescript  hooks
 
-2 projects, 6 units, 8 files
+2 projects, 6 units, 8 files  ·  enrichers: treesitter (8 symbols)
 languages: typescript 5, tsx 3
 "
 `;
