@@ -8,7 +8,8 @@
       "!**/coverage",
       "!**/.glossic",
       "!examples",
-      "!**/pnpm-lock.yaml"
+      "!**/pnpm-lock.yaml",
+      "!packages/adapters/treesitter/src/__fixtures__"
     ]
   },
   "formatter": {

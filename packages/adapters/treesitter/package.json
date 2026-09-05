@@ -27,7 +27,8 @@
     "node": ">=20"
   },
   "files": [
-    "dist"
+    "dist",
+    "wasm"
   ],
   "publishConfig": {
     "access": "public"
@@ -50,6 +51,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@glossic/schema": "workspace:*"
+    "@glossic/schema": "workspace:*",
+    "web-tree-sitter": "0.25.10"
   }
 }

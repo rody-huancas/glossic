@@ -59,6 +59,9 @@ importers:
       '@glossic/schema':
         specifier: workspace:*
         version: link:../../schema
+      web-tree-sitter:
+        specifier: 0.25.10
+        version: 0.25.10
 
   packages/cli:
     dependencies:
@@ -1443,6 +1446,14 @@ packages:
       jsdom:
         optional: true
 
+  web-tree-sitter@0.25.10:
+    resolution: {integrity: sha512-Y09sF44/13XvgVKgO2cNDw5rGk6s26MgoZPXLESvMXeefBf7i6/73eFurre0IsTW6E14Y0ArIzhUMmjoc7xyzA==}
+    peerDependencies:
+      '@types/emscripten': ^1.40.0
+    peerDependenciesMeta:
+      '@types/emscripten':
+        optional: true
+
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
     engines: {node: '>= 8'}
@@ -2625,6 +2636,8 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  web-tree-sitter@0.25.10: {}
 
   which@2.0.2:
     dependencies:

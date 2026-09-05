@@ -257,9 +257,9 @@ its default.
 | Option | Default | What it does |
 | --- | --- | --- |
 | `include` | `["**/*"]` | Globs walked, relative to each project root. |
-| `exclude` *(additive)* | build output of every ecosystem: `obj`, `out`, `build`, `dist`, `target`, `coverage`, `__pycache__`, `.gradle`, `.tox`, `tmp`, `storage/framework`, … | What your own build emits, never walked into. Code that is not yours — `node_modules`, `vendor`, `.venv`, `site-packages`, the VCS — is the adapter's hard ignore and is not configurable. |
-| `adapters` | `["nestjs", "treesitter", "generic"]` | Adapter ids in priority order; the first whose `detect()` passes wins. |
-| `ignoreUnits` *(additive)* | config files, manifests, dotfiles, migrations, seeds, `bin`, and the generated code of every ecosystem (`*.pb.go`, `*_pb2.py`, `*.Designer.cs`, `R.java`, …) | Files with no documentable content. A unit whose files all match is dropped. Matched without regard to case, so .NET's `Migrations/` meets `**/migrations/**`. |
+| `exclude` *(additive)* | build output of every ecosystem: `obj`, `out`, `build`, `dist`, `target`, `coverage`, `__pycache__`, `.gradle`, `.tox`, `tmp`, `storage/framework`; the caches of the doc-site generators — `.astro`, `.docusaurus`, `.vitepress/cache`; and `docs-site`, which is glossic's own scaffold | What your own build emits, never walked into. Code that is not yours — `node_modules`, `vendor`, `.venv`, `site-packages`, the VCS — is the adapter's hard ignore and is not configurable. `docs-site` is there because glossic should not document its own output; if the name is yours, take it back with `-**/docs-site/**`. |
+| `adapters` | `["nestjs", "treesitter", "generic"]` | The layer chain, in priority order. The first *base adapter* whose `detect()` passes claims the project and builds its units; every *enricher* that detects then runs over those units and adds facts. `treesitter` is an enricher, `generic` a base adapter that claims everything, so it must stay last. |
+| `ignoreUnits` *(additive)* | config files, manifests, dotfiles, migrations, seeds, `bin`, static test input (`testdata`, `__fixtures__`, `mocks`), and the generated code of every ecosystem (`*.pb.go`, `*_pb2.py`, `*.Designer.cs`, `R.java`, …) | Files with no documentable content. A unit whose files all match is dropped. Matched without regard to case, so .NET's `Migrations/` meets `**/migrations/**`. |
 | `excludeFromContent` *(additive)* | `**/__tests__/**`, `**/test/**`, `**/tests/**`, `**/spec/**`, `*.test.*`, `*.spec.*`, `*_test.go`, `test_*.py`, `*_test.py`, `*_test.rs`, `*_spec.rb` | Counted in the unit hash, never sent as prompt content. |
 | `mergeChildrenInto` | `25` | A directory absorbs every descendant when together they stay at or below this many files. |
 | `minUnitFiles` | `3` | A leaf unit below this is folded into the unit above it, unless it has subdirectories or a role of its own. |
@@ -375,6 +375,32 @@ export default {
 `glossic scan` settles it either way. If the workaround took, the folder shows
 up in the manifest as a unit of its own; if it did not, it is still absent.
 
+**Some module edges are invisible to the `treesitter` enricher.**
+
+The enricher reads TypeScript, JavaScript, JSX and TSX, and draws an `imports`
+relation wherever one unit reaches into another. It finds those edges in
+`import` and `export … from` statements, and only in those. Three shapes go
+unrecorded:
+
+| | Example | Why |
+| --- | --- | --- |
+| Dynamic import | `await import("./heavy.js")` | The specifier is an expression, not a static clause. A computed one is not a path at all. |
+| CommonJS require | `const x = require("./x.js")` | Same, and the ecosystem the enricher targets is ESM. |
+| `tsconfig` path alias | `import { a } from "@/core/a.js"` | Resolving it means reading `compilerOptions.paths` of the right `tsconfig`, which the enricher does not do. |
+
+The symbols are unaffected — every exported declaration in the file is still
+reported whatever the file imports. What is missing is only the edge, so the
+`relations` array of the manifest understates how the units depend on one
+another. Nothing else in the pipeline reads `relations` today, so a missing edge
+costs a little context in the prompt and nothing else: no page goes unwritten
+and no hash is wrong.
+
+A relative specifier resolves through the extension rewrite TypeScript expects,
+so `./hash.js` finds `hash.ts`, `./Card.jsx` finds `Card.tsx`, and a directory
+finds the `index.*` inside it. A specifier naming a package — `react`,
+`@glossic/schema`, `node:path`, `#internal/x` — is deliberately not an edge:
+there is no unit in the workspace for it to point at.
+
 ---
 
 ## In CI
@@ -436,10 +462,11 @@ git add docs .glossic/cache.json
 
 ## Roadmap
 
-- **tree-sitter extraction.** The `treesitter` adapter is registered but claims
-  nothing yet. It will give the prompt real symbols — exported functions, classes,
-  signatures — instead of only paths and sizes.
-- **NestJS adapter.** Same: registered, claims nothing. Modules, controllers,
+- **More languages for tree-sitter.** The `treesitter` enricher reads
+  TypeScript, JavaScript, JSX and TSX today, and names the exported surface of
+  every unit it touches. Python, Go and the rest need their grammars vendored
+  the same way.
+- **NestJS adapter.** Registered, claims nothing. Modules, controllers,
   providers and routes recognised as such, so a page can describe an endpoint
   rather than a file.
 - **Static site output.** The frontmatter already feeds Starlight and Docusaurus
