@@ -138,6 +138,7 @@ export const es: Partial<Record<MessageKey, string>> = {
   "check.cacheNote"     : "El cache regenera exactamente las units listadas arriba.",
   "check.orphans.one"   : "La unit que produjo la documentación de arriba ya no existe, así que el archivo se puede borrar.",
   "check.orphans.many"  : "Las units que produjeron las documentaciones de arriba ya no existen, así que esos archivos se pueden borrar.",
+  "check.outDeprecated" : "--out está obsoleto en check: el directorio que lee se indica con --docs.",
 
   "doctor.title"                : "glossic doctor",
   "doctor.node"                 : "node",

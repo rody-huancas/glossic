@@ -147,6 +147,7 @@ export const en = {
   "check.cacheNote"     : "The cache regenerates exactly the units listed above.",
   "check.orphans.one"   : "The unit that produced the document above no longer exists, so the file can be deleted.",
   "check.orphans.many"  : "The units that produced the documents above no longer exist, so those files can be deleted.",
+  "check.outDeprecated" : "--out is deprecated on check: the directory it reads is named by --docs.",
 
   // doctor
   "doctor.title"                : "glossic doctor",
