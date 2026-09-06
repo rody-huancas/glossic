@@ -7,4 +7,8 @@
 
 El reporte ya no imprime una lista de `rm` lista para pegar. Los huérfanos se siguen nombrando en la tabla, con la razón `its unit no longer exists` / `su unit ya no existe` en lugar de `no unit produces this file`, y el bloque final explica que la unit que produjo esos archivos ya no existe y que se pueden borrar. Borrar sigue siendo una decisión de quien lee, no un comando en el portapapeles.
 
-En el catálogo, `check.deleteOrphans` desaparece y entran `check.orphans.one` y `check.orphans.many`.
+El directorio de páginas generadas se llama `--docs` en todos los comandos que lo leen. `glossic check` pasa a aceptar `--docs`, igual que `glossic eject`, y `--out` queda reservado para destinos de escritura: la salida de `generate`, el sitio de `eject` y el manifest de `scan`. `check --out` sigue funcionando como alias obsoleto, imprimiendo una línea en stderr que dice que el flag se movió, y se quitará en un major. Si `--docs` y `--out` vienen juntos, gana `--docs`. El README lo documenta en «`--docs` reads, `--out` writes».
+
+`glossic check` resuelve el directorio de páginas con la misma precedencia que ya usaban `generate` y `eject`: el flag, después el directorio que la última corrida de `generate` dejó anotado en el manifest, después `output.dir`. **Generar en `docs-walearning` y correr `check` sin flags ahora lee `docs-walearning`; antes miraba `docs` y daba todas las páginas por faltantes.** En el menú interactivo, "check" recibe el directorio elegido en la sesión igual que "eject", así que generar en una carpeta y comprobar a continuación ya no mira dos sitios distintos. `resolveDocsDir` se muda de `commands/eject/` a `src/docs-dir.ts`, que es de donde lo toman ahora los tres.
+
+En el catálogo, `check.deleteOrphans` desaparece y entran `check.orphans.one`, `check.orphans.many` y `check.outDeprecated`.
