@@ -12,7 +12,8 @@ export interface CheckReportContext {
 
 /**
  * Renders the check report. Its job is to name the exact files to regenerate:
- * this is what a developer reads after a failing CI job.
+ * this is what a developer reads after a failing CI job. An orphan is named and
+ * explained but never handed over as an `rm`, which is too easy to paste blind.
  */
 export const renderCheckReport = (result: CheckResult, context: CheckReportContext): string => {
   const t        = context.t ?? defaultTranslator;
@@ -74,9 +75,7 @@ export const renderCheckReport = (result: CheckResult, context: CheckReportConte
   }
 
   if (result.orphaned.length > 0) {
-    lines.push(t("check.deleteOrphans"), "");
-    for (const doc of result.orphaned) lines.push(`  rm ${docs}/${doc}`);
-    lines.push("");
+    lines.push(result.orphaned.length === 1 ? t("check.orphans.one") : t("check.orphans.many"), "");
   }
 
   return `${lines.join("\n")}\n`;

@@ -284,6 +284,30 @@ One precedence chain applies to all of them:
 `glossic doctor` prints the resolved value and the origin of every option, which
 is the fastest way to find out why glossic did something you did not expect.
 
+### `--docs` reads, `--out` writes
+
+Two flags name a directory, and which one a command takes says which way the
+files move:
+
+| Command | Reads generated pages from | Writes to |
+| --- | --- | --- |
+| `glossic scan` | — | `--out` (the manifest) |
+| `glossic generate` | — | `--out` (the pages) |
+| `glossic check` | `--docs` | — |
+| `glossic eject` | `--docs` | `--out` (the site) |
+
+A flag is only needed when the directory is not the one the last run implies.
+`check` and `eject` fall back the same way — the directory `generate` recorded
+in the manifest, then `output.dir` — so generating into `docs-walearning` once
+is enough for both to look there afterwards. The three destinations fall back to
+`output.dir`, `output.manifest` and `<root>/docs-site`.
+
+The interactive menu applies the same chain: the directory you answered for
+`generate` is the one `check` and `eject` read for the rest of the session.
+
+`check --out` still works as a deprecated alias for `check --docs`, printing one
+line to stderr to say the flag moved. It will be removed in a future major.
+
 **Changing a grouping option invalidates pages.** `include`, `exclude`,
 `ignoreUnits`, `excludeFromContent`, `minUnitFiles`, `maxUnitFiles` and
 `mergeChildrenInto` decide which files land in which unit. Change one and the

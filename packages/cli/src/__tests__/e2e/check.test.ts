@@ -78,6 +78,42 @@ const OK_DOCUMENT = [
 const runCheck = async () =>
   check({ root, adapters: builtinAdapters, config: TREE_CONFIG, outDir: docs });
 
+/** Documentation a person wrote into the same directory, which check must not touch. */
+const HAND_WRITTEN = [
+  "# Deployment guide",
+  "",
+  "Push to main and the pipeline does the rest.",
+  "",
+].join("\n");
+
+/** The other shape of foreign document: frontmatter, but none of ours. */
+const FOREIGN_FRONTMATTER = [
+  "---",
+  'title: "Why Postgres"',
+  "sidebar_position: 1",
+  "---",
+  "",
+  "We picked Postgres because the team already runs it.",
+  "",
+].join("\n");
+
+/** A page glossic left behind: our frontmatter, naming a unit the scan no longer finds. */
+const generatedDoc = (unitId: string, unitPath: string): string =>
+  [
+    "---",
+    `title: ${JSON.stringify(unitPath)}`,
+    `unit: ${JSON.stringify(unitId)}`,
+    'project: "root"',
+    `path: ${JSON.stringify(unitPath)}`,
+    'hash: "0000000000000000000000000000000000000000000000000000000000000000"',
+    "files: 2",
+    'generatedAt: "2026-01-01T00:00:00.000Z"',
+    "---",
+    "",
+    OK_DOCUMENT,
+    "",
+  ].join("\n");
+
 describe("glossic check", () => {
   it("is happy right after a generate", async () => {
     await generateAll();
@@ -133,7 +169,53 @@ describe("glossic check", () => {
 
     const report = renderCheckReport(result, { cwd: root, target: "." });
     expect(report).toContain("orphaned");
-    expect(report).toContain("rm docs/src/routes.md");
+    expect(report).toContain("docs/src/routes.md");
+    expect(report).toContain("can be deleted");
+    expect(report).not.toContain("rm ");
+  });
+
+  it("says nothing about markdown it did not write", async () => {
+    await generateAll();
+    await write("docs/guide.md", HAND_WRITTEN);
+    await write("docs/adr/0001-why-postgres.md", FOREIGN_FRONTMATTER);
+
+    const result = await runCheck();
+
+    expect(result.orphaned).toEqual([]);
+    expect(result.ok).toBe(true);
+
+    const report = renderCheckReport(result, { cwd: root, target: "." });
+    expect(report).not.toContain("guide.md");
+    expect(report).not.toContain("0001-why-postgres.md");
+  });
+
+  it("reports a document of ours whose unit is gone", async () => {
+    await generateAll();
+    await write("docs/src/legacy.md", generatedDoc("root:src/legacy", "src/legacy"));
+
+    const result = await runCheck();
+
+    expect(result.orphaned).toEqual(["src/legacy.md"]);
+    expect(result.ok).toBe(false);
+  });
+
+  it("reports only its own files in a directory of mixed documentation", async () => {
+    await generateAll();
+    await write("docs/guide.md", HAND_WRITTEN);
+    await write("docs/adr/0001-why-postgres.md", FOREIGN_FRONTMATTER);
+    await write("docs/contributing.md", HAND_WRITTEN);
+    await write("docs/src/legacy.md", generatedDoc("root:src/legacy", "src/legacy"));
+    await fs.rm(path.join(root, "src/routes"), { force: true, recursive: true });
+
+    const result = await runCheck();
+
+    expect(result.orphaned).toEqual(["src/legacy.md", "src/routes.md"]);
+
+    const report = renderCheckReport(result, { cwd: root, target: "." });
+    for (const own of ["docs/src/legacy.md", "docs/src/routes.md"]) expect(report).toContain(own);
+    for (const theirs of ["guide.md", "0001-why-postgres.md", "contributing.md"]) {
+      expect(report).not.toContain(theirs);
+    }
   });
 
   it("reports all three problems at once and names every file", async () => {

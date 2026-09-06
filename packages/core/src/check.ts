@@ -21,6 +21,7 @@ export interface CheckEntry {
   documentedHash: string | undefined;
 }
 
+/** `orphaned` names only documents glossic wrote: markdown it did not generate is left alone. */
 export interface CheckResult {
   outDir  : string;
   upToDate: CheckEntry[];
@@ -31,36 +32,57 @@ export interface CheckResult {
 }
 
 interface DocumentFrontmatter {
-  unit: string | undefined;
-  hash: string | undefined;
+  unit       : string | undefined;
+  hash       : string | undefined;
+  generatedAt: string | undefined;
 }
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 
+const NO_FRONTMATTER: DocumentFrontmatter = {
+  unit       : undefined,
+  hash       : undefined,
+  generatedAt: undefined,
+};
+
+/** The fields `renderUnitDoc` writes, all undefined when there is no readable frontmatter. */
 export const readDocFrontmatter = async (file: string): Promise<DocumentFrontmatter> => {
   try {
     const raw   = await fs.readFile(file, "utf8");
     const match = FRONTMATTER.exec(raw);
 
     if (match === null) {
-      return { unit: undefined, hash: undefined };
+      return NO_FRONTMATTER;
     }
 
     const parsed: unknown = parseYaml(match[1] ?? "");
-    
+
     if (typeof parsed !== "object" || parsed === null) {
-      return { unit: undefined, hash: undefined };
+      return NO_FRONTMATTER;
     }
 
     const record = parsed as Record<string, unknown>;
 
     return {
-      unit: typeof record.unit === "string" ? record.unit : undefined,
-      hash: typeof record.hash === "string" ? record.hash : undefined,
+      unit       : typeof record.unit === "string" ? record.unit : undefined,
+      hash       : typeof record.hash === "string" ? record.hash : undefined,
+      generatedAt: typeof record.generatedAt === "string" ? record.generatedAt : undefined,
     };
   } catch {
-    return { unit: undefined, hash: undefined };
+    return NO_FRONTMATTER;
   }
+};
+
+/**
+ * Whether glossic wrote the page: only a document of ours carries all three
+ * fields, so hand-written markdown in the output directory is never touched.
+ */
+const isGeneratedDoc = (frontmatter: DocumentFrontmatter): boolean => {
+  return (
+    frontmatter.unit !== undefined &&
+    frontmatter.hash !== undefined &&
+    frontmatter.generatedAt !== undefined
+  );
 };
 
 const listDocs = async (outDir: string): Promise<string[]> => {
@@ -107,9 +129,16 @@ export const check = async (ctx: CheckContext): Promise<CheckResult> => {
     }
   }
 
-  const orphaned = docs
-    .filter((doc) => doc !== INDEX_DOC_PATH && !expected.has(doc))
-    .sort(compareStrings);
+  const unclaimed          = docs.filter((doc) => doc !== INDEX_DOC_PATH && !expected.has(doc));
+  const orphaned: string[] = [];
+
+  for (const doc of unclaimed) {
+    const frontmatter = await readDocFrontmatter(path.resolve(ctx.outDir, doc));
+
+    if (isGeneratedDoc(frontmatter)) orphaned.push(doc);
+  }
+
+  orphaned.sort(compareStrings);
 
   const byUnitId = (entries: CheckEntry[]): CheckEntry[] => {
     return sortBy(entries, (entry) => entry.unitId);
