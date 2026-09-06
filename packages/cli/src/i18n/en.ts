@@ -139,13 +139,14 @@ export const en = {
   "check.orphaned"      : "orphaned",
   "check.staleReason"   : "{unit} changed",
   "check.missingReason" : "{unit} is undocumented",
-  "check.orphanedReason": "no unit produces this file",
+  "check.orphanedReason": "its unit no longer exists",
   "check.problems"      : "{problems}, {units} up to date",
   "count.problem.one"   : "{count} problem",
   "count.problem.many"  : "{count} problems",
   "check.regenerate"    : "Regenerate the stale and missing documents with:",
   "check.cacheNote"     : "The cache regenerates exactly the units listed above.",
-  "check.deleteOrphans" : "Delete the orphaned documents:",
+  "check.orphans.one"   : "The unit that produced the document above no longer exists, so the file can be deleted.",
+  "check.orphans.many"  : "The units that produced the documents above no longer exist, so those files can be deleted.",
 
   // doctor
   "doctor.title"                : "glossic doctor",
