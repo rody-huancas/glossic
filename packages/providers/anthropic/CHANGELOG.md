@@ -1,5 +1,11 @@
 # @glossic/provider-anthropic
 
+## 0.6.0
+
+### Patch Changes
+
+- @glossic/schema@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes
