@@ -1,10 +1,12 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import process from "node:process";
 
 import { createFakeProvider, toPosix } from "@glossic/core";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { runCheck } from "../commands/check.js";
 import { runEject } from "../commands/eject/index.js";
 import { runGenerate } from "../commands/generate/index.js";
 import { runScan } from "../commands/scan.js";
@@ -201,6 +203,58 @@ describe("eject follows the documentation wherever generate put it", () => {
     // The menu remembered the answer instead of asking again or assuming docs.
     expect(seen).toEqual([chosen]);
     expect(await exists(path.join(root, "docs"))).toBe(false);
+  });
+});
+
+/**
+ * The menu's own check, driven the way the menu drives it: whatever the session
+ * answered for the output directory is where the pages are read from.
+ */
+describe("check follows the documentation wherever generate put it", () => {
+  afterEach(() => {
+    // Documentation behind its code sets it, and a leaked code fails the run.
+    process.exitCode = 0;
+  });
+
+  it("chains generate and check in one menu session, with a custom directory", async () => {
+    const chosen = path.join(home, "docs-session-check");
+    const fake   = createFakeProvider();
+    const seen: string[] = [];
+
+    const code = await runInteractive({
+      prompts    : scripted(["generate", "es", chosen, true, "check", "exit"]),
+      cwd        : root,
+      preferences: { env: { APPDATA: home }, platform: "win32", homedir: home },
+      runGenerate: (target, options) =>
+        runGenerate(target, options, { cwd: root, createProviders: () => [fake] }),
+      runCheck: async (_target, options) => {
+        seen.push(options?.docs ?? "<none>");
+        return runCheck(root, { ...options, uiLang: "en" });
+      },
+    });
+
+    expect(code).toBe(0);
+
+    // The session's answer reached check, and it read the pages there: a check
+    // pointed at docs would have called every page missing and returned 1.
+    expect(seen).toEqual([chosen]);
+    expect(await exists(path.join(root, "docs"))).toBe(false);
+  });
+
+  it("reads the recorded directory in a session that only checks", async () => {
+    const chosen = path.join(home, "docs-earlier-run");
+    const fake   = createFakeProvider();
+
+    await runGenerate(".", { out: chosen, quiet: true }, { cwd: root, createProviders: () => [fake] });
+
+    const code = await runInteractive({
+      prompts    : scripted(["check", "exit"]),
+      cwd        : root,
+      preferences: { env: { APPDATA: home }, platform: "win32", homedir: home },
+      runCheck   : async (_target, options) => runCheck(root, { ...options, uiLang: "en" }),
+    });
+
+    expect(code).toBe(0);
   });
 });
 

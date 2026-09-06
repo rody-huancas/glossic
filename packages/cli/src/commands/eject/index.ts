@@ -16,6 +16,7 @@ import { siteStats, startSlug, structurePage, STRUCTURE_SLUG } from "./structure
 import { DEFAULT_ACCENT, normaliseHex } from "./theme.js";
 import { renderStarlightPage, toStarlightPage } from "./frontmatter.js";
 import { flagsToConfig, resolveEffectiveConfig } from "../../config.js";
+import { resolveDocsDir } from "../../docs-dir.js";
 import type { Translator } from "../../i18n/index.js";
 
 export { buildSidebar, isGroup, pruneSidebar, renderSidebar, sidebarEntries, slugFor } from "./sidebar.js";
@@ -74,20 +75,6 @@ export interface EjectResult {
   template      : string;
   excludePattern: string | undefined;
 }
-
-export const resolveDocsDir = (
-  paths     : { cwd: string; root: string },
-  explicit  : string | undefined,
-  recorded  : string | undefined,
-  fromConfig: string,
-): string => {
-  if (explicit !== undefined) {
-    return path.resolve(paths.cwd, explicit);
-  }
-
-  return path.resolve(paths.root, recorded ?? fromConfig);
-};
-
 
 /** True when the path exists at all, whatever it is. */
 const exists = async (target: string): Promise<boolean> =>

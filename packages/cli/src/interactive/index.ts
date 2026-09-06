@@ -6,18 +6,19 @@ import { readManifest } from "@glossic/core";
 import { counted } from "../render/index.js";
 import { runScan } from "../commands/scan.js";
 import { runCheck } from "../commands/check.js";
+import { runEject } from "../commands/eject/index.js";
 import { printBanner } from "../ui/banner.js";
 import { runGenerate } from "../commands/generate/index.js";
 import { pickLanguage } from "./language.js";
 import { clackPrompts } from "../ui/prompts.js";
 import { runConnection } from "./connection.js";
+import { resolveDocsDir } from "../docs-dir.js";
 import { formatCliError } from "../errors.js";
 import { hasGeneratedDocs } from "./docs.js";
 import { writePreferences } from "../preferences.js";
 import { generateInteractively } from "./generate-flow.js";
 import { resolveEffectiveConfig } from "../config.js";
 import { LANGUAGES, languageLabel } from "../language.js";
-import { resolveDocsDir, runEject } from "../commands/eject/index.js";
 import { readStatus, renderStatusLine } from "./status.js";
 import { createTranslator, UI_LANGUAGES } from "../i18n/index.js";
 import type { Translator } from "../i18n/index.js";
@@ -31,11 +32,6 @@ export type { StatusLine } from "./status.js";
 type Action = "scan" | "generate" | "eject" | "check" | "connection";
 type Choice = Action | "uiLanguage" | "docLanguage" | "exit";
 
-/**
- * The runScan, runGenerate and runCheck slots are the very same entry points
- * the flags go through; `preferences` is injectable so tests neither read nor
- * write the real user config.
- */
 export interface InteractiveDeps {
   prompts         ?: PromptPort;
   runScan         ?: typeof runScan;
@@ -50,26 +46,6 @@ export interface InteractiveDeps {
   writePreferences?: typeof writePreferences;
 }
 
-/**
- * The menu shown by a bare `glossic`. Every branch calls the function the
- * matching flag would have called: this file asks the questions, it never
- * reimplements the work.
- *
- * It is a loop, and every turn starts from a clean screen: the banner, the
- * status line and the menu, with no pile of earlier output above them. An
- * action that printed something holds it on screen until the reader says they
- * are done. Where the screen cannot be wiped -- a pipe, a CI log -- the output
- * accumulates as it always did, and nothing waits for a keypress that will
- * never come.
- *
- * The failure flag and the last unit count are remembered across the session:
- * the first so the exit code can report it, the second so the menu can say
- * what the last scan found without scanning again. An action that throws -- a
- * dead provider, a timeout, a bad path -- is worth reading but not worth
- * ending the session over, so it is reported and the menu is drawn again.
- * Backing out of a prompt is not a failure at all and never reaches the exit
- * code.
- */
 export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number> => {
   const prompts    = deps.prompts ?? clackPrompts;
   const cwd        = deps.cwd ?? process.cwd();
@@ -108,7 +84,7 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
       }
 
       if (choice === "check") {
-        const result = await check(".", {});
+        const result = await check(".", sessionDocs === undefined ? {} : { docs: sessionDocs });
 
         return { ok: result.ok, printed: true };
       }
@@ -156,10 +132,6 @@ export const runInteractive = async (deps: InteractiveDeps = {}): Promise<number
     const recorded   = await readManifest(path.resolve(root, config.output.manifest));
     const docsDir    = resolveDocsDir({ cwd, root }, sessionDocs, recorded?.docsDir, config.output.dir);
 
-    // Where generate would write if the reader just presses enter: the
-    // directory the last run recorded, then the configured one, which itself
-    // defaults to docs. Proposing "docs" to someone who generated elsewhere
-    // offers to scatter their documentation over two folders.
     const defaultOut = recorded?.docsDir ?? config.output.dir;
     const documented = await hasDocs(root, docsDir);
     const noAiCalls  = t("menu.hint.noAiCalls");
